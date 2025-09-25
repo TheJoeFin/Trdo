@@ -14,6 +14,7 @@ public sealed class RadioPlayerService : IDisposable
     private double _volume = 0.5; // default
     private const string VolumeKey = "RadioVolume";
     private bool _isInitialized;
+    private string? _streamUrl;
 
     public static RadioPlayerService Instance { get; } = new();
 
@@ -21,6 +22,8 @@ public sealed class RadioPlayerService : IDisposable
     public event EventHandler<double>? VolumeChanged;
 
     public bool IsPlaying => _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
+
+    public string? StreamUrl => _streamUrl;
 
     public double Volume
     {
@@ -74,12 +77,12 @@ public sealed class RadioPlayerService : IDisposable
     {
         try
         {
-            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(VolumeKey, out var v))
+            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(VolumeKey, out object? v))
             {
                 double parsed = v switch
                 {
                     double d => d,
-                    string s when double.TryParse(s, out var d2) => d2,
+                    string s when double.TryParse(s, out double d2) => d2,
                     _ => _volume
                 };
                 _volume = Math.Clamp(parsed, 0, 1);
@@ -92,8 +95,31 @@ public sealed class RadioPlayerService : IDisposable
     public void Initialize(string streamUrl)
     {
         if (_isInitialized) return;
-        _player.Source = MediaSource.CreateFromUri(new Uri(streamUrl));
-        _isInitialized = true;
+        SetStreamUrl(streamUrl);
+    }
+
+    public void SetStreamUrl(string streamUrl)
+    {
+        if (string.IsNullOrWhiteSpace(streamUrl)) return;
+        try
+        {
+            Uri uri = new Uri(streamUrl);
+            bool wasPlaying = false;
+            try { wasPlaying = IsPlaying; } catch { }
+
+            _player.Source = MediaSource.CreateFromUri(uri);
+            _isInitialized = true;
+            _streamUrl = streamUrl;
+
+            if (wasPlaying)
+            {
+                try { _player.Play(); } catch { }
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore invalid URLs here; caller should validate.
+        }
     }
 
     public void Play()

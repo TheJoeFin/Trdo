@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Windows.Input;
 using Microsoft.UI.Xaml;
 
@@ -15,7 +16,7 @@ public sealed class ShowWindowCommand : ICommand
         // Request App to create/show window
         if (Application.Current is App app)
         {
-            var method = typeof(App).GetMethod("EnsureWindow", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            MethodInfo? method = typeof(App).GetMethod("EnsureWindow", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             method?.Invoke(app, null);
         }
     }
@@ -23,7 +24,7 @@ public sealed class ShowWindowCommand : ICommand
 
 internal static class WindowHelper
 {
-    private static Window[] _active = Array.Empty<Window>();
+    private static Window[] _active = [];
 
     public static Window[] ActiveWindows() => _active;
 
@@ -34,7 +35,7 @@ internal static class WindowHelper
             if (ReferenceEquals(_active[i], window))
                 return;
         }
-        var newArr = new Window[_active.Length + 1];
+        Window[] newArr = new Window[_active.Length + 1];
         _active.CopyTo(newArr, 0);
         newArr[^1] = window;
         _active = newArr;
@@ -47,10 +48,10 @@ internal static class WindowHelper
         if (idx < 0) return;
         if (_active.Length == 1)
         {
-            _active = Array.Empty<Window>();
+            _active = [];
             return;
         }
-        var newArr = new Window[_active.Length - 1];
+        Window[] newArr = new Window[_active.Length - 1];
         if (idx > 0) Array.Copy(_active, 0, newArr, 0, idx);
         if (idx < _active.Length - 1) Array.Copy(_active, idx + 1, newArr, idx, _active.Length - idx - 1);
         _active = newArr;

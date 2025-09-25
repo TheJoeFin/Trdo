@@ -14,6 +14,7 @@
             <XamlUICommand x:Key="ShowHideWindowCommand"/>
             <XamlUICommand x:Key="ExitApplicationCommand"/>
             <XamlUICommand x:Key="PlayPauseCommand"/>
+            <XamlUICommand x:Key="ToggleStartupCommand"/>
 
             <!-- Tray Icon definition -->
             <taskbar:TaskbarIcon x:Key="TrayIcon"
@@ -23,6 +24,7 @@
                     <MenuFlyout>
                         <MenuFlyoutItem Text="Play/Pause" Command="{StaticResource PlayPauseCommand}"/>
                         <MenuFlyoutItem Text="Show/Hide Window" Command="{StaticResource ShowHideWindowCommand}"/>
+                        <MenuFlyoutItem Text="Start with Windows" Command="{StaticResource ToggleStartupCommand}"/>
                         <MenuFlyoutSeparator/>
                         <MenuFlyoutItem Text="Exit" Command="{StaticResource ExitApplicationCommand}"/>
                     </MenuFlyout>
