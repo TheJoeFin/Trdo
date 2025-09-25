@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Tradio (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Tradio (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

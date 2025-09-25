@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="Tradio.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Tradio"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Tradio">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid Padding="12" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12" MinWidth="260" MinHeight="160">
+        <TextBlock Text="Tradio" FontSize="18" FontWeight="Bold"/>
+        <StackPanel Orientation="Horizontal" Spacing="12" Grid.Row="1" HorizontalAlignment="Center">
+            <Button x:Name="PlayPauseButton" Click="PlayPauseButton_Click" Width="90"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="8" Grid.Row="2" VerticalAlignment="Center">
+            <TextBlock Text="Vol" VerticalAlignment="Center"/>
+            <Slider x:Name="VolumeSlider" Width="160" Minimum="0" Maximum="1" StepFrequency="0.01" SmallChange="0.01" ValueChanged="VolumeSlider_ValueChanged"/>
+            <TextBlock x:Name="VolumeValue" Width="36" TextAlignment="Right"/>
+        </StackPanel>
+    </Grid>
+</Window>

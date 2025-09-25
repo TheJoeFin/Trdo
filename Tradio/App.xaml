@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Application
+    x:Class="Tradio.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:taskbar="using:H.NotifyIcon">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Commands -->
+            <XamlUICommand x:Key="ShowHideWindowCommand"/>
+            <XamlUICommand x:Key="ExitApplicationCommand"/>
+            <XamlUICommand x:Key="PlayPauseCommand"/>
+
+            <!-- Tray Icon definition -->
+            <taskbar:TaskbarIcon x:Key="TrayIcon"
+                                 ToolTipText="Tradio"
+                                 LeftClickCommand="{StaticResource ShowHideWindowCommand}">
+                <taskbar:TaskbarIcon.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem Text="Play/Pause" Command="{StaticResource PlayPauseCommand}"/>
+                        <MenuFlyoutItem Text="Show/Hide Window" Command="{StaticResource ShowHideWindowCommand}"/>
+                        <MenuFlyoutSeparator/>
+                        <MenuFlyoutItem Text="Exit" Command="{StaticResource ExitApplicationCommand}"/>
+                    </MenuFlyout>
+                </taskbar:TaskbarIcon.ContextFlyout>
+            </taskbar:TaskbarIcon>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
