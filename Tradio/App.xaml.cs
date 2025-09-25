@@ -1,4 +1,5 @@
 ﻿using H.NotifyIcon;
+using H.NotifyIcon.Core;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 using Tradio.ViewModels;
 using Windows.Storage;
 using Windows.ApplicationModel;
+using Microsoft.UI.Input;
 
 namespace Tradio
 {
@@ -58,11 +60,37 @@ namespace Tradio
             _playPauseCommand = (XamlUICommand)Resources["PlayPauseCommand"];
             _playPauseCommand.ExecuteRequested += PlayPauseCommand_ExecuteRequested;
 
-            _toggleStartupCommand = (XamlUICommand)Resources["ToggleStartupCommand"];
-            _toggleStartupCommand.ExecuteRequested += ToggleStartupCommand_ExecuteRequested;
-
             _trayIcon = (TaskbarIcon)Resources["TrayIcon"];
+            
+            // Doesn't work for some reason
+            // Adjust volume with the mouse wheel over the tray icon via PointerWheelChanged.
+            //_trayIcon.PointerWheelChanged += TrayIcon_PointerWheelChanged;
+
+
             _trayIcon.ForceCreate();
+        }
+
+        private void TrayIcon_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+        {
+            try
+            {
+                // Use PointerPoint to get wheel delta. Positive delta => wheel up.
+                PointerPoint point = e.GetCurrentPoint(_trayIcon);
+                int delta = point.Properties.MouseWheelDelta;
+
+                if (delta == 0)
+                    return;
+
+                const double step = 0.05; // 5% per notch
+                double newVol = _playerVm.Volume + (delta > 0 ? step : -step);
+                _playerVm.Volume = Math.Clamp(newVol, 0, 1);
+
+                e.Handled = true;
+            }
+            catch
+            {
+                // ignore
+            }
         }
 
         private async Task UpdateTrayIconAsync()
@@ -91,7 +119,7 @@ namespace Tradio
             if (_toggleStartupCommand is null) return;
             try
             {
-                var task = await StartupTask.GetAsync("TradioStartup");
+                StartupTask task = await StartupTask.GetAsync("TradioStartup");
                 _toggleStartupCommand.Label = task.State == StartupTaskState.Enabled ? "Disable Start with Windows" : "Enable Start with Windows";
             }
             catch
@@ -150,11 +178,11 @@ namespace Tradio
         {
             try
             {
-                var startupTask = await StartupTask.GetAsync("TradioStartup");
+                StartupTask startupTask = await StartupTask.GetAsync("TradioStartup");
                 switch (startupTask.State)
                 {
                     case StartupTaskState.Disabled:
-                        var newState = await startupTask.RequestEnableAsync();
+                        StartupTaskState newState = await startupTask.RequestEnableAsync();
                         break;
                     case StartupTaskState.DisabledByUser:
                         // Cannot enable programmatically; show info

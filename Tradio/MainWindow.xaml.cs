@@ -4,6 +4,8 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Tradio.ViewModels;
 using Microsoft.UI.Windowing;
 using Windows.ApplicationModel;
+using Windows.Graphics;
+using System.Runtime.InteropServices;
 
 namespace Tradio
 {
@@ -17,6 +19,17 @@ namespace Tradio
         {
             InitializeComponent();
             WindowHelper.Track(this);
+
+            // Use WinAppSDK TitleBar control as custom title bar
+            try
+            {
+                ExtendsContentIntoTitleBar = true;
+                SetTitleBar(SimpleTitleBar);
+            }
+            catch { }
+
+            // Position window small at bottom-right on first show
+            TryPositionBottomRightSmall();
 
             // Intercept window closing to just hide instead of exiting the app
             try
@@ -53,6 +66,101 @@ namespace Tradio
             };
 
             _ = InitializeStartupToggleAsync();
+        }
+
+        private void TryPositionBottomRightSmall()
+        {
+            try
+            {
+                AppWindow? appWin = this.AppWindow;
+                if (appWin is null)
+                    return;
+
+                // Base size in DIPs; scale to monitor DPI to get pixels
+                double scale = GetScaleForCurrentWindow();
+                int width = (int)Math.Round(420 * scale);
+                int height = (int)Math.Round(260 * scale);
+                int margin = (int)Math.Round(12 * scale);
+
+                // Use the display area for this window
+                DisplayArea displayArea = DisplayArea.GetFromWindowId(appWin.Id, DisplayAreaFallback.Primary);
+                RectInt32 workArea = displayArea.WorkArea; // work area accounts for taskbar
+
+                // Ensure we don't exceed work area
+                width = Math.Min(width, workArea.Width);
+                height = Math.Min(height, workArea.Height);
+
+                int x = workArea.X + Math.Max(0, workArea.Width - width - margin);
+                int y = workArea.Y + Math.Max(0, workArea.Height - height - margin);
+
+                RectInt32 rect = new(x, y, width, height);
+                appWin.MoveAndResize(rect);
+
+                if (appWin.Presenter is OverlappedPresenter presenter)
+                {
+                    presenter.IsResizable = true;
+                    presenter.IsMaximizable = true;
+                    presenter.IsMinimizable = true;
+                }
+            }
+            catch
+            {
+                // best-effort; ignore if positioning fails
+            }
+        }
+
+        private static class NativeMethods
+        {
+            public const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+
+            [DllImport("user32.dll")]
+            public static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
+
+            [DllImport("Shcore.dll")]
+            public static extern int GetDpiForMonitor(IntPtr hmonitor, Monitor_DPI_Type dpiType, out uint dpiX, out uint dpiY);
+
+            [DllImport("user32.dll")]
+            public static extern uint GetDpiForWindow(IntPtr hwnd);
+        }
+
+        private enum Monitor_DPI_Type
+        {
+            MDT_EFFECTIVE_DPI = 0,
+            MDT_ANGULAR_DPI = 1,
+            MDT_RAW_DPI = 2,
+            MDT_DEFAULT = MDT_EFFECTIVE_DPI
+        }
+
+        private double GetScaleForCurrentWindow()
+        {
+            try
+            {
+                nint hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+                if (hwnd != IntPtr.Zero)
+                {
+                    // Try monitor DPI first
+                    IntPtr hmon = NativeMethods.MonitorFromWindow(hwnd, NativeMethods.MONITOR_DEFAULTTONEAREST);
+                    if (hmon != IntPtr.Zero)
+                    {
+                        if (NativeMethods.GetDpiForMonitor(hmon, Monitor_DPI_Type.MDT_EFFECTIVE_DPI, out uint dx, out uint _) == 0 && dx > 0)
+                        {
+                            return dx / 96.0;
+                        }
+                    }
+
+                    // Fallback to window DPI
+                    uint dpi = NativeMethods.GetDpiForWindow(hwnd);
+                    if (dpi > 0)
+                    {
+                        return dpi / 96.0;
+                    }
+                }
+            }
+            catch
+            {
+                // ignore and use default scale
+            }
+            return 1.0;
         }
 
         private void OnAppWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
@@ -164,7 +272,7 @@ namespace Tradio
                     switch (_startupTask.State)
                     {
                         case StartupTaskState.Disabled:
-                            var result = await _startupTask.RequestEnableAsync();
+                            StartupTaskState result = await _startupTask.RequestEnableAsync();
                             break;
                         case StartupTaskState.DisabledByUser:
                             // no-op: cannot enable programmatically
