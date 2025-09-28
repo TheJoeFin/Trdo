@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Application
     x:Class="Tradio.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -10,21 +10,46 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
-            <!-- Commands -->
-            <XamlUICommand x:Key="ShowHideWindowCommand"/>
-            <XamlUICommand x:Key="ExitApplicationCommand"/>
-            <XamlUICommand x:Key="PlayPauseCommand"/>
+            <!--  Modern Commands with Fluent Icons  -->
+            <XamlUICommand
+                x:Key="ShowHideWindowCommand"
+                Description="Show or hide the main window"
+                Label="Show Window">
+                <XamlUICommand.IconSource>
+                    <FontIconSource FontFamily="Segoe Fluent Icons" Glyph="&#xE8A7;" />
+                </XamlUICommand.IconSource>
+            </XamlUICommand>
 
-            <!-- Tray Icon definition -->
-            <taskbar:TaskbarIcon x:Key="TrayIcon"
-                                 ToolTipText="Tradio"
-                                 LeftClickCommand="{StaticResource PlayPauseCommand}">
+            <XamlUICommand
+                x:Key="ExitApplicationCommand"
+                Description="Exit Tradio"
+                Label="Exit">
+                <XamlUICommand.IconSource>
+                    <FontIconSource FontFamily="Segoe Fluent Icons" Glyph="&#xE8BB;" />
+                </XamlUICommand.IconSource>
+            </XamlUICommand>
+
+            <XamlUICommand
+                x:Key="PlayPauseCommand"
+                Description="Play or pause radio"
+                Label="xPlay">
+                <XamlUICommand.IconSource>
+                    <FontIconSource FontFamily="Segoe Fluent Icons" Glyph="&#xE768;" />
+                </XamlUICommand.IconSource>
+            </XamlUICommand>
+
+            <!--  Modern Tray Icon definition  -->
+            <taskbar:TaskbarIcon
+                x:Key="TrayIcon"
+                LeftClickCommand="{StaticResource PlayPauseCommand}"
+                ToolTipText="Tradio - Internet Radio Player">
                 <taskbar:TaskbarIcon.ContextFlyout>
                     <MenuFlyout>
-                        <MenuFlyoutItem Text="Play/Pause" Command="{StaticResource PlayPauseCommand}"/>
-                        <MenuFlyoutItem Text="Show/Hide Window" Command="{StaticResource ShowHideWindowCommand}"/>
-                        <MenuFlyoutSeparator/>
-                        <MenuFlyoutItem Text="Exit" Command="{StaticResource ExitApplicationCommand}"/>
+                        <MenuFlyoutItem Command="{StaticResource PlayPauseCommand}" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Command="{StaticResource ShowHideWindowCommand}" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem Command="{StaticResource ExitApplicationCommand}" />
                     </MenuFlyout>
                 </taskbar:TaskbarIcon.ContextFlyout>
             </taskbar:TaskbarIcon>

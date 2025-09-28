@@ -1,16 +1,16 @@
 ﻿using H.NotifyIcon;
-using H.NotifyIcon.Core;
+using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using Tradio.ViewModels;
-using Windows.Storage;
 using Windows.ApplicationModel;
-using Microsoft.UI.Input;
+using Windows.Storage;
 
 namespace Tradio
 {
@@ -33,7 +33,7 @@ namespace Tradio
             _playerVm.PropertyChanged += PlayerVmOnPropertyChanged;
         }
 
-        protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
+        protected override async void OnLaunched(LaunchActivatedEventArgs args)
         {
             InitializeTrayIcon();
             await UpdateTrayIconAsync();
@@ -46,6 +46,8 @@ namespace Tradio
             if (e.PropertyName == nameof(PlayerViewModel.IsPlaying))
             {
                 UpdatePlayPauseCommandText();
+                // Update tray icon to reflect play/pause state
+                _ = UpdateTrayIconAsync();
             }
         }
 
@@ -61,7 +63,7 @@ namespace Tradio
             _playPauseCommand.ExecuteRequested += PlayPauseCommand_ExecuteRequested;
 
             _trayIcon = (TaskbarIcon)Resources["TrayIcon"];
-            
+
             // Doesn't work for some reason
             // Adjust volume with the mouse wheel over the tray icon via PointerWheelChanged.
             //_trayIcon.PointerWheelChanged += TrayIcon_PointerWheelChanged;
@@ -95,16 +97,33 @@ namespace Tradio
 
         private async Task UpdateTrayIconAsync()
         {
-            // Try radio.ico; if missing, don't set to avoid invalid PNG icon exception
+            if (_trayIcon is null) return;
+
+            // Choose icon based on play state. When not playing, use Radio-Off.png
+            // Fallback to Radio.ico when playing or if the PNG isn't present.
+            string iconUri = _playerVm.IsPlaying
+                ? "ms-appx:///Assets/Radio.ico"
+                : "ms-appx:///Assets/Radio-Off.ico";
+
             try
             {
-                Uri preferred = new Uri("ms-appx:///Assets/radio.ico");
+                Uri preferred = new(iconUri);
                 _ = await StorageFile.GetFileFromApplicationUriAsync(preferred);
-                _trayIcon!.IconSource = new BitmapImage(preferred);
+                _trayIcon.IconSource = new BitmapImage(preferred);
             }
             catch
             {
-                // No valid .ico found; TaskbarIcon will keep its default shell icon
+                // Fallback: try the default Radio.ico if available
+                try
+                {
+                    Uri fallback = new("ms-appx:///Assets/Radio.ico");
+                    _ = await StorageFile.GetFileFromApplicationUriAsync(fallback);
+                    _trayIcon.IconSource = new BitmapImage(fallback);
+                }
+                catch
+                {
+                    // No valid icon found; keep existing icon
+                }
             }
         }
 
@@ -112,6 +131,14 @@ namespace Tradio
         {
             if (_playPauseCommand is null) return;
             _playPauseCommand.Label = _playerVm.IsPlaying ? "Pause" : "Play";
+
+            // Update the icon as well
+            FontIconSource? iconSource = _playPauseCommand.IconSource as FontIconSource;
+            if (iconSource != null)
+            {
+                // Play icon: &#xE768; (Play), Pause icon: &#xE769; (Pause)
+                iconSource.Glyph = _playerVm.IsPlaying ? "\uE769" : "\uE768";
+            }
         }
 
         private async Task UpdateStartupCommandLabelAsync()
@@ -172,34 +199,7 @@ namespace Tradio
         {
             _playerVm.Toggle();
             UpdatePlayPauseCommandText();
-        }
-
-        private async void ToggleStartupCommand_ExecuteRequested(object? sender, ExecuteRequestedEventArgs e)
-        {
-            try
-            {
-                StartupTask startupTask = await StartupTask.GetAsync("TradioStartup");
-                switch (startupTask.State)
-                {
-                    case StartupTaskState.Disabled:
-                        StartupTaskState newState = await startupTask.RequestEnableAsync();
-                        break;
-                    case StartupTaskState.DisabledByUser:
-                        // Cannot enable programmatically; show info
-                        break;
-                    case StartupTaskState.Enabled:
-                        startupTask.Disable();
-                        break;
-                    case StartupTaskState.DisabledByPolicy:
-                    default:
-                        break;
-                }
-            }
-            catch
-            {
-                // ignore
-            }
-            await UpdateStartupCommandLabelAsync();
+            _ = UpdateTrayIconAsync();
         }
     }
 }

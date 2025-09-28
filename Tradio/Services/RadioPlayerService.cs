@@ -1,6 +1,5 @@
-using System;
 using Microsoft.UI.Dispatching;
-using Microsoft.UI.Xaml;
+using System;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;

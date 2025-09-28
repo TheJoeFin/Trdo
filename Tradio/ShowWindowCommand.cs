@@ -1,7 +1,7 @@
+using Microsoft.UI.Xaml;
 using System;
 using System.Reflection;
 using System.Windows.Input;
-using Microsoft.UI.Xaml;
 
 namespace Tradio;
 
