@@ -176,9 +176,18 @@ public sealed class RadioPlayerService : IDisposable
         if (!_isInitialized) return;
         try
         {
-            _player.Pause();
+            // For live streams, stop completely instead of pause
+            // This ensures when resumed, we get the live stream, not buffered content
+            _player.Source = null;
+
             // Notify watchdog that user intentionally paused
             _watchdog.NotifyUserIntentionToPause();
+
+            // Reinitialize the stream so it's ready to play again
+            if (!string.IsNullOrEmpty(_streamUrl))
+            {
+                SetStreamUrl(_streamUrl);
+            }
         }
         catch (Exception) { }
     }
