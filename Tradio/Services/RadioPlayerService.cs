@@ -10,8 +10,10 @@ public sealed class RadioPlayerService : IDisposable
 {
     private readonly MediaPlayer _player;
     private readonly DispatcherQueue _uiQueue; // capture UI dispatcher
+    private readonly StreamWatchdogService _watchdog;
     private double _volume = 0.5; // default
     private const string VolumeKey = "RadioVolume";
+    private const string WatchdogEnabledKey = "WatchdogEnabled";
     private bool _isInitialized;
     private string? _streamUrl;
 
@@ -23,6 +25,8 @@ public sealed class RadioPlayerService : IDisposable
     public bool IsPlaying => _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
 
     public string? StreamUrl => _streamUrl;
+
+    public StreamWatchdogService Watchdog => _watchdog;
 
     public double Volume
     {
@@ -39,6 +43,20 @@ public sealed class RadioPlayerService : IDisposable
             }
             catch { }
             VolumeChanged?.Invoke(this, _volume);
+        }
+    }
+
+    public bool WatchdogEnabled
+    {
+        get => _watchdog.IsEnabled;
+        set
+        {
+            _watchdog.IsEnabled = value;
+            try
+            {
+                ApplicationData.Current.LocalSettings.Values[WatchdogEnabledKey] = value;
+            }
+            catch { }
         }
     }
 
@@ -69,6 +87,9 @@ public sealed class RadioPlayerService : IDisposable
             TryEnqueueOnUi(() => PlaybackStateChanged?.Invoke(this, isPlaying));
         };
 
+        // Initialize watchdog service
+        _watchdog = new StreamWatchdogService(this);
+
         LoadSettings();
     }
 
@@ -86,6 +107,23 @@ public sealed class RadioPlayerService : IDisposable
                 };
                 _volume = Math.Clamp(parsed, 0, 1);
                 _player.Volume = _volume;
+            }
+
+            // Load watchdog enabled state (default to true for auto-recovery)
+            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(WatchdogEnabledKey, out object? w))
+            {
+                bool watchdogEnabled = w switch
+                {
+                    bool b => b,
+                    string s when bool.TryParse(s, out bool b2) => b2,
+                    _ => true
+                };
+                _watchdog.IsEnabled = watchdogEnabled;
+            }
+            else
+            {
+                // Enable watchdog by default
+                _watchdog.IsEnabled = true;
             }
         }
         catch { }
@@ -124,13 +162,25 @@ public sealed class RadioPlayerService : IDisposable
     public void Play()
     {
         if (!_isInitialized) return;
-        try { _player.Play(); } catch (Exception) { }
+        try
+        {
+            _player.Play();
+            // Notify watchdog that user intentionally started playback
+            _watchdog.NotifyUserIntentionToPlay();
+        }
+        catch (Exception) { }
     }
 
     public void Pause()
     {
         if (!_isInitialized) return;
-        try { _player.Pause(); } catch (Exception) { }
+        try
+        {
+            _player.Pause();
+            // Notify watchdog that user intentionally paused
+            _watchdog.NotifyUserIntentionToPause();
+        }
+        catch (Exception) { }
     }
 
     public void TogglePlayPause()
@@ -157,6 +207,7 @@ public sealed class RadioPlayerService : IDisposable
 
     public void Dispose()
     {
+        _watchdog.Dispose();
         _player.Dispose();
     }
 }

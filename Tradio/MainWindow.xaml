@@ -16,7 +16,7 @@
     <Grid
         MinWidth="260"
         MinHeight="200"
-        RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*"
+        RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*"
         RowSpacing="12">
         <!--  WinAppSDK TitleBar control  -->
         <TitleBar
@@ -87,9 +87,26 @@
             Header="Start with Windows"
             Toggled="StartupToggle_Toggled" />
 
+        <!--  Stream Watchdog toggle  -->
+        <ToggleSwitch
+            x:Name="WatchdogToggle"
+            Grid.Row="5"
+            Margin="18"
+            Header="Auto-resume stream (Watchdog)"
+            Toggled="WatchdogToggle_Toggled" />
+
+        <!--  Watchdog status display  -->
+        <TextBlock
+            x:Name="WatchdogStatusText"
+            Grid.Row="6"
+            Margin="18"
+            Foreground="{ThemeResource SystemControlForegroundBaseMediumBrush}"
+            Text=""
+            TextWrapping="Wrap" />
+
         <TextBlock
             x:Name="UrlErrorText"
-            Grid.Row="5"
+            Grid.Row="7"
             Margin="18"
             Foreground="Tomato" />
     </Grid>

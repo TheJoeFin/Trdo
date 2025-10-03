@@ -45,6 +45,9 @@ namespace Tradio
             StreamUrlTextBox.Text = _vm.StreamUrl; // init
             ValidateUrlAndUpdateUi(_vm.StreamUrl);
 
+            // Initialize watchdog toggle
+            WatchdogToggle.IsOn = _vm.WatchdogEnabled;
+
             _vm.PropertyChanged += (_, args) =>
             {
                 if (args.PropertyName == nameof(PlayerViewModel.IsPlaying))
@@ -62,6 +65,15 @@ namespace Tradio
                     if (StreamUrlTextBox.Text != _vm.StreamUrl)
                         StreamUrlTextBox.Text = _vm.StreamUrl;
                     ValidateUrlAndUpdateUi(_vm.StreamUrl);
+                }
+                else if (args.PropertyName == nameof(PlayerViewModel.WatchdogStatus))
+                {
+                    WatchdogStatusText.Text = _vm.WatchdogStatus;
+                }
+                else if (args.PropertyName == nameof(PlayerViewModel.WatchdogEnabled))
+                {
+                    if (WatchdogToggle.IsOn != _vm.WatchdogEnabled)
+                        WatchdogToggle.IsOn = _vm.WatchdogEnabled;
                 }
             };
 
@@ -294,6 +306,11 @@ namespace Tradio
 
             // Reflect actual state after operation
             UpdateStartupToggleFromState();
+        }
+
+        private void WatchdogToggle_Toggled(object sender, RoutedEventArgs e)
+        {
+            _vm.WatchdogEnabled = WatchdogToggle.IsOn;
         }
     }
 }

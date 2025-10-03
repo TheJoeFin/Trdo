@@ -10,6 +10,7 @@ public sealed class PlayerViewModel : INotifyPropertyChanged
     private readonly RadioPlayerService _player = RadioPlayerService.Instance;
     private const string DefaultStreamUrl = "https://wyms.streamguys1.com/live?platform=NPR&uuid=xhjlsf05e";
     private string _streamUrl;
+    private string _watchdogStatus = string.Empty;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -19,6 +20,12 @@ public sealed class PlayerViewModel : INotifyPropertyChanged
         _player.Initialize(_streamUrl);
         _player.PlaybackStateChanged += (_, _) => OnPropertyChanged(nameof(IsPlaying));
         _player.VolumeChanged += (_, _) => OnPropertyChanged(nameof(Volume));
+        
+        // Subscribe to watchdog status changes
+        _player.Watchdog.StreamStatusChanged += (_, args) =>
+        {
+            WatchdogStatus = $"{args.Status}: {args.Message}";
+        };
     }
 
     public bool IsPlaying => _player.IsPlaying;
@@ -30,6 +37,28 @@ public sealed class PlayerViewModel : INotifyPropertyChanged
         {
             if (value == _streamUrl) return;
             _streamUrl = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool WatchdogEnabled
+    {
+        get => _player.WatchdogEnabled;
+        set
+        {
+            if (value == _player.WatchdogEnabled) return;
+            _player.WatchdogEnabled = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string WatchdogStatus
+    {
+        get => _watchdogStatus;
+        private set
+        {
+            if (value == _watchdogStatus) return;
+            _watchdogStatus = value;
             OnPropertyChanged();
         }
     }
