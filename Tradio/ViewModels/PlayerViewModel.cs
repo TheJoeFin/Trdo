@@ -5,7 +5,7 @@ using Tradio.Services;
 
 namespace Tradio.ViewModels;
 
-public sealed class PlayerViewModel : INotifyPropertyChanged
+public sealed partial class PlayerViewModel : INotifyPropertyChanged
 {
     private readonly RadioPlayerService _player = RadioPlayerService.Instance;
     private const string DefaultStreamUrl = "https://wyms.streamguys1.com/live?platform=NPR&uuid=xhjlsf05e";

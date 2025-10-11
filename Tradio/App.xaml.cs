@@ -1,16 +1,10 @@
-﻿using H.NotifyIcon;
-using Microsoft.UI.Input;
-using Microsoft.UI.Windowing;
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media.Imaging;
-using System;
 using System.ComponentModel;
 using System.Threading.Tasks;
+using Tradio.Controls;
 using Tradio.ViewModels;
-using Windows.ApplicationModel;
-using Windows.Storage;
+using WinUIEx;
 
 namespace Tradio
 {
@@ -21,11 +15,6 @@ namespace Tradio
     {
         private Window? _window;
         private readonly PlayerViewModel _playerVm = new();
-        private TaskbarIcon? _trayIcon;
-        private XamlUICommand? _showHideCommand;
-        private XamlUICommand? _exitCommand;
-        private XamlUICommand? _playPauseCommand;
-        private XamlUICommand? _toggleStartupCommand;
 
         public App()
         {
@@ -37,8 +26,6 @@ namespace Tradio
         {
             InitializeTrayIcon();
             await UpdateTrayIconAsync();
-            await UpdateStartupCommandLabelAsync();
-            UpdatePlayPauseCommandText();
         }
 
         private void PlayerVmOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -53,153 +40,67 @@ namespace Tradio
 
         private void InitializeTrayIcon()
         {
-            _showHideCommand = (XamlUICommand)Resources["ShowHideWindowCommand"];
-            _showHideCommand.ExecuteRequested += ShowHideWindowCommand_ExecuteRequested;
+            _window = new Window
+            {
+                Title = "Tradio"
+            };
+            WindowManager wm = WindowManager.Get(_window);
+            wm.TrayIconInvoked += Wm_TrayIconInvoked;
+            _window.SetTaskBarIcon(Icon.FromFile("Assets/Radio.ico"));
+            wm.IsVisibleInTray = true; // Show app in tray
+                                       // Minimize to tray:
+            wm.WindowStateChanged += (s, state) =>
+                wm.AppWindow.IsShownInSwitchers = state != WindowState.Minimized;
 
-            _exitCommand = (XamlUICommand)Resources["ExitApplicationCommand"];
-            _exitCommand.ExecuteRequested += ExitApplicationCommand_ExecuteRequested;
-
-            _playPauseCommand = (XamlUICommand)Resources["PlayPauseCommand"];
-            _playPauseCommand.ExecuteRequested += PlayPauseCommand_ExecuteRequested;
-
-            _trayIcon = (TaskbarIcon)Resources["TrayIcon"];
-
-            // Doesn't work for some reason
-            // Adjust volume with the mouse wheel over the tray icon via PointerWheelChanged.
-            //_trayIcon.PointerWheelChanged += TrayIcon_PointerWheelChanged;
-
-
-            _trayIcon.ForceCreate();
+            wm.WindowState = WindowState.Minimized; // Delay activating the window by starting minimized
         }
 
-        private void TrayIcon_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+        private void Wm_TrayIconInvoked(object? sender, TrayIconInvokedEventArgs e)
         {
-            try
+            if (e.Type == TrayIconInvokeType.RightMouseUp)
             {
-                // Use PointerPoint to get wheel delta. Positive delta => wheel up.
-                PointerPoint point = e.GetCurrentPoint(_trayIcon);
-                int delta = point.Properties.MouseWheelDelta;
-
-                if (delta == 0)
-                    return;
-
-                const double step = 0.05; // 5% per notch
-                double newVol = _playerVm.Volume + (delta > 0 ? step : -step);
-                _playerVm.Volume = Math.Clamp(newVol, 0, 1);
-
-                e.Handled = true;
+                Flyout flyout = new()
+                {
+                    Content = new OptionsControl()
+                };
+                e.Flyout = flyout;
             }
-            catch
+            else if (e.Type == TrayIconInvokeType.LeftMouseUp)
             {
-                // ignore
+                _playerVm.Toggle();
+                _ = UpdateTrayIconAsync();
             }
         }
 
         private async Task UpdateTrayIconAsync()
         {
-            if (_trayIcon is null) return;
+            if (_window is null)
+                return;
 
             // Choose icon based on play state. When not playing, use Radio-Off.png
             // Fallback to Radio.ico when playing or if the PNG isn't present.
             string iconUri = _playerVm.IsPlaying
-                ? "ms-appx:///Assets/Radio.ico"
-                : "ms-appx:///Assets/Radio-Off.ico";
+                ? "Assets/Radio.ico"
+                : "Assets/Radio-Off.ico";
 
-            try
-            {
-                Uri preferred = new(iconUri);
-                _ = await StorageFile.GetFileFromApplicationUriAsync(preferred);
-                _trayIcon.IconSource = new BitmapImage(preferred);
-            }
-            catch
-            {
-                // Fallback: try the default Radio.ico if available
-                try
-                {
-                    Uri fallback = new("ms-appx:///Assets/Radio.ico");
-                    _ = await StorageFile.GetFileFromApplicationUriAsync(fallback);
-                    _trayIcon.IconSource = new BitmapImage(fallback);
-                }
-                catch
-                {
-                    // No valid icon found; keep existing icon
-                }
-            }
+            // TODO: maybe make this a little more robust witha try/catch
+            _window.SetTaskBarIcon(null);
+            _window.SetTaskBarIcon(Icon.FromFile(iconUri));
         }
 
         private void UpdatePlayPauseCommandText()
         {
-            if (_playPauseCommand is null) return;
-            _playPauseCommand.Label = _playerVm.IsPlaying ? "Pause" : "Play";
-
-            // Update the icon as well
-            FontIconSource? iconSource = _playPauseCommand.IconSource as FontIconSource;
-            if (iconSource != null)
-            {
-                // Play icon: &#xE768; (Play), Pause icon: &#xE769; (Pause)
-                iconSource.Glyph = _playerVm.IsPlaying ? "\uE769" : "\uE768";
-            }
-        }
-
-        private async Task UpdateStartupCommandLabelAsync()
-        {
-            if (_toggleStartupCommand is null) return;
-            try
-            {
-                StartupTask task = await StartupTask.GetAsync("TradioStartup");
-                _toggleStartupCommand.Label = task.State == StartupTaskState.Enabled ? "Disable Start with Windows" : "Enable Start with Windows";
-            }
-            catch
-            {
-                _toggleStartupCommand.Label = "Enable Start with Windows";
-            }
-        }
-
-        private void ShowHideWindowCommand_ExecuteRequested(object? _, ExecuteRequestedEventArgs args)
-        {
-            if (_window == null)
-            {
-                _window = new MainWindow();
-                _window.Closed += (sender, e) => { _window = null; };
-                _window.Activate();
+            if (this._window is null)
                 return;
-            }
 
-            try
+            if (_playerVm.IsPlaying)
             {
-                AppWindow? appWin = _window.AppWindow;
-                if (appWin is not null)
-                {
-                    if (appWin.IsVisible)
-                        appWin.Hide();
-                    else
-                    {
-                        appWin.Show();
-                        _window.Activate();
-                    }
-                }
-                else
-                {
-                    _window.Activate();
-                }
+                _window.Title = "Tradio - Pause";
             }
-            catch
+            else
             {
-                _window.Activate();
+                _window.Title = "Tradio - Play";
             }
-        }
-
-        private void ExitApplicationCommand_ExecuteRequested(object? _, ExecuteRequestedEventArgs args)
-        {
-            _trayIcon?.Dispose();
-            Exit();
-        }
-
-        private void PlayPauseCommand_ExecuteRequested(object? _, ExecuteRequestedEventArgs args)
-        {
-            _playerVm.Toggle();
-            UpdatePlayPauseCommandText();
-            _ = UpdateTrayIconAsync();
         }
     }
 }

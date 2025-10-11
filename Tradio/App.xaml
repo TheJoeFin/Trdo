@@ -2,8 +2,7 @@
 <Application
     x:Class="Tradio.App"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:taskbar="using:H.NotifyIcon">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -37,22 +36,6 @@
                     <FontIconSource FontFamily="Segoe Fluent Icons" Glyph="&#xE768;" />
                 </XamlUICommand.IconSource>
             </XamlUICommand>
-
-            <!--  Modern Tray Icon definition  -->
-            <taskbar:TaskbarIcon
-                x:Key="TrayIcon"
-                LeftClickCommand="{StaticResource PlayPauseCommand}"
-                ToolTipText="Tradio - Internet Radio Player">
-                <taskbar:TaskbarIcon.ContextFlyout>
-                    <MenuFlyout>
-                        <MenuFlyoutItem Command="{StaticResource PlayPauseCommand}" />
-                        <MenuFlyoutSeparator />
-                        <MenuFlyoutItem Command="{StaticResource ShowHideWindowCommand}" />
-                        <MenuFlyoutSeparator />
-                        <MenuFlyoutItem Command="{StaticResource ExitApplicationCommand}" />
-                    </MenuFlyout>
-                </taskbar:TaskbarIcon.ContextFlyout>
-            </taskbar:TaskbarIcon>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
