@@ -6,7 +6,7 @@ using Windows.Storage;
 
 namespace Tradio.Services;
 
-public sealed class RadioPlayerService : IDisposable
+public sealed partial class RadioPlayerService : IDisposable
 {
     private readonly MediaPlayer _player;
     private readonly DispatcherQueue _uiQueue; // capture UI dispatcher
@@ -140,10 +140,11 @@ public sealed class RadioPlayerService : IDisposable
         if (string.IsNullOrWhiteSpace(streamUrl)) return;
         try
         {
-            Uri uri = new Uri(streamUrl);
+            Uri uri = new(streamUrl);
             bool wasPlaying = false;
             try { wasPlaying = IsPlaying; } catch { }
-
+            _player.AudioCategory = MediaPlayerAudioCategory.Media;
+            _player.RealTimePlayback = true; // optimize for live streams
             _player.Source = MediaSource.CreateFromUri(uri);
             _isInitialized = true;
             _streamUrl = streamUrl;
@@ -161,9 +162,16 @@ public sealed class RadioPlayerService : IDisposable
 
     public void Play()
     {
-        if (!_isInitialized) return;
+        if (!_isInitialized 
+            || string.IsNullOrWhiteSpace(_streamUrl)) return;
+
+        if (_player.Source is MediaSource media && media.State == MediaSourceState.Opening)
+            return; // already trying to open
+
         try
         {
+            Uri uri = new(_streamUrl);
+            _player.Source = MediaSource.CreateFromUri(uri);
             _player.Play();
             // Notify watchdog that user intentionally started playback
             _watchdog.NotifyUserIntentionToPlay();
@@ -178,6 +186,12 @@ public sealed class RadioPlayerService : IDisposable
         {
             // For live streams, stop completely instead of pause
             // This ensures when resumed, we get the live stream, not buffered content
+             _player.Pause();
+            if (_player.Source is MediaSource media)
+            {
+                media?.Reset();
+                media?.Dispose();
+            }
             _player.Source = null;
 
             // Notify watchdog that user intentionally paused
@@ -194,7 +208,8 @@ public sealed class RadioPlayerService : IDisposable
 
     public void TogglePlayPause()
     {
-        if (IsPlaying) Pause(); else Play();
+        if (IsPlaying) Pause();
+        else Play();
     }
 
     private void TryEnqueueOnUi(DispatcherQueueHandler action)

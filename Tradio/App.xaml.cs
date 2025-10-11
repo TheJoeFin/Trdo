@@ -46,7 +46,7 @@ namespace Tradio
             };
             WindowManager wm = WindowManager.Get(_window);
             wm.TrayIconInvoked += Wm_TrayIconInvoked;
-            _window.SetTaskBarIcon(Icon.FromFile("Assets/Radio.ico"));
+            _window.AppWindow.SetTaskbarIcon("Assets/Radio.ico");
             wm.IsVisibleInTray = true; // Show app in tray
                                        // Minimize to tray:
             wm.WindowStateChanged += (s, state) =>
@@ -84,8 +84,8 @@ namespace Tradio
                 : "Assets/Radio-Off.ico";
 
             // TODO: maybe make this a little more robust witha try/catch
-            _window.SetTaskBarIcon(null);
-            _window.SetTaskBarIcon(Icon.FromFile(iconUri));
+            // _window.SetTaskBarIcon(Icon.FromFile(iconUri));
+            _window.AppWindow.SetTaskbarIcon(iconUri);
         }
 
         private void UpdatePlayPauseCommandText()

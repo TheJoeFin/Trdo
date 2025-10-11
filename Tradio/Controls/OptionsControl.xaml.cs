@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using System;
@@ -75,7 +75,7 @@ public sealed partial class OptionsControl : UserControl
     {
         if (PlayPauseButton is not null)
         {
-            PlayPauseButton.Content = _vm.IsPlaying ? "Pause" : "Play";
+            PlayPauseButton.Content = _vm.IsPlaying ? "⏸️ Pause" : "▶️ Play";
         }
     }
 

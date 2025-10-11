@@ -105,6 +105,6 @@
             Grid.Row="7"
             HorizontalAlignment="Right"
             Click="ExitButton_Click"
-            Content="Exit" />
+            Content="❌ Exit" />
     </Grid>
 </UserControl>
