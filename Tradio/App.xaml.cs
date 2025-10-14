@@ -40,7 +40,7 @@ public partial class App : Application
 
     private void InitializeTrayIcon()
     {
-        _trayIcon = new(0, "Assets/Radio.ico", "Tradio");
+        _trayIcon = new(0, "Assets/Radio.ico", "Trdo");
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
         _trayIcon.IsVisible = true;
@@ -85,11 +85,11 @@ public partial class App : Application
 
         if (_playerVm.IsPlaying)
         {
-            _trayIcon.Tooltip = "Tradio (Playing) - Click to Pause";
+            _trayIcon.Tooltip = "Trdo (Playing) - Click to Pause";
         }
         else
         {
-            _trayIcon.Tooltip = "Tradio - Play";
+            _trayIcon.Tooltip = "Trdo - Play";
         }
     }
 }

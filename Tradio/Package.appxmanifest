@@ -9,15 +9,15 @@
   IgnorableNamespaces="uap uap5 rescap">
 
   <Identity
-    Name="eee1a589-f7d4-4cf7-870a-3f94efdeb95b"
-    Publisher="CN=josep"
-    Version="1.0.0.0" />
+    Name="40087JoeFinApps.Trdo"
+    Publisher="CN=153F3B0F-BA3D-4964-8098-71AC78A1DF6A"
+    Version="1.0.3.0" />
 
-  <mp:PhoneIdentity PhoneProductId="eee1a589-f7d4-4cf7-870a-3f94efdeb95b" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="fa86867b-3ba1-44b4-b776-ea2ad8aea4c7" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>Tradio</DisplayName>
-    <PublisherDisplayName>josep</PublisherDisplayName>
+    <DisplayName>Trdo</DisplayName>
+    <PublisherDisplayName>JoeFinApps</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -35,8 +35,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="Tradio"
-        Description="Tradio"
+        DisplayName="Trdo"
+        Description="A mini Tray Radio app"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
