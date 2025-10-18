@@ -13,16 +13,6 @@
         MinHeight="200"
         RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*"
         RowSpacing="12">
-        <!--  WinAppSDK TitleBar control  -->
-        <TitleBar
-            x:Name="SimpleTitleBar"
-            Title="Tradio"
-            Grid.Row="0"
-            Subtitle="beta">
-            <TitleBar.IconSource>
-                <ImageIconSource ImageSource="ms-appx:///Assets/Radio.png" />
-            </TitleBar.IconSource>
-        </TitleBar>
 
         <StackPanel
             Grid.Row="1"
