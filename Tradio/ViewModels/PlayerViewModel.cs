@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -35,7 +36,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         };
 
         // Load stations from settings
-        var loadedStations = _stationService.LoadStations();
+        List<RadioStation> loadedStations = _stationService.LoadStations();
         Stations = new ObservableCollection<RadioStation>(loadedStations);
 
         // Load the previously selected station

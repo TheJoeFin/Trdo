@@ -47,7 +47,7 @@ public class RadioStationService
             if (ApplicationData.Current.LocalSettings.Values.TryGetValue(StationsKey, out object? value) &&
                 value is string json)
             {
-                var stations = JsonSerializer.Deserialize<List<RadioStation>>(json);
+                List<RadioStation>? stations = JsonSerializer.Deserialize<List<RadioStation>>(json);
                 if (stations != null && stations.Count > 0)
                 {
                     return stations;
@@ -61,7 +61,7 @@ public class RadioStationService
         }
 
         // Return default stations if loading fails or no stations exist
-        return GetDefaultStations();
+        return [];
     }
 
     /// <summary>
@@ -69,12 +69,12 @@ public class RadioStationService
     /// </summary>
     private List<RadioStation> GetDefaultStations()
     {
-        return new List<RadioStation>
-        {
+        return
+        [
             new RadioStation { Name = "WUWM - Milwaukee's NPR", StreamUrl = "https://wyms.streamguys1.com/live?platform=NPR&uuid=xhjlsf05e" },
             new RadioStation { Name = "88nine Radio Milwaukee", StreamUrl = "https://wmse.streamguys1.com/witr-hi-mp3" },
             new RadioStation { Name = "WXRW - Riverwest Radio", StreamUrl = "https://wxrw.radioca.st/stream" }
-        };
+        ];
     }
 
     /// <summary>

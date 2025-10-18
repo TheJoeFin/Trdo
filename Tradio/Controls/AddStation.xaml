@@ -22,7 +22,7 @@
             <TextBlock Text="Station Name" FontWeight="SemiBold" />
             <TextBox
                 x:Name="StationNameTextBox"
-                PlaceholderText="e.g., 88nine Radio Milwaukee"
+                PlaceholderText="e.g., WYMS - Hometown radio"
                 Text="{x:Bind ViewModel.StationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
 
