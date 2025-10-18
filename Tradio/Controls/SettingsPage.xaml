@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="Tradio.Controls.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Tradio.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid RowDefinitions="Auto,*" RowSpacing="24">
+        <!--  Settings Title  -->
+        <TextBlock
+            Grid.Row="0"
+            FontSize="24"
+            FontWeight="SemiBold"
+            Text="Settings" />
+
+        <!--  Settings Content  -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="24">
+                <!--  Open on startup setting  -->
+                <StackPanel Spacing="8">
+                    <TextBlock FontSize="16" Text="Open on startup" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            x:Name="StartupToggle"
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsEnabled="{x:Bind ViewModel.IsStartupToggleEnabled, Mode=OneWay}"
+                            IsOn="{x:Bind ViewModel.IsStartupEnabled, Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Text="{x:Bind ViewModel.StartupToggleText, Mode=OneWay}" />
+                    </Grid>
+                </StackPanel>
+
+                <!--  Enable Auto-Resume setting  -->
+                <StackPanel Spacing="8">
+                    <TextBlock FontSize="16" Text="Enable Auto-Resume" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            x:Name="WatchdogToggle"
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsWatchdogEnabled, Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Text="{x:Bind ViewModel.WatchdogToggleText, Mode=OneWay}" />
+                    </Grid>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
