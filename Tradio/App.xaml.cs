@@ -50,7 +50,7 @@ public partial class App : Application
     {
         Flyout flyout = new()
         {
-            Content = new OptionsControl()
+            Content = new ShellPage()
         };
 
         args.Flyout = flyout;

@@ -15,6 +15,9 @@
   <ItemGroup>
     <None Remove="Assets\Radio.ico" />
     <None Remove="Controls\OptionsControl.xaml" />
+    <None Remove="Controls\PlayingPage.xaml" />
+    <None Remove="Controls\SettingsPage.xaml" />
+    <None Remove="Controls\ShellPage.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -50,6 +53,21 @@
     <Content Update="Assets\Radio.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\SettingsPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\PlayingPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\ShellPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Controls\OptionsControl.xaml">
