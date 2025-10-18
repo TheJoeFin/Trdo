@@ -45,9 +45,7 @@ public class ShellViewModel : INotifyPropertyChanged
 
     public void NavigateToAddStationPage()
     {
-        // TODO: Create AddStationPage
-        // For now, navigate to settings as placeholder
-        _navigationService.Navigate(typeof(Controls.SettingsPage));
+        _navigationService.Navigate(typeof(Controls.AddStation));
     }
 
     public void GoBack()
