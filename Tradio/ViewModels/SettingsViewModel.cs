@@ -21,7 +21,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     public SettingsViewModel()
     {
         _playerViewModel = new PlayerViewModel();
-        
+
         // Subscribe to PlayerViewModel property changes
         _playerViewModel.PropertyChanged += (_, args) =>
         {
@@ -48,7 +48,7 @@ public class SettingsViewModel : INotifyPropertyChanged
             _isStartupEnabled = value;
             OnPropertyChanged();
             StartupToggleText = value ? "On" : "Off";
-            
+
             // Apply the change
             _ = ApplyStartupStateAsync(value);
         }

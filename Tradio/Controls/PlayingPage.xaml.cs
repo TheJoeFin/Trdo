@@ -1,19 +1,10 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
 using Tradio.Models;
 using Tradio.ViewModels;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -36,7 +27,7 @@ public sealed partial class PlayingPage : Page
 
         // Subscribe to property changes to update UI
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-        
+
         // Wait for loaded to access named elements
         Loaded += PlayingPage_Loaded;
     }
@@ -45,7 +36,7 @@ public sealed partial class PlayingPage : Page
     {
         UpdatePlayButtonState();
         UpdateStationSelection();
-        
+
         // Find the ShellViewModel from the parent page
         _shellViewModel = FindShellViewModel();
     }
@@ -104,19 +95,20 @@ public sealed partial class PlayingPage : Page
 
         for (int i = 0; i < ViewModel.Stations.Count; i++)
         {
-            var container = StationsItemsControl.ContainerFromIndex(i) as FrameworkElement;
-            if (container != null)
+            FrameworkElement? container = StationsItemsControl.ContainerFromIndex(i) as FrameworkElement;
+            if (container == null)
             {
-                var button = FindDescendant<Button>(container);
-                if (button != null && button.Tag is RadioStation station)
+                continue;
+            }
+            Button? button = FindDescendant<Button>(container);
+            if (button != null && button.Tag is RadioStation station)
+            {
+                Border? indicator = FindDescendant<Border>(button, "SelectionIndicator");
+                if (indicator != null)
                 {
-                    var indicator = FindDescendant<Border>(button, "SelectionIndicator");
-                    if (indicator != null)
-                    {
-                        indicator.Visibility = station == ViewModel.SelectedStation
-                            ? Visibility.Visible
-                            : Visibility.Collapsed;
-                    }
+                    indicator.Visibility = station == ViewModel.SelectedStation
+                        ? Visibility.Visible
+                        : Visibility.Collapsed;
                 }
             }
         }
@@ -127,8 +119,8 @@ public sealed partial class PlayingPage : Page
         int childCount = VisualTreeHelper.GetChildrenCount(parent);
         for (int i = 0; i < childCount; i++)
         {
-            var child = VisualTreeHelper.GetChild(parent, i);
-            
+            DependencyObject child = VisualTreeHelper.GetChild(parent, i);
+
             if (child is T typedChild)
             {
                 if (string.IsNullOrEmpty(name) || (child is FrameworkElement fe && fe.Name == name))
@@ -137,7 +129,7 @@ public sealed partial class PlayingPage : Page
                 }
             }
 
-            var result = FindDescendant<T>(child, name);
+            T? result = FindDescendant<T>(child, name);
             if (result != null)
             {
                 return result;
@@ -199,10 +191,7 @@ public sealed partial class PlayingPage : Page
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
         // Use navigation service if available
-        if (_shellViewModel != null)
-        {
-            _shellViewModel.NavigateToSettingsPage();
-        }
+        _shellViewModel?.NavigateToSettingsPage();
     }
 
     private void EditStation_Click(object sender, RoutedEventArgs e)
@@ -210,10 +199,7 @@ public sealed partial class PlayingPage : Page
         if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
         {
             // Navigate to AddStation page in edit mode with the station data
-            if (_shellViewModel != null)
-            {
-                _shellViewModel.NavigateToAddStationPage(station);
-            }
+            _shellViewModel?.NavigateToAddStationPage(station);
         }
     }
 

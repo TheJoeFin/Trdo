@@ -8,7 +8,7 @@ namespace Tradio.Services;
 public class NavigationService : INotifyPropertyChanged
 {
     private Frame? _frame;
-    
+
     public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler? NavigationChanged;
 
@@ -18,7 +18,7 @@ public class NavigationService : INotifyPropertyChanged
         set
         {
             if (_frame == value) return;
-            
+
             if (_frame != null)
             {
                 _frame.Navigated -= OnNavigated;

@@ -162,7 +162,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
     public void Play()
     {
-        if (!_isInitialized 
+        if (!_isInitialized
             || string.IsNullOrWhiteSpace(_streamUrl)) return;
 
         if (_player.Source is MediaSource media && media.State == MediaSourceState.Opening)
@@ -186,7 +186,7 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             // For live streams, stop completely instead of pause
             // This ensures when resumed, we get the live stream, not buffered content
-             _player.Pause();
+            _player.Pause();
             if (_player.Source is MediaSource media)
             {
                 media?.Reset();

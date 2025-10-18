@@ -11,7 +11,7 @@ public class RadioStationService
 {
     private const string StationsKey = "RadioStations";
     private const string SelectedStationIndexKey = "SelectedStationIndex";
-    
+
     private static readonly Lazy<RadioStationService> _instance = new(() => new RadioStationService());
     public static RadioStationService Instance => _instance.Value;
 

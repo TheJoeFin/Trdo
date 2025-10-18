@@ -88,8 +88,8 @@ public class AddStationViewModel : INotifyPropertyChanged
         }
     }
 
-    public bool CanSave => !string.IsNullOrWhiteSpace(StationName) && 
-                           !string.IsNullOrWhiteSpace(StreamUrl) && 
+    public bool CanSave => !string.IsNullOrWhiteSpace(StationName) &&
+                           !string.IsNullOrWhiteSpace(StreamUrl) &&
                            !HasValidationError;
 
     private void ValidateInput()
@@ -133,7 +133,7 @@ public class AddStationViewModel : INotifyPropertyChanged
     public bool Save()
     {
         ValidateInput();
-        
+
         if (!CanSave)
         {
             return false;
@@ -144,10 +144,10 @@ public class AddStationViewModel : INotifyPropertyChanged
             // Edit mode - update existing station
             _editingStation.Name = StationName.Trim();
             _editingStation.StreamUrl = StreamUrl.Trim();
-            
+
             // Save the updated stations list
             _playerViewModel?.SaveStations();
-            
+
             // If this was the selected station, trigger update to reload the stream
             if (_playerViewModel?.SelectedStation == _editingStation)
             {
@@ -173,7 +173,7 @@ public class AddStationViewModel : INotifyPropertyChanged
             // Raise event for listeners
             StationAdded?.Invoke(this, newStation);
         }
-        
+
         return true;
     }
 

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using Tradio.Models;
 using Tradio.Services;
@@ -28,7 +27,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         _player.Initialize(_streamUrl);
         _player.PlaybackStateChanged += (_, _) => OnPropertyChanged(nameof(IsPlaying));
         _player.VolumeChanged += (_, _) => OnPropertyChanged(nameof(Volume));
-        
+
         // Subscribe to watchdog status changes
         _player.Watchdog.StreamStatusChanged += (_, args) =>
         {
@@ -153,7 +152,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     public void AddStation(RadioStation station)
     {
         if (station == null) return;
-        
+
         Stations.Add(station);
         _stationService.SaveStations(Stations);
     }
@@ -164,7 +163,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     public void RemoveStation(RadioStation station)
     {
         if (station == null) return;
-        
+
         // If removing the selected station, select another one first
         if (station == _selectedStation && Stations.Count > 1)
         {
@@ -172,7 +171,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             int newIndex = currentIndex > 0 ? currentIndex - 1 : 1;
             SelectedStation = Stations[newIndex];
         }
-        
+
         Stations.Remove(station);
         _stationService.SaveStations(Stations);
     }

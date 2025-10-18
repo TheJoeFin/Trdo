@@ -3,7 +3,6 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Media.Playback;
 
 namespace Tradio.Services;
 
@@ -171,14 +170,14 @@ public sealed class StreamWatchdogService : IDisposable
 
             // Stream stopped unexpectedly - attempt recovery
             var timeSinceLastCheck = DateTime.UtcNow - _lastStateCheck;
-            
+
             // Only attempt recovery if enough time has passed
             if (timeSinceLastCheck > _checkInterval)
             {
                 _consecutiveFailures++;
                 Debug.WriteLine($"[Watchdog] Stream stopped unexpectedly. Attempt {_consecutiveFailures}/{_maxConsecutiveFailures}");
-                
-                RaiseStatusChanged($"Stream stopped. Recovery attempt {_consecutiveFailures}/{_maxConsecutiveFailures}", 
+
+                RaiseStatusChanged($"Stream stopped. Recovery attempt {_consecutiveFailures}/{_maxConsecutiveFailures}",
                     StreamWatchdogStatus.Recovering);
 
                 if (_consecutiveFailures <= _maxConsecutiveFailures)
@@ -188,9 +187,9 @@ public sealed class StreamWatchdogService : IDisposable
                 else
                 {
                     Debug.WriteLine("[Watchdog] Max recovery attempts reached. Backing off.");
-                    RaiseStatusChanged("Max recovery attempts reached. Will retry later.", 
+                    RaiseStatusChanged("Max recovery attempts reached. Will retry later.",
                         StreamWatchdogStatus.BackingOff);
-                    
+
                     // Wait longer before next attempt
                     await Task.Delay(_backoffDelay, cancellationToken);
                     _consecutiveFailures = 0; // Reset after backoff
@@ -227,10 +226,10 @@ public sealed class StreamWatchdogService : IDisposable
                     {
                         // Reinitialize the stream
                         _playerService.SetStreamUrl(streamUrl);
-                        
+
                         // Resume playback
                         _playerService.Play();
-                        
+
                         Debug.WriteLine("[Watchdog] Stream recovery initiated");
                         RaiseStatusChanged("Stream resumed", StreamWatchdogStatus.Recovering);
                     }
@@ -291,7 +290,7 @@ public sealed class StreamWatchdogService : IDisposable
     private void RaiseStatusChanged(string message, StreamWatchdogStatus status)
     {
         Debug.WriteLine($"[Watchdog] {status}: {message}");
-        
+
         if (_uiQueue is null || _uiQueue.HasThreadAccess)
         {
             StreamStatusChanged?.Invoke(this, new StreamWatchdogEventArgs(message, status));

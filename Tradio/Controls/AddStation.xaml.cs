@@ -20,7 +20,7 @@ public sealed partial class AddStation : Page
         InitializeComponent();
         ViewModel = new AddStationViewModel();
         DataContext = ViewModel;
-        
+
         // Use the shared PlayerViewModel instance
         ViewModel.SetPlayerViewModel(PlayerViewModel.Shared);
 
@@ -30,7 +30,7 @@ public sealed partial class AddStation : Page
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        
+
         // Check if we're editing an existing station
         if (e.Parameter is RadioStation station)
         {
