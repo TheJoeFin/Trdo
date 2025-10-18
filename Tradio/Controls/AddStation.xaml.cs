@@ -1,6 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
+using Tradio.Models;
 using Tradio.ViewModels;
 
 namespace Tradio.Controls;
@@ -18,8 +20,22 @@ public sealed partial class AddStation : Page
         InitializeComponent();
         ViewModel = new AddStationViewModel();
         DataContext = ViewModel;
+        
+        // Use the shared PlayerViewModel instance
+        ViewModel.SetPlayerViewModel(PlayerViewModel.Shared);
 
         Loaded += AddStation_Loaded;
+    }
+
+    protected override void OnNavigatedTo(NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        
+        // Check if we're editing an existing station
+        if (e.Parameter is RadioStation station)
+        {
+            ViewModel.LoadStationForEdit(station);
+        }
     }
 
     private void AddStation_Loaded(object sender, RoutedEventArgs e)

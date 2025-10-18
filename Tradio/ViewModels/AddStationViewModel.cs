@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Tradio.Models;
 
 namespace Tradio.ViewModels;
 
@@ -10,8 +11,36 @@ public class AddStationViewModel : INotifyPropertyChanged
     private string _streamUrl = string.Empty;
     private bool _hasValidationError;
     private string _validationMessage = string.Empty;
+    private string _pageTitle = "Add Radio Station";
+    private PlayerViewModel? _playerViewModel;
+    private RadioStation? _editingStation;
 
     public event PropertyChangedEventHandler? PropertyChanged;
+    public event EventHandler<RadioStation>? StationAdded;
+
+    public void SetPlayerViewModel(PlayerViewModel playerViewModel)
+    {
+        _playerViewModel = playerViewModel;
+    }
+
+    public void LoadStationForEdit(RadioStation station)
+    {
+        _editingStation = station;
+        StationName = station.Name;
+        StreamUrl = station.StreamUrl;
+        PageTitle = "Edit Radio Station";
+    }
+
+    public string PageTitle
+    {
+        get => _pageTitle;
+        private set
+        {
+            if (value == _pageTitle) return;
+            _pageTitle = value;
+            OnPropertyChanged();
+        }
+    }
 
     public string StationName
     {
@@ -110,9 +139,40 @@ public class AddStationViewModel : INotifyPropertyChanged
             return false;
         }
 
-        // TODO: Implement actual save logic to persist the station
-        // For now, just return true to indicate success
-        // This should add to PlayerViewModel.Stations or save to storage
+        if (_editingStation != null)
+        {
+            // Edit mode - update existing station
+            _editingStation.Name = StationName.Trim();
+            _editingStation.StreamUrl = StreamUrl.Trim();
+            
+            // Save the updated stations list
+            _playerViewModel?.SaveStations();
+            
+            // If this was the selected station, trigger update to reload the stream
+            if (_playerViewModel?.SelectedStation == _editingStation)
+            {
+                // Re-apply the stream URL if it changed
+                _playerViewModel.ApplyStreamUrl();
+            }
+        }
+        else
+        {
+            // Add mode - create new station
+            var newStation = new RadioStation
+            {
+                Name = StationName.Trim(),
+                StreamUrl = StreamUrl.Trim()
+            };
+
+            // Add to PlayerViewModel if available
+            if (_playerViewModel != null)
+            {
+                _playerViewModel.AddStation(newStation);
+            }
+
+            // Raise event for listeners
+            StationAdded?.Invoke(this, newStation);
+        }
         
         return true;
     }

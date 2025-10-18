@@ -30,7 +30,8 @@ public sealed partial class PlayingPage : Page
     public PlayingPage()
     {
         InitializeComponent();
-        ViewModel = new PlayerViewModel();
+        // Use shared instance so all pages reference the same ViewModel
+        ViewModel = PlayerViewModel.Shared;
         DataContext = ViewModel;
 
         // Subscribe to property changes to update UI
@@ -201,6 +202,27 @@ public sealed partial class PlayingPage : Page
         if (_shellViewModel != null)
         {
             _shellViewModel.NavigateToSettingsPage();
+        }
+    }
+
+    private void EditStation_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
+        {
+            // Navigate to AddStation page in edit mode with the station data
+            if (_shellViewModel != null)
+            {
+                _shellViewModel.NavigateToAddStationPage(station);
+            }
+        }
+    }
+
+    private void RemoveStation_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
+        {
+            // Remove the station immediately - no dialog since it's in a flyout
+            ViewModel.RemoveStation(station);
         }
     }
 }

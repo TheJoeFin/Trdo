@@ -57,6 +57,26 @@
                                 Click="StationButton_Click"
                                 CornerRadius="4"
                                 Tag="{x:Bind}">
+                                <Button.ContextFlyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem
+                                            Click="EditStation_Click"
+                                            Tag="{x:Bind}"
+                                            Text="Edit">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE70F;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutItem
+                                            Click="RemoveStation_Click"
+                                            Tag="{x:Bind}"
+                                            Text="Remove">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE74D;" />
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Button.ContextFlyout>
                                 <Grid ColumnDefinitions="Auto,*">
                                     <!--  Selection indicator  -->
                                     <Border

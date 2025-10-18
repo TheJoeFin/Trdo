@@ -43,9 +43,9 @@ public class ShellViewModel : INotifyPropertyChanged
         _navigationService.Navigate(typeof(Controls.SettingsPage));
     }
 
-    public void NavigateToAddStationPage()
+    public void NavigateToAddStationPage(Models.RadioStation? stationToEdit = null)
     {
-        _navigationService.Navigate(typeof(Controls.AddStation));
+        _navigationService.Navigate(typeof(Controls.AddStation), stationToEdit);
     }
 
     public void GoBack()

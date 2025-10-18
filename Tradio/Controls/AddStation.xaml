@@ -8,14 +8,14 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
 
-    <Grid Padding="16" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="12">
+    <Grid Padding="16" RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="12">
         
         <!-- Title -->
         <TextBlock
             Grid.Row="0"
             FontSize="20"
             FontWeight="SemiBold"
-            Text="Add Radio Station" />
+            Text="{x:Bind ViewModel.PageTitle, Mode=OneWay}" />
 
         <!-- Station Name Input -->
         <StackPanel Grid.Row="1" Spacing="4">
@@ -35,16 +35,8 @@
                 Text="{x:Bind ViewModel.StreamUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
 
-        <!-- Validation Message -->
-        <InfoBar
-            Grid.Row="3"
-            x:Name="ValidationInfoBar"
-            IsOpen="{x:Bind ViewModel.HasValidationError, Mode=OneWay}"
-            Severity="Error"
-            Message="{x:Bind ViewModel.ValidationMessage, Mode=OneWay}" />
-
         <!-- Buttons -->
-        <Grid Grid.Row="5" ColumnSpacing="8">
+        <Grid Grid.Row="4" ColumnSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
