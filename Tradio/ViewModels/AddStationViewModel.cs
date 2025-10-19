@@ -151,7 +151,7 @@ public class AddStationViewModel : INotifyPropertyChanged
         else
         {
             // Add mode - create new station
-            var newStation = new RadioStation
+            RadioStation newStation = new()
             {
                 Name = StationName.Trim(),
                 StreamUrl = StreamUrl.Trim()

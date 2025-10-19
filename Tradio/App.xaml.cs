@@ -2,9 +2,9 @@
 using Microsoft.UI.Xaml.Controls;
 using System.ComponentModel;
 using System.Threading.Tasks;
-using Trdo.Controls;
 using Trdo.Pages;
 using Trdo.ViewModels;
+using Windows.UI;
 using Windows.UI.ViewManagement;
 using WinUIEx;
 
@@ -112,8 +112,8 @@ public partial class App : Application
     {
         try
         {
-            var uiSettings = new UISettings();
-            var foregroundColor = uiSettings.GetColorValue(UIColorType.Foreground);
+            UISettings uiSettings = new();
+            Color foregroundColor = uiSettings.GetColorValue(UIColorType.Foreground);
 
             // In dark mode, foreground color is light (high RGB values)
             // In light mode, foreground color is dark (low RGB values)

@@ -1,9 +1,8 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Windows.System;
-using Trdo.Controls;
 using System.Threading.Tasks;
+using Windows.System;
 
 namespace Trdo.ViewModels;
 
@@ -14,10 +13,10 @@ public class AboutViewModel : INotifyPropertyChanged
     public string AppName => "Tradio";
     public string AppDescription => "A simple, elegant internet radio player for Windows";
     public string Version => "1.0.0 (Beta)";
-    
+
     public string GitHubUrl => "https://github.com/TheJoeFin/Tradio";
     public string GitHubDisplayText => "github.com/TheJoeFin/Tradio";
-    
+
     public string DeveloperName => "Joe Finney (TheJoeFin)";
     public string DeveloperGitHub => "https://github.com/TheJoeFin";
 

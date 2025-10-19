@@ -169,7 +169,7 @@ public sealed class StreamWatchdogService : IDisposable
             }
 
             // Stream stopped unexpectedly - attempt recovery
-            var timeSinceLastCheck = DateTime.UtcNow - _lastStateCheck;
+            TimeSpan timeSinceLastCheck = DateTime.UtcNow - _lastStateCheck;
 
             // Only attempt recovery if enough time has passed
             if (timeSinceLastCheck > _checkInterval)
@@ -254,7 +254,7 @@ public sealed class StreamWatchdogService : IDisposable
 
     private Task RunOnUiThreadAsync(Action action)
     {
-        var tcs = new TaskCompletionSource<bool>();
+        TaskCompletionSource<bool> tcs = new();
 
         if (_uiQueue is null || _uiQueue.HasThreadAccess)
         {

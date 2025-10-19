@@ -19,7 +19,7 @@ namespace Trdo
         public MainWindow()
         {
             Debug.WriteLine("=== MainWindow Constructor START ===");
-            
+
             InitializeComponent();
             WindowHelper.Track(this);
 
@@ -44,7 +44,7 @@ namespace Trdo
             Debug.WriteLine($"[MainWindow] Initial ViewModel state - IsPlaying: {_vm.IsPlaying}, Volume: {_vm.Volume}");
             Debug.WriteLine($"[MainWindow] Initial selected station: {_vm.SelectedStation?.Name ?? "null"}");
             Debug.WriteLine($"[MainWindow] Initial stream URL: {_vm.StreamUrl}");
-            
+
             UpdatePlayPauseButton();
             VolumeSlider.Value = _vm.Volume;
             VolumeValue.Text = ((int)(_vm.Volume * 100)).ToString();
@@ -63,7 +63,7 @@ namespace Trdo
             _vm.PropertyChanged += (_, args) =>
             {
                 Debug.WriteLine($"[MainWindow] ViewModel PropertyChanged: {args.PropertyName}");
-                
+
                 if (args.PropertyName == nameof(PlayerViewModel.IsPlaying))
                 {
                     Debug.WriteLine($"[MainWindow] IsPlaying changed to: {_vm.IsPlaying}");
@@ -98,7 +98,7 @@ namespace Trdo
             };
 
             _ = InitializeStartupToggleAsync();
-            
+
             Debug.WriteLine("=== MainWindow Constructor END ===");
         }
 
@@ -210,12 +210,12 @@ namespace Trdo
             Debug.WriteLine($"[MainWindow] Current IsPlaying: {_vm.IsPlaying}");
             Debug.WriteLine($"[MainWindow] Current selected station: {_vm.SelectedStation?.Name ?? "null"}");
             Debug.WriteLine($"[MainWindow] Current stream URL: {_vm.StreamUrl}");
-            
+
             _vm.Toggle();
             Debug.WriteLine($"[MainWindow] After Toggle - IsPlaying: {_vm.IsPlaying}");
-            
+
             UpdatePlayPauseButton();
-            
+
             Debug.WriteLine("=== PlayPauseButton_Click (MainWindow) END ===");
         }
 

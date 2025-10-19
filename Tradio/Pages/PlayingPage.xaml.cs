@@ -22,7 +22,7 @@ public sealed partial class PlayingPage : Page
     public PlayingPage()
     {
         Debug.WriteLine("=== PlayingPage Constructor START ===");
-        
+
         InitializeComponent();
         // Use shared instance so all pages reference the same ViewModel
         ViewModel = PlayerViewModel.Shared;
@@ -31,13 +31,13 @@ public sealed partial class PlayingPage : Page
 
         // Subscribe to property changes to update UI
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-        
+
         // Subscribe to playback errors
         ViewModel.PlaybackError += ViewModel_PlaybackError;
 
         // Wait for loaded to access named elements
         Loaded += PlayingPage_Loaded;
-        
+
         Debug.WriteLine("=== PlayingPage Constructor END ===");
     }
 
@@ -47,14 +47,14 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] Current IsPlaying: {ViewModel.IsPlaying}");
         Debug.WriteLine($"[PlayingPage] Current SelectedStation: {ViewModel.SelectedStation?.Name ?? "null"}");
         Debug.WriteLine($"[PlayingPage] Current StreamUrl: {ViewModel.StreamUrl}");
-        
+
         UpdatePlayButtonState();
         UpdateStationSelection();
 
         // Find the ShellViewModel from the parent page
         _shellViewModel = FindShellViewModel();
         Debug.WriteLine($"[PlayingPage] ShellViewModel found: {_shellViewModel != null}");
-        
+
         Debug.WriteLine("=== PlayingPage_Loaded END ===");
     }
 
@@ -76,7 +76,7 @@ public sealed partial class PlayingPage : Page
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         Debug.WriteLine($"[PlayingPage] ViewModel PropertyChanged: {e.PropertyName}");
-        
+
         if (e.PropertyName == nameof(PlayerViewModel.IsPlaying))
         {
             Debug.WriteLine($"[PlayingPage] IsPlaying changed to: {ViewModel.IsPlaying}");
@@ -92,11 +92,11 @@ public sealed partial class PlayingPage : Page
     private async void ViewModel_PlaybackError(object? sender, string errorMessage)
     {
         Debug.WriteLine($"[PlayingPage] PlaybackError event received: {errorMessage}");
-        
+
         // Display error to user using an InfoBar or ContentDialog
         try
         {
-            var dialog = new ContentDialog
+            ContentDialog dialog = new()
             {
                 Title = "Playback Error",
                 Content = errorMessage,
@@ -115,8 +115,8 @@ public sealed partial class PlayingPage : Page
 
     private void UpdatePlayButtonState()
     {
-        var playIcon = this.FindName("PlayIcon") as FontIcon;
-        var playText = this.FindName("PlayText") as TextBlock;
+        FontIcon? playIcon = this.FindName("PlayIcon") as FontIcon;
+        TextBlock? playText = this.FindName("PlayText") as TextBlock;
 
         if (playIcon != null && playText != null)
         {
@@ -143,7 +143,7 @@ public sealed partial class PlayingPage : Page
     {
         Debug.WriteLine("[PlayingPage] UpdateStationSelection called");
         Debug.WriteLine($"[PlayingPage] Selected station: {ViewModel.SelectedStation?.Name ?? "null"}");
-        
+
         // Find all station buttons and update their selection state
         if (StationsItemsControl == null)
         {
@@ -199,22 +199,22 @@ public sealed partial class PlayingPage : Page
     private void StationButton_Click(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine("=== StationButton_Click START ===");
-        
+
         if (sender is Button button && button.Tag is RadioStation station)
         {
             Debug.WriteLine($"[PlayingPage] Station button clicked: {station.Name}");
             Debug.WriteLine($"[PlayingPage] Station URL: {station.StreamUrl}");
             Debug.WriteLine($"[PlayingPage] Current selected station before change: {ViewModel.SelectedStation?.Name ?? "null"}");
-            
+
             ViewModel.SelectedStation = station;
-            
+
             Debug.WriteLine($"[PlayingPage] Current selected station after change: {ViewModel.SelectedStation?.Name ?? "null"}");
         }
         else
         {
             Debug.WriteLine($"[PlayingPage] WARNING: StationButton_Click - Invalid sender or Tag (sender type: {sender?.GetType().Name}, Tag type: {(sender as Button)?.Tag?.GetType().Name})");
         }
-        
+
         Debug.WriteLine("=== StationButton_Click END ===");
     }
 
@@ -230,9 +230,9 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] Current IsPlaying: {ViewModel.IsPlaying}");
         Debug.WriteLine($"[PlayingPage] Current selected station: {ViewModel.SelectedStation?.Name ?? "null"}");
         Debug.WriteLine($"[PlayingPage] Current stream URL: {ViewModel.StreamUrl}");
-        
+
         ViewModel.Toggle();
-        
+
         Debug.WriteLine($"[PlayingPage] After Toggle - IsPlaying: {ViewModel.IsPlaying}");
         Debug.WriteLine("=== PlayButton_Click END ===");
     }
@@ -246,7 +246,7 @@ public sealed partial class PlayingPage : Page
     private void AddStationButton_Click(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine("[PlayingPage] Add station button clicked");
-        
+
         // Use navigation service if available
         if (_shellViewModel != null)
         {

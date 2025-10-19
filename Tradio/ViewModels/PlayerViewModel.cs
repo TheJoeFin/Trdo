@@ -26,13 +26,13 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     public PlayerViewModel()
     {
         Debug.WriteLine("=== PlayerViewModel Constructor START ===");
-        
+
         _player.PlaybackStateChanged += (_, _) =>
         {
             Debug.WriteLine($"[PlayerViewModel] PlaybackStateChanged event fired. IsPlaying={IsPlaying}");
             OnPropertyChanged(nameof(IsPlaying));
         };
-        
+
         _player.VolumeChanged += (_, _) =>
         {
             Debug.WriteLine($"[PlayerViewModel] VolumeChanged event fired. Volume={Volume}");
@@ -55,7 +55,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         // Load the previously selected station
         int selectedIndex = _stationService.LoadSelectedStationIndex();
         Debug.WriteLine($"[PlayerViewModel] Previously selected station index: {selectedIndex}");
-        
+
         if (selectedIndex >= 0 && selectedIndex < Stations.Count)
         {
             _selectedStation = Stations[selectedIndex];
@@ -81,7 +81,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine("[PlayerViewModel] No selected station to initialize");
         }
-        
+
         Debug.WriteLine("=== PlayerViewModel Constructor END ===");
     }
 
@@ -95,17 +95,17 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine($"=== SelectedStation SETTER START ===");
             Debug.WriteLine($"[PlayerViewModel] Current station: {(_selectedStation?.Name ?? "null")}");
             Debug.WriteLine($"[PlayerViewModel] New station: {(value?.Name ?? "null")}");
-            
+
             if (value == _selectedStation)
             {
                 Debug.WriteLine("[PlayerViewModel] Same station selected, no change needed");
                 Debug.WriteLine($"=== SelectedStation SETTER END (no change) ===");
                 return;
             }
-            
+
             bool wasPlaying = IsPlaying;
             Debug.WriteLine($"[PlayerViewModel] Was playing before station change: {wasPlaying}");
-            
+
             _selectedStation = value;
             OnPropertyChanged();
 
@@ -113,7 +113,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             {
                 Debug.WriteLine($"[PlayerViewModel] New selected station: {_selectedStation.Name}");
                 Debug.WriteLine($"[PlayerViewModel] Stream URL: {_selectedStation.StreamUrl}");
-                
+
                 // Save the selected station index
                 int index = Stations.IndexOf(_selectedStation);
                 Debug.WriteLine($"[PlayerViewModel] Station index in collection: {index}");
@@ -151,7 +151,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     Debug.WriteLine($"[PlayerViewModel] Setting stream URL in player: {_selectedStation.StreamUrl}");
                     _player.SetStreamUrl(_selectedStation.StreamUrl);
                     Debug.WriteLine("[PlayerViewModel] Stream URL set successfully");
-                    
+
                     // Resume playback if we were playing before
                     if (wasPlaying)
                     {
@@ -159,7 +159,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                         _player.Play();
                         Debug.WriteLine("[PlayerViewModel] Play command sent to player");
                     }
-                    
+
                     _lastError = null;
                 }
                 catch (Exception ex)
@@ -174,7 +174,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             {
                 Debug.WriteLine("[PlayerViewModel] Selected station is null");
             }
-            
+
             Debug.WriteLine($"=== SelectedStation SETTER END ===");
         }
     }
@@ -241,7 +241,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         Debug.WriteLine($"[PlayerViewModel] Current IsPlaying: {IsPlaying}");
         Debug.WriteLine($"[PlayerViewModel] Selected station: {(_selectedStation?.Name ?? "null")}");
         Debug.WriteLine($"[PlayerViewModel] Current stream URL in player: {_player.StreamUrl ?? "null"}");
-        
+
         try
         {
             _player.TogglePlayPause();
@@ -256,7 +256,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
             PlaybackError?.Invoke(this, _lastError);
         }
-        
+
         Debug.WriteLine("=== Toggle END ===");
     }
 
@@ -270,7 +270,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         Debug.WriteLine($"[PlayerViewModel] Adding station: {station.Name} ({station.StreamUrl})");
         Stations.Add(station);
         _stationService.SaveStations(Stations);
-        
+
         // If this is the first station, select it automatically
         if (Stations.Count == 1)
         {
@@ -324,7 +324,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     {
         Debug.WriteLine("[PlayerViewModel] SaveStations called");
         _stationService.SaveStations(Stations);
-        
+
         // If the current station was edited, reinitialize the stream
         if (_selectedStation != null && IsValidUrl(_selectedStation.StreamUrl))
         {
@@ -337,10 +337,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     Debug.WriteLine("[PlayerViewModel] Pausing before reinitialize");
                     _player.Pause();
                 }
-                
+
                 _player.SetStreamUrl(_selectedStation.StreamUrl);
                 Debug.WriteLine("[PlayerViewModel] Stream URL updated");
-                
+
                 if (wasPlaying)
                 {
                     Debug.WriteLine("[PlayerViewModel] Resuming playback");
