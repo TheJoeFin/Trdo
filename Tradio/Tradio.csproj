@@ -17,9 +17,7 @@
   <ItemGroup>
     <None Remove="Assets\Radio-Black.ico" />
     <None Remove="Assets\Radio-White.ico" />
-    <None Remove="Controls\RatingWindow.xaml" />
     <None Remove="Pages\AddStation.xaml" />
-    <None Remove="Controls\OptionsControl.xaml" />
     <None Remove="Pages\PlayingPage.xaml" />
     <None Remove="Pages\SettingsPage.xaml" />
     <None Remove="Pages\ShellPage.xaml" />
@@ -64,11 +62,6 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Controls\RatingWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
     <Page Update="Pages\AboutPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -90,11 +83,6 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\ShellPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Update="Controls\OptionsControl.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
