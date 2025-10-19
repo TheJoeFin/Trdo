@@ -1,5 +1,6 @@
 using Microsoft.UI.Dispatching;
 using System;
+using System.Diagnostics;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
@@ -9,22 +10,36 @@ namespace Tradio.Services;
 public sealed partial class RadioPlayerService : IDisposable
 {
     private readonly MediaPlayer _player;
-    private readonly DispatcherQueue _uiQueue; // capture UI dispatcher
+    private readonly DispatcherQueue _uiQueue;
     private readonly StreamWatchdogService _watchdog;
-    private double _volume = 0.5; // default
+    private double _volume = 0.5;
     private const string VolumeKey = "RadioVolume";
     private const string WatchdogEnabledKey = "WatchdogEnabled";
-    private bool _isInitialized;
     private string? _streamUrl;
 
     public static RadioPlayerService Instance { get; } = new();
 
-    public event EventHandler<bool>? PlaybackStateChanged; // bool = isPlaying
+    public event EventHandler<bool>? PlaybackStateChanged;
     public event EventHandler<double>? VolumeChanged;
 
-    public bool IsPlaying => _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
+    public bool IsPlaying
+    {
+        get
+        {
+            bool isPlaying = _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
+            Debug.WriteLine($"[RadioPlayerService] IsPlaying getter: {isPlaying}, PlaybackState: {_player.PlaybackSession.PlaybackState}");
+            return isPlaying;
+        }
+    }
 
-    public string? StreamUrl => _streamUrl;
+    public string? StreamUrl
+    {
+        get
+        {
+            Debug.WriteLine($"[RadioPlayerService] StreamUrl getter: {_streamUrl}");
+            return _streamUrl;
+        }
+    }
 
     public StreamWatchdogService Watchdog => _watchdog;
 
@@ -35,6 +50,7 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             value = Math.Clamp(value, 0, 1);
             if (Math.Abs(_volume - value) < 0.0001) return;
+            Debug.WriteLine($"[RadioPlayerService] Setting Volume from {_volume} to {value}");
             _volume = value;
             _player.Volume = _volume;
             try
@@ -51,6 +67,7 @@ public sealed partial class RadioPlayerService : IDisposable
         get => _watchdog.IsEnabled;
         set
         {
+            Debug.WriteLine($"[RadioPlayerService] Setting WatchdogEnabled to {value}");
             _watchdog.IsEnabled = value;
             try
             {
@@ -62,8 +79,10 @@ public sealed partial class RadioPlayerService : IDisposable
 
     private RadioPlayerService()
     {
-        // This constructor is invoked on the UI thread (first access happens in MainWindow).
+        Debug.WriteLine("=== RadioPlayerService Constructor START ===");
+        
         _uiQueue = DispatcherQueue.GetForCurrentThread();
+        Debug.WriteLine($"[RadioPlayerService] DispatcherQueue obtained: {_uiQueue != null}");
 
         _player = new MediaPlayer
         {
@@ -72,6 +91,7 @@ public sealed partial class RadioPlayerService : IDisposable
             IsLoopingEnabled = false,
             Volume = _volume
         };
+        Debug.WriteLine($"[RadioPlayerService] MediaPlayer created with Volume={_volume}, AutoPlay=false");
 
         _player.PlaybackSession.PlaybackStateChanged += (_, _) =>
         {
@@ -79,22 +99,27 @@ public sealed partial class RadioPlayerService : IDisposable
             try
             {
                 isPlaying = IsPlaying;
+                Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, State={_player.PlaybackSession.PlaybackState}");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return; // bail out if player state not accessible
+                Debug.WriteLine($"[RadioPlayerService] EXCEPTION in PlaybackStateChanged: {ex.Message}");
+                return;
             }
             TryEnqueueOnUi(() => PlaybackStateChanged?.Invoke(this, isPlaying));
         };
 
-        // Initialize watchdog service
         _watchdog = new StreamWatchdogService(this);
+        Debug.WriteLine("[RadioPlayerService] StreamWatchdogService created");
 
         LoadSettings();
+        
+        Debug.WriteLine("=== RadioPlayerService Constructor END ===");
     }
 
     private void LoadSettings()
     {
+        Debug.WriteLine("[RadioPlayerService] LoadSettings START");
         try
         {
             if (ApplicationData.Current.LocalSettings.Values.TryGetValue(VolumeKey, out object? v))
@@ -107,9 +132,9 @@ public sealed partial class RadioPlayerService : IDisposable
                 };
                 _volume = Math.Clamp(parsed, 0, 1);
                 _player.Volume = _volume;
+                Debug.WriteLine($"[RadioPlayerService] Loaded volume from settings: {_volume}");
             }
 
-            // Load watchdog enabled state (default to true for auto-recovery)
             if (ApplicationData.Current.LocalSettings.Values.TryGetValue(WatchdogEnabledKey, out object? w))
             {
                 bool watchdogEnabled = w switch
@@ -119,97 +144,225 @@ public sealed partial class RadioPlayerService : IDisposable
                     _ => true
                 };
                 _watchdog.IsEnabled = watchdogEnabled;
+                Debug.WriteLine($"[RadioPlayerService] Loaded watchdog enabled from settings: {watchdogEnabled}");
             }
             else
             {
-                // Enable watchdog by default
                 _watchdog.IsEnabled = true;
+                Debug.WriteLine("[RadioPlayerService] No saved watchdog setting, defaulting to enabled");
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RadioPlayerService] EXCEPTION in LoadSettings: {ex.Message}");
+        }
+        Debug.WriteLine("[RadioPlayerService] LoadSettings END");
     }
 
+    /// <summary>
+    /// Initialize the player with a stream URL (first-time setup only)
+    /// </summary>
     public void Initialize(string streamUrl)
     {
-        if (_isInitialized) return;
+        Debug.WriteLine($"=== Initialize START ===");
+        Debug.WriteLine($"[RadioPlayerService] Initialize called with URL: {streamUrl}");
+        Debug.WriteLine($"[RadioPlayerService] Current _streamUrl: {_streamUrl}");
+        
+        if (!string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            // Already initialized, use SetStreamUrl instead
+            Debug.WriteLine("[RadioPlayerService] Already initialized, skipping Initialize");
+            Debug.WriteLine($"=== Initialize END (already initialized) ===");
+            return;
+        }
+        
+        Debug.WriteLine("[RadioPlayerService] Calling SetStreamUrl...");
         SetStreamUrl(streamUrl);
+        Debug.WriteLine($"=== Initialize END ===");
     }
 
+    /// <summary>
+    /// Set or change the stream URL. This will prepare the stream for playback.
+    /// </summary>
     public void SetStreamUrl(string streamUrl)
     {
-        if (string.IsNullOrWhiteSpace(streamUrl)) return;
-        try
+        Debug.WriteLine($"=== SetStreamUrl START ===");
+        Debug.WriteLine($"[RadioPlayerService] SetStreamUrl called with: {streamUrl}");
+        Debug.WriteLine($"[RadioPlayerService] Previous URL: {_streamUrl}");
+        
+        if (string.IsNullOrWhiteSpace(streamUrl))
         {
-            Uri uri = new(streamUrl);
-            bool wasPlaying = false;
-            try { wasPlaying = IsPlaying; } catch { }
-            _player.AudioCategory = MediaPlayerAudioCategory.Media;
-            _player.RealTimePlayback = true; // optimize for live streams
-            _player.Source = MediaSource.CreateFromUri(uri);
-            _isInitialized = true;
-            _streamUrl = streamUrl;
-
-            if (wasPlaying)
-            {
-                try { _player.Play(); } catch { }
-            }
+            Debug.WriteLine("[RadioPlayerService] ERROR: Stream URL is empty");
+            throw new ArgumentException("Stream URL cannot be empty", nameof(streamUrl));
         }
-        catch (Exception)
+        
+        Uri uri = new(streamUrl); // Will throw if invalid URL
+        Debug.WriteLine($"[RadioPlayerService] URI created successfully: {uri}");
+        
+        // Update the stream URL
+        _streamUrl = streamUrl;
+        Debug.WriteLine($"[RadioPlayerService] _streamUrl updated to: {_streamUrl}");
+        
+        // Configure player for live streaming
+        _player.AudioCategory = MediaPlayerAudioCategory.Media;
+        _player.RealTimePlayback = true;
+        Debug.WriteLine("[RadioPlayerService] Player configured for live streaming");
+        
+        // Dispose old source if exists
+        if (_player.Source is MediaSource oldMedia)
         {
-            // Ignore invalid URLs here; caller should validate.
+            Debug.WriteLine("[RadioPlayerService] Disposing old MediaSource");
+            oldMedia.Reset();
+            oldMedia.Dispose();
         }
+        
+        // Set new media source
+        Debug.WriteLine($"[RadioPlayerService] Creating new MediaSource from URI: {uri}");
+        _player.Source = MediaSource.CreateFromUri(uri);
+        Debug.WriteLine("[RadioPlayerService] New MediaSource set on player");
+        Debug.WriteLine($"=== SetStreamUrl END ===");
     }
 
+    /// <summary>
+    /// Start playback of the current stream
+    /// </summary>
     public void Play()
     {
-        if (!_isInitialized
-            || string.IsNullOrWhiteSpace(_streamUrl)) return;
-
-        if (_player.Source is MediaSource media && media.State == MediaSourceState.Opening)
-            return; // already trying to open
+        Debug.WriteLine($"=== Play START ===");
+        Debug.WriteLine($"[RadioPlayerService] Play called");
+        Debug.WriteLine($"[RadioPlayerService] Current stream URL: {_streamUrl}");
+        Debug.WriteLine($"[RadioPlayerService] Current IsPlaying: {_player.PlaybackSession.PlaybackState}");
+        Debug.WriteLine($"[RadioPlayerService] Player.Source is null: {_player.Source == null}");
+        
+        if (string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            Debug.WriteLine("[RadioPlayerService] ERROR: No stream URL set");
+            throw new InvalidOperationException("No stream URL set. Call SetStreamUrl first.");
+        }
 
         try
         {
-            Uri uri = new(_streamUrl);
-            _player.Source = MediaSource.CreateFromUri(uri);
+            // Ensure we have a fresh media source
+            if (_player.Source == null)
+            {
+                Debug.WriteLine("[RadioPlayerService] Player.Source is null, creating new MediaSource");
+                Uri uri = new(_streamUrl);
+                _player.Source = MediaSource.CreateFromUri(uri);
+                Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
+            }
+            else
+            {
+                Debug.WriteLine($"[RadioPlayerService] Player.Source exists, current state: {(_player.Source as MediaSource)?.State}");
+            }
+            
+            Debug.WriteLine("[RadioPlayerService] Calling _player.Play()...");
             _player.Play();
-            // Notify watchdog that user intentionally started playback
+            Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully");
+            
             _watchdog.NotifyUserIntentionToPlay();
+            Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
         }
-        catch (Exception) { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RadioPlayerService] EXCEPTION in Play: {ex.Message}");
+            Debug.WriteLine($"[RadioPlayerService] Exception details: {ex}");
+            Debug.WriteLine("[RadioPlayerService] Re-creating media source and trying again...");
+            
+            // Re-create the media source and try again
+            try
+            {
+                Uri uri = new(_streamUrl);
+                _player.Source = MediaSource.CreateFromUri(uri);
+                Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
+                
+                _player.Play();
+                Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully (retry)");
+                
+                _watchdog.NotifyUserIntentionToPlay();
+                Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
+            }
+            catch (Exception retryEx)
+            {
+                Debug.WriteLine($"[RadioPlayerService] EXCEPTION on retry: {retryEx.Message}");
+                throw;
+            }
+        }
+        
+        Debug.WriteLine($"=== Play END ===");
     }
 
+    /// <summary>
+    /// Stop playback and clean up resources
+    /// </summary>
     public void Pause()
     {
-        if (!_isInitialized) return;
+        Debug.WriteLine($"=== Pause START ===");
+        Debug.WriteLine($"[RadioPlayerService] Pause called");
+        Debug.WriteLine($"[RadioPlayerService] Current stream URL: {_streamUrl}");
+        Debug.WriteLine($"[RadioPlayerService] Current IsPlaying: {_player.PlaybackSession.PlaybackState}");
+        
+        if (string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            Debug.WriteLine("[RadioPlayerService] No stream URL set, nothing to pause");
+            Debug.WriteLine($"=== Pause END (no URL) ===");
+            return;
+        }
+
         try
         {
-            // For live streams, stop completely instead of pause
-            // This ensures when resumed, we get the live stream, not buffered content
+            Debug.WriteLine("[RadioPlayerService] Calling _player.Pause()...");
             _player.Pause();
+            Debug.WriteLine("[RadioPlayerService] _player.Pause() called successfully");
+            
+            // Clean up the media source for live streams
             if (_player.Source is MediaSource media)
             {
-                media?.Reset();
-                media?.Dispose();
+                Debug.WriteLine("[RadioPlayerService] Disposing MediaSource");
+                media.Reset();
+                media.Dispose();
             }
             _player.Source = null;
+            Debug.WriteLine("[RadioPlayerService] Player.Source set to null");
 
-            // Notify watchdog that user intentionally paused
             _watchdog.NotifyUserIntentionToPause();
+            Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause");
 
-            // Reinitialize the stream so it's ready to play again
-            if (!string.IsNullOrEmpty(_streamUrl))
-            {
-                SetStreamUrl(_streamUrl);
-            }
+            // DO NOT prepare the stream here - let Play() or SetStreamUrl() handle it
+            // The previous code was creating a MediaSource with the current URL,
+            // but if the user then selects a different station, the MediaSource
+            // would be in "Opening" state with the OLD URL, preventing the new station from playing
+            Debug.WriteLine("[RadioPlayerService] Stream cleanup complete, ready for next operation");
         }
-        catch (Exception) { }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RadioPlayerService] EXCEPTION in Pause: {ex.Message}");
+            Debug.WriteLine($"[RadioPlayerService] Exception details: {ex}");
+        }
+        
+        Debug.WriteLine($"=== Pause END ===");
     }
 
+    /// <summary>
+    /// Toggle between play and pause
+    /// </summary>
     public void TogglePlayPause()
     {
-        if (IsPlaying) Pause();
-        else Play();
+        Debug.WriteLine($"=== TogglePlayPause START ===");
+        Debug.WriteLine($"[RadioPlayerService] Current IsPlaying: {IsPlaying}");
+        Debug.WriteLine($"[RadioPlayerService] Current stream URL: {_streamUrl}");
+        
+        if (IsPlaying)
+        {
+            Debug.WriteLine("[RadioPlayerService] Is playing, calling Pause()");
+            Pause();
+        }
+        else
+        {
+            Debug.WriteLine("[RadioPlayerService] Not playing, calling Play()");
+            Play();
+        }
+        
+        Debug.WriteLine($"=== TogglePlayPause END ===");
     }
 
     private void TryEnqueueOnUi(DispatcherQueueHandler action)
@@ -219,6 +372,7 @@ public sealed partial class RadioPlayerService : IDisposable
             action();
             return;
         }
+        
         if (_uiQueue.HasThreadAccess)
         {
             action();
@@ -231,7 +385,16 @@ public sealed partial class RadioPlayerService : IDisposable
 
     public void Dispose()
     {
+        Debug.WriteLine("[RadioPlayerService] Dispose called");
         _watchdog.Dispose();
+        
+        if (_player.Source is MediaSource media)
+        {
+            media.Reset();
+            media.Dispose();
+        }
+        
         _player.Dispose();
+        Debug.WriteLine("[RadioPlayerService] Disposed");
     }
 }

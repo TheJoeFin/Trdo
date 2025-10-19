@@ -21,17 +21,8 @@ public sealed partial class OptionsControl : UserControl
 
     private void OptionsControl_Loaded(object sender, RoutedEventArgs e)
     {
-        // Try to get ViewModel from DataContext (set by parent page)
-        if (DataContext is PlayerViewModel vm)
-        {
-            _vm = vm;
-        }
-        else
-        {
-            // Fallback: create our own instance if no DataContext provided
-            _vm = new PlayerViewModel();
-        }
-
+        // Use the shared PlayerViewModel instance
+        _vm = PlayerViewModel.Shared;
         InitializeWithViewModel();
     }
 
@@ -43,8 +34,12 @@ public sealed partial class OptionsControl : UserControl
         VolumeSlider.Value = _vm.Volume;
         VolumeValue.Text = ((int)(_vm.Volume * 100)).ToString();
 
-        StreamUrlTextBox.Text = _vm.StreamUrl; // init
-        ValidateUrlAndUpdateUi(_vm.StreamUrl);
+        // Display current stream URL (read-only display)
+        if (StreamUrlTextBox != null)
+        {
+            StreamUrlTextBox.Text = _vm.StreamUrl;
+            StreamUrlTextBox.IsReadOnly = true; // Stations manage URLs now
+        }
 
         // Initialize watchdog toggle
         WatchdogToggle.IsOn = _vm.WatchdogEnabled;
@@ -63,13 +58,13 @@ public sealed partial class OptionsControl : UserControl
             }
             else if (args.PropertyName == nameof(PlayerViewModel.StreamUrl))
             {
-                if (StreamUrlTextBox.Text != _vm.StreamUrl)
+                if (StreamUrlTextBox != null && StreamUrlTextBox.Text != _vm.StreamUrl)
                     StreamUrlTextBox.Text = _vm.StreamUrl;
-                ValidateUrlAndUpdateUi(_vm.StreamUrl);
             }
             else if (args.PropertyName == nameof(PlayerViewModel.WatchdogStatus))
             {
-                WatchdogStatusText.Text = _vm.WatchdogStatus;
+                if (WatchdogStatusText != null)
+                    WatchdogStatusText.Text = _vm.WatchdogStatus;
             }
             else if (args.PropertyName == nameof(PlayerViewModel.WatchdogEnabled))
             {
@@ -102,33 +97,6 @@ public sealed partial class OptionsControl : UserControl
         }
     }
 
-    private void StreamUrlTextBox_TextChanged(object sender, Microsoft.UI.Xaml.Controls.TextChangedEventArgs e)
-    {
-        if (_vm is not null)
-            _vm.StreamUrl = StreamUrlTextBox.Text?.Trim() ?? string.Empty;
-        ValidateUrlAndUpdateUi(StreamUrlTextBox.Text?.Trim());
-    }
-
-    private void ApplyUrlButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_vm?.ApplyStreamUrl() == true)
-        {
-            UrlErrorText.Text = string.Empty;
-        }
-        else
-        {
-            UrlErrorText.Text = "Please enter a valid http/https URL.";
-        }
-    }
-
-    private void ValidateUrlAndUpdateUi(string? url)
-    {
-        bool valid = Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) &&
-                     (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
-        ApplyUrlButton.IsEnabled = valid;
-        UrlErrorText.Text = valid ? string.Empty : "Enter a valid http/https URL.";
-    }
-
     private async System.Threading.Tasks.Task InitializeStartupToggleAsync()
     {
         try
@@ -140,14 +108,17 @@ public sealed partial class OptionsControl : UserControl
         catch
         {
             // Could not get StartupTask (likely unpackaged). Disable toggle.
-            StartupToggle.IsEnabled = false;
-            StartupToggle.IsOn = false;
+            if (StartupToggle != null)
+            {
+                StartupToggle.IsEnabled = false;
+                StartupToggle.IsOn = false;
+            }
         }
     }
 
     private void UpdateStartupToggleFromState()
     {
-        if (_startupTask is null) return;
+        if (_startupTask is null || StartupToggle is null) return;
         switch (_startupTask.State)
         {
             case StartupTaskState.Enabled:
@@ -176,7 +147,7 @@ public sealed partial class OptionsControl : UserControl
 
     private async void StartupToggle_Toggled(object sender, RoutedEventArgs e)
     {
-        if (!_initDone || _startupTask is null) return;
+        if (!_initDone || _startupTask is null || StartupToggle is null) return;
 
         try
         {

@@ -2,6 +2,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Tradio.ViewModels;
 using Windows.ApplicationModel;
@@ -11,12 +12,14 @@ namespace Tradio
 {
     public sealed partial class MainWindow : Window
     {
-        private readonly PlayerViewModel _vm = new();
+        private readonly PlayerViewModel _vm = PlayerViewModel.Shared; // Use shared instance
         private bool _initDone;
         private StartupTask? _startupTask;
 
         public MainWindow()
         {
+            Debug.WriteLine("=== MainWindow Constructor START ===");
+            
             InitializeComponent();
             WindowHelper.Track(this);
 
@@ -38,46 +41,65 @@ namespace Tradio
             }
             catch { /* AppWindow may not be available in some environments */ }
 
+            Debug.WriteLine($"[MainWindow] Initial ViewModel state - IsPlaying: {_vm.IsPlaying}, Volume: {_vm.Volume}");
+            Debug.WriteLine($"[MainWindow] Initial selected station: {_vm.SelectedStation?.Name ?? "null"}");
+            Debug.WriteLine($"[MainWindow] Initial stream URL: {_vm.StreamUrl}");
+            
             UpdatePlayPauseButton();
             VolumeSlider.Value = _vm.Volume;
             VolumeValue.Text = ((int)(_vm.Volume * 100)).ToString();
 
-            StreamUrlTextBox.Text = _vm.StreamUrl; // init
-            ValidateUrlAndUpdateUi(_vm.StreamUrl);
+            // Display current stream URL (read-only display)
+            if (StreamUrlTextBox != null)
+            {
+                StreamUrlTextBox.Text = _vm.StreamUrl;
+                StreamUrlTextBox.IsReadOnly = true; // Make it read-only as stations manage URLs now
+            }
 
             // Initialize watchdog toggle
             WatchdogToggle.IsOn = _vm.WatchdogEnabled;
+            Debug.WriteLine($"[MainWindow] Watchdog enabled: {_vm.WatchdogEnabled}");
 
             _vm.PropertyChanged += (_, args) =>
             {
+                Debug.WriteLine($"[MainWindow] ViewModel PropertyChanged: {args.PropertyName}");
+                
                 if (args.PropertyName == nameof(PlayerViewModel.IsPlaying))
                 {
+                    Debug.WriteLine($"[MainWindow] IsPlaying changed to: {_vm.IsPlaying}");
                     UpdatePlayPauseButton();
                 }
                 else if (args.PropertyName == nameof(PlayerViewModel.Volume))
                 {
                     if (Math.Abs(VolumeSlider.Value - _vm.Volume) > 0.0001)
+                    {
+                        Debug.WriteLine($"[MainWindow] Volume changed to: {_vm.Volume}");
                         VolumeSlider.Value = _vm.Volume;
+                    }
                     VolumeValue.Text = ((int)(_vm.Volume * 100)).ToString();
                 }
                 else if (args.PropertyName == nameof(PlayerViewModel.StreamUrl))
                 {
-                    if (StreamUrlTextBox.Text != _vm.StreamUrl)
+                    Debug.WriteLine($"[MainWindow] StreamUrl changed to: {_vm.StreamUrl}");
+                    if (StreamUrlTextBox != null && StreamUrlTextBox.Text != _vm.StreamUrl)
                         StreamUrlTextBox.Text = _vm.StreamUrl;
-                    ValidateUrlAndUpdateUi(_vm.StreamUrl);
                 }
                 else if (args.PropertyName == nameof(PlayerViewModel.WatchdogStatus))
                 {
-                    WatchdogStatusText.Text = _vm.WatchdogStatus;
+                    if (WatchdogStatusText != null)
+                        WatchdogStatusText.Text = _vm.WatchdogStatus;
                 }
                 else if (args.PropertyName == nameof(PlayerViewModel.WatchdogEnabled))
                 {
+                    Debug.WriteLine($"[MainWindow] WatchdogEnabled changed to: {_vm.WatchdogEnabled}");
                     if (WatchdogToggle.IsOn != _vm.WatchdogEnabled)
                         WatchdogToggle.IsOn = _vm.WatchdogEnabled;
                 }
             };
 
             _ = InitializeStartupToggleAsync();
+            
+            Debug.WriteLine("=== MainWindow Constructor END ===");
         }
 
         private void TryPositionBottomRightSmall()
@@ -184,12 +206,22 @@ namespace Tradio
 
         private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
         {
+            Debug.WriteLine("=== PlayPauseButton_Click (MainWindow) START ===");
+            Debug.WriteLine($"[MainWindow] Current IsPlaying: {_vm.IsPlaying}");
+            Debug.WriteLine($"[MainWindow] Current selected station: {_vm.SelectedStation?.Name ?? "null"}");
+            Debug.WriteLine($"[MainWindow] Current stream URL: {_vm.StreamUrl}");
+            
             _vm.Toggle();
+            Debug.WriteLine($"[MainWindow] After Toggle - IsPlaying: {_vm.IsPlaying}");
+            
             UpdatePlayPauseButton();
+            
+            Debug.WriteLine("=== PlayPauseButton_Click (MainWindow) END ===");
         }
 
         private void VolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
         {
+            Debug.WriteLine($"[MainWindow] Volume slider changed to: {e.NewValue}");
             _vm.Volume = e.NewValue;
             VolumeValue.Text = ((int)(_vm.Volume * 100)).ToString();
         }
@@ -198,34 +230,10 @@ namespace Tradio
         {
             if (PlayPauseButton is not null)
             {
-                PlayPauseButton.Content = _vm.IsPlaying ? "Pause" : "Play";
+                string newContent = _vm.IsPlaying ? "Pause" : "Play";
+                Debug.WriteLine($"[MainWindow] Updating PlayPauseButton to: {newContent}");
+                PlayPauseButton.Content = newContent;
             }
-        }
-
-        private void StreamUrlTextBox_TextChanged(object sender, Microsoft.UI.Xaml.Controls.TextChangedEventArgs e)
-        {
-            _vm.StreamUrl = StreamUrlTextBox.Text?.Trim() ?? string.Empty;
-            ValidateUrlAndUpdateUi(_vm.StreamUrl);
-        }
-
-        private void ApplyUrlButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_vm.ApplyStreamUrl())
-            {
-                UrlErrorText.Text = string.Empty;
-            }
-            else
-            {
-                UrlErrorText.Text = "Please enter a valid http/https URL.";
-            }
-        }
-
-        private void ValidateUrlAndUpdateUi(string? url)
-        {
-            bool valid = Uri.TryCreate(url, UriKind.Absolute, out Uri? uri) &&
-                         (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
-            ApplyUrlButton.IsEnabled = valid;
-            UrlErrorText.Text = valid ? string.Empty : "Enter a valid http/https URL.";
         }
 
         private async System.Threading.Tasks.Task InitializeStartupToggleAsync()
@@ -239,14 +247,17 @@ namespace Tradio
             catch
             {
                 // Could not get StartupTask (likely unpackaged). Disable toggle.
-                StartupToggle.IsEnabled = false;
-                StartupToggle.IsOn = false;
+                if (StartupToggle != null)
+                {
+                    StartupToggle.IsEnabled = false;
+                    StartupToggle.IsOn = false;
+                }
             }
         }
 
         private void UpdateStartupToggleFromState()
         {
-            if (_startupTask is null) return;
+            if (_startupTask is null || StartupToggle is null) return;
             switch (_startupTask.State)
             {
                 case StartupTaskState.Enabled:
@@ -275,7 +286,7 @@ namespace Tradio
 
         private async void StartupToggle_Toggled(object sender, RoutedEventArgs e)
         {
-            if (!_initDone || _startupTask is null) return;
+            if (!_initDone || _startupTask is null || StartupToggle is null) return;
 
             try
             {
@@ -310,6 +321,7 @@ namespace Tradio
 
         private void WatchdogToggle_Toggled(object sender, RoutedEventArgs e)
         {
+            Debug.WriteLine($"[MainWindow] WatchdogToggle toggled to: {WatchdogToggle.IsOn}");
             _vm.WatchdogEnabled = WatchdogToggle.IsOn;
         }
     }

@@ -145,15 +145,8 @@ public class AddStationViewModel : INotifyPropertyChanged
             _editingStation.Name = StationName.Trim();
             _editingStation.StreamUrl = StreamUrl.Trim();
 
-            // Save the updated stations list
+            // Save the updated stations list - this will automatically reinitialize if it's the selected station
             _playerViewModel?.SaveStations();
-
-            // If this was the selected station, trigger update to reload the stream
-            if (_playerViewModel?.SelectedStation == _editingStation)
-            {
-                // Re-apply the stream URL if it changed
-                _playerViewModel.ApplyStreamUrl();
-            }
         }
         else
         {

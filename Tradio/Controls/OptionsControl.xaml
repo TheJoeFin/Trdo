@@ -20,16 +20,12 @@
             VerticalAlignment="Center"
             Orientation="Vertical"
             Spacing="8">
-            <TextBlock VerticalAlignment="Center" Text="Stream URL" />
+            <TextBlock VerticalAlignment="Center" Text="Current Stream URL (Managed by Stations)" />
             <TextBox
                 x:Name="StreamUrlTextBox"
                 Width="320"
                 HorizontalAlignment="Left"
-                TextChanged="StreamUrlTextBox_TextChanged" />
-            <Button
-                x:Name="ApplyUrlButton"
-                Click="ApplyUrlButton_Click"
-                Content="Apply" />
+                IsReadOnly="True" />
         </StackPanel>
 
         <StackPanel
