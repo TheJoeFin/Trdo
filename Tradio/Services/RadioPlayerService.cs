@@ -5,7 +5,7 @@ using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
 
-namespace Tradio.Services;
+namespace Trdo.Services;
 
 public sealed partial class RadioPlayerService : IDisposable
 {

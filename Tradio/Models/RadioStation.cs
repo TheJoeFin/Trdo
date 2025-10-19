@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Tradio.Models;
+namespace Trdo.Models;
 
 public class RadioStation : INotifyPropertyChanged
 {

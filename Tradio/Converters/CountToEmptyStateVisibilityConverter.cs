@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 using System;
 
-namespace Tradio.Converters;
+namespace Trdo.Converters;
 
 /// <summary>
 /// Converts a count to Visibility. Returns Visible when count is 0, Collapsed otherwise.

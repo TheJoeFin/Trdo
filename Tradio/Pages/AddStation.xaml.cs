@@ -2,10 +2,10 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using Tradio.Models;
-using Tradio.ViewModels;
+using Trdo.Models;
+using Trdo.ViewModels;
 
-namespace Tradio.Pages;
+namespace Trdo.Pages;
 
 /// <summary>
 /// An empty page that can be used on its own or navigated to within a Frame.

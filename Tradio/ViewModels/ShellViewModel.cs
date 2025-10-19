@@ -1,10 +1,10 @@
 ﻿using Microsoft.UI.Xaml.Controls;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Tradio.Pages;
-using Tradio.Services;
+using Trdo.Pages;
+using Trdo.Services;
 
-namespace Tradio.ViewModels;
+namespace Trdo.ViewModels;
 
 public class ShellViewModel : INotifyPropertyChanged
 {

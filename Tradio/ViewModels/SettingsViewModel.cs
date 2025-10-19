@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
 
-namespace Tradio.ViewModels;
+namespace Trdo.ViewModels;
 
 public class SettingsViewModel : INotifyPropertyChanged
 {
@@ -103,7 +103,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     {
         try
         {
-            _startupTask = await StartupTask.GetAsync("TradioStartup").AsTask();
+            _startupTask = await StartupTask.GetAsync("TrdoStartup").AsTask();
             _initDone = true;
             UpdateStartupStateFromTask();
         }

@@ -47,7 +47,7 @@
       <!-- Allow app to be configured as a Startup Task -->
       <Extensions>
         <uap5:Extension Category="windows.startupTask">
-          <uap5:StartupTask TaskId="TradioStartup" Enabled="false" DisplayName="Tradio" />
+          <uap5:StartupTask TaskId="TrdoStartup" Enabled="false" DisplayName="Trdo" />
         </uap5:Extension>
       </Extensions>
     </Application>

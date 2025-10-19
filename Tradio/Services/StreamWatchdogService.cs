@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Tradio.Services;
+namespace Trdo.Services;
 
 /// <summary>
 /// Monitors the radio stream and automatically resumes playback when the stream stops unexpectedly.

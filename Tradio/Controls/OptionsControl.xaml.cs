@@ -2,10 +2,10 @@
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using System;
-using Tradio.ViewModels;
+using Trdo.ViewModels;
 using Windows.ApplicationModel;
 
-namespace Tradio.Controls;
+namespace Trdo.Controls;
 
 public sealed partial class OptionsControl : UserControl
 {
@@ -101,7 +101,7 @@ public sealed partial class OptionsControl : UserControl
     {
         try
         {
-            _startupTask = await StartupTask.GetAsync("TradioStartup");
+            _startupTask = await StartupTask.GetAsync("TrdoStartup");
             _initDone = true;
             UpdateStartupToggleFromState();
         }

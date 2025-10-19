@@ -3,7 +3,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace Tradio.Services;
+namespace Trdo.Services;
 
 public class NavigationService : INotifyPropertyChanged
 {

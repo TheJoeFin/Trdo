@@ -4,11 +4,11 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using Tradio.ViewModels;
+using Trdo.ViewModels;
 using Windows.ApplicationModel;
 using Windows.Graphics;
 
-namespace Tradio
+namespace Trdo
 {
     public sealed partial class MainWindow : Window
     {
@@ -240,7 +240,7 @@ namespace Tradio
         {
             try
             {
-                _startupTask = await StartupTask.GetAsync("TradioStartup");
+                _startupTask = await StartupTask.GetAsync("TrdoStartup");
                 _initDone = true;
                 UpdateStartupToggleFromState();
             }

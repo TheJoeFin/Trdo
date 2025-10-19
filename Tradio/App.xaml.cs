@@ -2,12 +2,12 @@
 using Microsoft.UI.Xaml.Controls;
 using System.ComponentModel;
 using System.Threading.Tasks;
-using Tradio.Controls;
-using Tradio.Pages;
-using Tradio.ViewModels;
+using Trdo.Controls;
+using Trdo.Pages;
+using Trdo.ViewModels;
 using WinUIEx;
 
-namespace Tradio;
+namespace Trdo;
 
 /// <summary>
 /// Provides application-specific behavior to supplement the default Application class.

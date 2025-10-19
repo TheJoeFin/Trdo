@@ -1,9 +1,9 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Tradio.Models;
+using Trdo.Models;
 
-namespace Tradio.ViewModels;
+namespace Trdo.ViewModels;
 
 public class AddStationViewModel : INotifyPropertyChanged
 {

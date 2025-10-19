@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Window
-    x:Class="Tradio.MainWindow"
+    x:Class="Trdo.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:local="using:Tradio"
+    xmlns:local="using:Trdo"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Tradio"
+    Title="Trdo"
     mc:Ignorable="d">
 
     <Window.SystemBackdrop>
@@ -21,7 +21,7 @@
         <!--  WinAppSDK TitleBar control  -->
         <TitleBar
             x:Name="SimpleTitleBar"
-            Title="Tradio"
+            Title="Trdo"
             Grid.Row="0"
             Subtitle="beta">
             <TitleBar.IconSource>

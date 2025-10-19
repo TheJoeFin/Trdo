@@ -3,7 +3,7 @@ using System;
 using System.Reflection;
 using System.Windows.Input;
 
-namespace Tradio;
+namespace Trdo;
 
 public sealed class ShowWindowCommand : ICommand
 {

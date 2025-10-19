@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
-using Tradio.Models;
+using Trdo.Models;
 using Windows.Storage;
 
-namespace Tradio.Services;
+namespace Trdo.Services;
 
 public class RadioStationService
 {

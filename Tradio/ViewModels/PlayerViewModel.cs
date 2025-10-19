@@ -4,10 +4,10 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using Tradio.Models;
-using Tradio.Services;
+using Trdo.Models;
+using Trdo.Services;
 
-namespace Tradio.ViewModels;
+namespace Trdo.ViewModels;
 
 public sealed partial class PlayerViewModel : INotifyPropertyChanged
 {
