@@ -1,5 +1,5 @@
 ﻿<p align="center">
-  <img width="128" align="center" src="Images/Trdo-icon.png">
+  <img width="128" align="center" src="Images/Trdo-Icon.png">
 </p>
 <h1 align="center">
   Trdo
@@ -9,9 +9,11 @@
 </p>
 <p align="center">
   <a href="https://www.microsoft.com/store/apps/9NXT4TGJVHVV" target="_blank">
-    <img src="images/storeBadge.png" width="200" alt="Store link" />
+    <img src="Images/storeBadge.png" width="200" alt="Store link" />
   </a>
 </p>
+
+![Trdo flyout](Images/Screenshot-1-1.png)
 
 ### Overview
 Trdo is a modern internet radio player built for Windows with a focus on simplicity and elegance. Stream your favorite radio stations with a beautiful, intuitive interface designed for Windows 11.
