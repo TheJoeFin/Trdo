@@ -65,19 +65,6 @@ public class RadioStationService
     }
 
     /// <summary>
-    /// Get default radio stations
-    /// </summary>
-    private List<RadioStation> GetDefaultStations()
-    {
-        return
-        [
-            new RadioStation { Name = "WUWM - Milwaukee's NPR", StreamUrl = "https://wyms.streamguys1.com/live?platform=NPR&uuid=xhjlsf05e" },
-            new RadioStation { Name = "88nine Radio Milwaukee", StreamUrl = "https://wmse.streamguys1.com/witr-hi-mp3" },
-            new RadioStation { Name = "WXRW - Riverwest Radio", StreamUrl = "https://wxrw.radioca.st/stream" }
-        ];
-    }
-
-    /// <summary>
     /// Save the index of the selected station
     /// </summary>
     public void SaveSelectedStationIndex(int index)

@@ -12,7 +12,7 @@ public class AboutViewModel : INotifyPropertyChanged
 
     public string AppName => "Trdo";
     public string AppDescription => "A simple, elegant internet radio player for Windows";
-    public string Version => "1.0.0 (Beta)";
+    public string Version => "1.1.0";
 
     public string GitHubUrl => "https://github.com/TheJoeFin/Trdo";
     public string GitHubDisplayText => "github.com/TheJoeFin/Trdo";
