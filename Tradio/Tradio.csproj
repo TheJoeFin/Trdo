@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0-windows10.0.19041.0</TargetFramework>
@@ -17,11 +17,13 @@
   <ItemGroup>
     <None Remove="Assets\Radio-Black.ico" />
     <None Remove="Assets\Radio-White.ico" />
-    <None Remove="Controls\AddStation.xaml" />
+    <None Remove="Controls\RatingWindow.xaml" />
+    <None Remove="Pages\AddStation.xaml" />
     <None Remove="Controls\OptionsControl.xaml" />
-    <None Remove="Controls\PlayingPage.xaml" />
-    <None Remove="Controls\SettingsPage.xaml" />
-    <None Remove="Controls\ShellPage.xaml" />
+    <None Remove="Pages\PlayingPage.xaml" />
+    <None Remove="Pages\SettingsPage.xaml" />
+    <None Remove="Pages\ShellPage.xaml" />
+    <None Remove="Pages\AboutPage.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -62,22 +64,32 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Controls\AddStation.xaml">
+    <Page Update="Controls\RatingWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Controls\SettingsPage.xaml">
+    <Page Update="Pages\AboutPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Controls\PlayingPage.xaml">
+    <Page Update="Pages\AddStation.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <Page Update="Controls\ShellPage.xaml">
+    <Page Update="Pages\SettingsPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\PlayingPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\ShellPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
@@ -85,9 +97,6 @@
     <Page Update="Controls\OptionsControl.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Pages\" />
   </ItemGroup>
 
   <!--

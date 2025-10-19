@@ -49,6 +49,11 @@ public class ShellViewModel : INotifyPropertyChanged
         _navigationService.Navigate(typeof(AddStation), stationToEdit);
     }
 
+    public void NavigateToAboutPage()
+    {
+        _navigationService.Navigate(typeof(AboutPage));
+    }
+
     public void GoBack()
     {
         _navigationService.GoBack();
