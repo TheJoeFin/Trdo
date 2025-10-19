@@ -14,8 +14,8 @@ public class AboutViewModel : INotifyPropertyChanged
     public string AppDescription => "A simple, elegant internet radio player for Windows";
     public string Version => "1.0.0 (Beta)";
 
-    public string GitHubUrl => "https://github.com/TheJoeFin/Tradio";
-    public string GitHubDisplayText => "github.com/TheJoeFin/Tradio";
+    public string GitHubUrl => "https://github.com/TheJoeFin/Trdo";
+    public string GitHubDisplayText => "github.com/TheJoeFin/Trdo";
 
     public string DeveloperName => "Joe Finney (TheJoeFin)";
     public string DeveloperGitHub => "https://github.com/TheJoeFin";

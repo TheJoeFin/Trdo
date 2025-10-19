@@ -1,7 +1,7 @@
 ﻿# go to the packages folder and copy all .msix files to a new folder called "msixes"
 # then run the MakeAppxBundle command to create a bundle
 # the bundle will be created in the same folder as the script
-# the bundle will be called "Tradio.msixbundle"
+# the bundle will be called "Trdo.msixbundle"
 
 # get the latest version which has been created using a regex to match something like 1.0.3.0
 # Function to compare two version numbers
@@ -64,8 +64,8 @@ else {
 }
 
 $folderNames = @()
-$folderNames += "Tradio_" + $largestVersion + "_x64_Test"
-$folderNames += "Tradio_" + $largestVersion + "_arm64_Test"
+$folderNames += "Trdo_" + $largestVersion + "_x64_Test"
+$folderNames += "Trdo_" + $largestVersion + "_arm64_Test"
 
 # copy all .msix files in each folder to the msixes folder
 foreach ($folderName in $folderNames) {
@@ -77,7 +77,7 @@ $currentPath = (Get-Location).Path
 $trimmedMsixesFolder = $msixesFolder.TrimStart(".\\")
 $locationOfMakeAppx = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\makeappx.exe"
 $locationOfMsixes = "${currentPath}\${trimmedMsixesFolder}"
-$bundleName = "${currentPath}\${trimmedMsixesFolder}\Tradio_${largestVersion}.msixbundle"
+$bundleName = "${currentPath}\${trimmedMsixesFolder}\Trdo_${largestVersion}.msixbundle"
 
 & $locationOfMakeAppx bundle /d $locationOfMsixes /p  $bundleName
 
