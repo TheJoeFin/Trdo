@@ -1,5 +1,5 @@
 ﻿<p align="center">
-  <img width="128" align="center" src="images/Trdo-icon.png">
+  <img width="128" align="center" src="Images/Trdo-icon.png">
 </p>
 <h1 align="center">
   Trdo
