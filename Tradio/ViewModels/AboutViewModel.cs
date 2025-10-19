@@ -10,7 +10,7 @@ public class AboutViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string AppName => "Tradio";
+    public string AppName => "Trdo";
     public string AppDescription => "A simple, elegant internet radio player for Windows";
     public string Version => "1.0.0 (Beta)";
 
