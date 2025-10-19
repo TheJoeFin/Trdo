@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Trdo.Controls;
 using Trdo.Pages;
 using Trdo.ViewModels;
+using Windows.UI.ViewManagement;
 using WinUIEx;
 
 namespace Trdo;
@@ -16,11 +17,15 @@ public partial class App : Application
 {
     private TrayIcon? _trayIcon;
     private readonly PlayerViewModel _playerVm = new();
+    private readonly UISettings _uiSettings = new();
 
     public App()
     {
         InitializeComponent();
         _playerVm.PropertyChanged += PlayerVmOnPropertyChanged;
+
+        // Subscribe to theme change events
+        _uiSettings.ColorValuesChanged += OnColorValuesChanged;
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
@@ -37,6 +42,12 @@ public partial class App : Application
             // Update tray icon to reflect play/pause state
             _ = UpdateTrayIconAsync();
         }
+    }
+
+    private void OnColorValuesChanged(UISettings sender, object args)
+    {
+        // Theme has changed, update the tray icon
+        _ = UpdateTrayIconAsync();
     }
 
     private void InitializeTrayIcon()
@@ -68,15 +79,51 @@ public partial class App : Application
         if (_trayIcon is null)
             return;
 
-        // Choose icon based on play state. When not playing, use Radio-Off.png
-        // Fallback to Radio.ico when playing or if the PNG isn't present.
-        string iconUri = _playerVm.IsPlaying
-            ? "Assets/Radio.ico"
-            : "Assets/Radio-Off.ico";
+        // Detect system theme (true = dark theme, false = light theme)
+        bool isDarkTheme = IsSystemInDarkMode();
 
-        // TODO: maybe make this a little more robust witha try/catch
-        // _window.SetTaskBarIcon(Icon.FromFile(iconUri));
-        _trayIcon.SetIcon(iconUri);
+        // Choose icon based on theme and play state
+        string iconUri;
+        if (_playerVm.IsPlaying)
+        {
+            // When playing, use the regular Radio icon
+            iconUri = "Assets/Radio.ico";
+        }
+        else
+        {
+            // When not playing, use theme-aware icons
+            iconUri = isDarkTheme ? "Assets/Radio-White.ico" : "Assets/Radio-Black.ico";
+        }
+
+        try
+        {
+            _trayIcon.SetIcon(iconUri);
+        }
+        catch
+        {
+            // If the theme-specific icon doesn't exist, fallback to default Radio.ico
+            _trayIcon.SetIcon("Assets/Radio.ico");
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private static bool IsSystemInDarkMode()
+    {
+        try
+        {
+            var uiSettings = new UISettings();
+            var foregroundColor = uiSettings.GetColorValue(UIColorType.Foreground);
+
+            // In dark mode, foreground color is light (high RGB values)
+            // In light mode, foreground color is dark (low RGB values)
+            return (foregroundColor.R + foregroundColor.G + foregroundColor.B) > 384;
+        }
+        catch
+        {
+            // Default to dark theme if detection fails
+            return true;
+        }
     }
 
     private void UpdatePlayPauseCommandText()
