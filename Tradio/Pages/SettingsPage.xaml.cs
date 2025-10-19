@@ -1,7 +1,7 @@
 using Microsoft.UI.Xaml.Controls;
 using Tradio.ViewModels;
 
-namespace Tradio.Controls;
+namespace Tradio.Pages;
 
 public sealed partial class SettingsPage : Page
 {

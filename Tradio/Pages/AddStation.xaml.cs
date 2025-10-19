@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Tradio.Models;
 using Tradio.ViewModels;
 
-namespace Tradio.Controls;
+namespace Tradio.Pages;
 
 /// <summary>
 /// An empty page that can be used on its own or navigated to within a Frame.

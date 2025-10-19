@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using Tradio.Controls;
+using Tradio.Pages;
 using Tradio.ViewModels;
 using WinUIEx;
 

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Page
-    x:Class="Tradio.Controls.PlayingPage"
+    x:Class="Tradio.Pages.PlayingPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="using:Tradio.Converters"
@@ -14,7 +14,7 @@
         <converters:CountToEmptyStateVisibilityConverter x:Key="CountToEmptyStateVisibilityConverter" />
     </Page.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="6">
+    <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="12">
 
         <StackPanel Orientation="Horizontal" Spacing="4">
             <Button

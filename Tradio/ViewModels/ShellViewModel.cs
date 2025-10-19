@@ -1,6 +1,7 @@
 ﻿using Microsoft.UI.Xaml.Controls;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Tradio.Pages;
 using Tradio.Services;
 
 namespace Tradio.ViewModels;
@@ -35,17 +36,17 @@ public class ShellViewModel : INotifyPropertyChanged
 
     public void NavigateToPlayingPage()
     {
-        _navigationService.Navigate(typeof(Controls.PlayingPage));
+        _navigationService.Navigate(typeof(PlayingPage));
     }
 
     public void NavigateToSettingsPage()
     {
-        _navigationService.Navigate(typeof(Controls.SettingsPage));
+        _navigationService.Navigate(typeof(SettingsPage));
     }
 
     public void NavigateToAddStationPage(Models.RadioStation? stationToEdit = null)
     {
-        _navigationService.Navigate(typeof(Controls.AddStation), stationToEdit);
+        _navigationService.Navigate(typeof(AddStation), stationToEdit);
     }
 
     public void GoBack()
