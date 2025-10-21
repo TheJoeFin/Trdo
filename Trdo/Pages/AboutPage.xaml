@@ -86,7 +86,7 @@
                         TextWrapping="Wrap" />
 
                     <HyperlinkButton
-                        Padding="0,8,0,0"
+                        Margin="0,8,0,0"
                         Click="GitHubButton_Click"
                         Content="{x:Bind ViewModel.GitHubDisplayText}" />
                 </StackPanel>
@@ -104,7 +104,7 @@
                         Text="{x:Bind ViewModel.DeveloperName}"
                         TextWrapping="Wrap" />
 
-                    <HyperlinkButton Padding="0,8,0,0" Click="DeveloperGitHubButton_Click">
+                    <HyperlinkButton Margin="0,8,0,0" Click="DeveloperGitHubButton_Click">
                         <TextBlock Text="Visit Developer's GitHub" TextWrapping="Wrap" />
                     </HyperlinkButton>
                 </StackPanel>
