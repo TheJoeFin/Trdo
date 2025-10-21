@@ -27,7 +27,7 @@ public class RadioStationService
         try
         {
             List<RadioStation> stationList = stations.ToList();
-            var json = JsonSerializer.Serialize(stationList);
+            string json = JsonSerializer.Serialize(stationList);
             ApplicationData.Current.LocalSettings.Values[StationsKey] = json;
         }
         catch (Exception ex)

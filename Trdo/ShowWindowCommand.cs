@@ -9,7 +9,10 @@ public sealed class ShowWindowCommand : ICommand
 {
     public event EventHandler? CanExecuteChanged;
 
-    public bool CanExecute(object? parameter) => true;
+    public bool CanExecute(object? parameter)
+    {
+        return true;
+    }
 
     public void Execute(object? parameter)
     {
@@ -26,7 +29,10 @@ internal static class WindowHelper
 {
     private static Window[] _active = [];
 
-    public static Window[] ActiveWindows() => _active;
+    public static Window[] ActiveWindows()
+    {
+        return _active;
+    }
 
     public static void Track(Window window)
     {

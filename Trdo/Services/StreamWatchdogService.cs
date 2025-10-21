@@ -221,7 +221,7 @@ public sealed class StreamWatchdogService : IDisposable
             {
                 try
                 {
-                    var streamUrl = _playerService.StreamUrl;
+                    string? streamUrl = _playerService.StreamUrl;
                     if (!string.IsNullOrEmpty(streamUrl))
                     {
                         // Reinitialize the stream
