@@ -97,26 +97,31 @@ public sealed partial class RadioPlayerService : IDisposable
         _player.PlaybackSession.PlaybackStateChanged += (_, _) =>
         {
             bool isPlaying;
+            MediaPlaybackState currentState;
             try
             {
-                isPlaying = IsPlaying;
-                Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, State={_player.PlaybackSession.PlaybackState}, IsInternalChange={_isInternalStateChange}");
+                currentState = _player.PlaybackSession.PlaybackState;
+                isPlaying = currentState == MediaPlaybackState.Playing;
+                Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, State={currentState}, IsInternalChange={_isInternalStateChange}");
                 
                 // If state change was not initiated internally (e.g., from hardware buttons),
                 // notify the watchdog of user intention
                 if (!_isInternalStateChange)
                 {
                     Debug.WriteLine("[RadioPlayerService] External state change detected (likely hardware button)");
-                    if (isPlaying)
+                    if (currentState == MediaPlaybackState.Playing)
                     {
                         _watchdog.NotifyUserIntentionToPlay();
                         Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play (hardware button)");
                     }
-                    else
+                    else if (currentState == MediaPlaybackState.Paused)
                     {
+                        // Only notify pause intent if explicitly paused (not buffering, opening, or other states)
                         _watchdog.NotifyUserIntentionToPause();
                         Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause (hardware button)");
                     }
+                    // For other states (Buffering, Opening, None), don't change watchdog intent
+                    // This allows the watchdog to recover if a stream stops unexpectedly
                 }
             }
             catch (Exception ex)
