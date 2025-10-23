@@ -1,6 +1,8 @@
 ﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System;
 using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 using Trdo.Pages;
 using Trdo.ViewModels;
@@ -18,6 +20,7 @@ public partial class App : Application
     private TrayIcon? _trayIcon;
     private readonly PlayerViewModel _playerVm = new();
     private readonly UISettings _uiSettings = new();
+    private Mutex? _singleInstanceMutex;
 
     public App()
     {
@@ -30,6 +33,28 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        // Check for single instance using a named mutex
+        const string mutexName = "Global\\Trdo_SingleInstance_Mutex";
+        bool createdNew;
+        
+        try
+        {
+            _singleInstanceMutex = new Mutex(true, mutexName, out createdNew);
+            
+            if (!createdNew)
+            {
+                // Another instance is already running
+                // Exit this instance gracefully
+                Exit();
+                return;
+            }
+        }
+        catch (Exception)
+        {
+            // If mutex creation fails, allow the app to continue
+            // This could happen in restricted environments
+        }
+
         InitializeTrayIcon();
         await UpdateTrayIconAsync();
     }
@@ -138,6 +163,22 @@ public partial class App : Application
         else
         {
             _trayIcon.Tooltip = "Trdo - Play";
+        }
+    }
+
+    /// <summary>
+    /// Cleanup resources when the application exits
+    /// </summary>
+    ~App()
+    {
+        try
+        {
+            _singleInstanceMutex?.ReleaseMutex();
+            _singleInstanceMutex?.Dispose();
+        }
+        catch
+        {
+            // Ignore errors during cleanup
         }
     }
 }
