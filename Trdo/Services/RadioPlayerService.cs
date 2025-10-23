@@ -16,6 +16,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private const string VolumeKey = "RadioVolume";
     private const string WatchdogEnabledKey = "WatchdogEnabled";
     private string? _streamUrl;
+    private bool _isInternalStateChange;
 
     public static RadioPlayerService Instance { get; } = new();
 
@@ -96,10 +97,32 @@ public sealed partial class RadioPlayerService : IDisposable
         _player.PlaybackSession.PlaybackStateChanged += (_, _) =>
         {
             bool isPlaying;
+            MediaPlaybackState currentState;
             try
             {
-                isPlaying = IsPlaying;
-                Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, State={_player.PlaybackSession.PlaybackState}");
+                currentState = _player.PlaybackSession.PlaybackState;
+                isPlaying = currentState == MediaPlaybackState.Playing;
+                Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, State={currentState}, IsInternalChange={_isInternalStateChange}");
+                
+                // If state change was not initiated internally (e.g., from hardware buttons),
+                // notify the watchdog of user intention
+                if (!_isInternalStateChange)
+                {
+                    Debug.WriteLine("[RadioPlayerService] External state change detected (likely hardware button)");
+                    if (currentState == MediaPlaybackState.Playing)
+                    {
+                        _watchdog.NotifyUserIntentionToPlay();
+                        Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play (hardware button)");
+                    }
+                    else if (currentState == MediaPlaybackState.Paused)
+                    {
+                        // Only notify pause intent if explicitly paused (not buffering, opening, or other states)
+                        _watchdog.NotifyUserIntentionToPause();
+                        Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause (hardware button)");
+                    }
+                    // For other states (Buffering, Opening, None), don't change watchdog intent
+                    // This allows the watchdog to recover if a stream stops unexpectedly
+                }
             }
             catch (Exception ex)
             {
@@ -256,7 +279,9 @@ public sealed partial class RadioPlayerService : IDisposable
             }
 
             Debug.WriteLine("[RadioPlayerService] Calling _player.Play()...");
+            _isInternalStateChange = true;
             _player.Play();
+            _isInternalStateChange = false;
             Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully");
 
             _watchdog.NotifyUserIntentionToPlay();
@@ -275,7 +300,9 @@ public sealed partial class RadioPlayerService : IDisposable
                 _player.Source = MediaSource.CreateFromUri(uri);
                 Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
 
+                _isInternalStateChange = true;
                 _player.Play();
+                _isInternalStateChange = false;
                 Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully (retry)");
 
                 _watchdog.NotifyUserIntentionToPlay();
@@ -283,6 +310,7 @@ public sealed partial class RadioPlayerService : IDisposable
             }
             catch (Exception retryEx)
             {
+                _isInternalStateChange = false;
                 Debug.WriteLine($"[RadioPlayerService] EXCEPTION on retry: {retryEx.Message}");
                 throw;
             }
@@ -311,7 +339,9 @@ public sealed partial class RadioPlayerService : IDisposable
         try
         {
             Debug.WriteLine("[RadioPlayerService] Calling _player.Pause()...");
+            _isInternalStateChange = true;
             _player.Pause();
+            _isInternalStateChange = false;
             Debug.WriteLine("[RadioPlayerService] _player.Pause() called successfully");
 
             // Clean up the media source for live streams
@@ -335,6 +365,7 @@ public sealed partial class RadioPlayerService : IDisposable
         }
         catch (Exception ex)
         {
+            _isInternalStateChange = false;
             Debug.WriteLine($"[RadioPlayerService] EXCEPTION in Pause: {ex.Message}");
             Debug.WriteLine($"[RadioPlayerService] Exception details: {ex}");
         }
