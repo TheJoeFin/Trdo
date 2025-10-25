@@ -23,6 +23,7 @@ public partial class App : Application
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
     private DispatcherQueueTimer? _trayIconWatchdogTimer;
+    private ShellPage? _shellPage;
 
     public App()
     {
@@ -37,12 +38,11 @@ public partial class App : Application
     {
         // Check for single instance using a named mutex
         const string mutexName = "Global\\Trdo_SingleInstance_Mutex";
-        bool createdNew;
-        
+
         try
         {
-            _singleInstanceMutex = new Mutex(true, mutexName, out createdNew);
-            
+            _singleInstanceMutex = new Mutex(true, mutexName, out bool createdNew);
+
             if (!createdNew)
             {
                 // Another instance is already running
@@ -84,13 +84,20 @@ public partial class App : Application
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
         _trayIcon.IsVisible = true;
+        _shellPage = new();
     }
 
     private void TrayIcon_ContextMenu(TrayIcon sender, TrayIconEventArgs args)
     {
         Flyout flyout = new()
         {
-            Content = new ShellPage()
+            Content = _shellPage
+        };
+
+        flyout.Closing += (s, e) =>
+        {
+            if (s is Flyout f)
+                f.Content = null;
         };
 
         args.Flyout = flyout;
@@ -189,7 +196,10 @@ public partial class App : Application
     private async Task EnsureTrayIconVisibleAsync()
     {
         if (_trayIcon is null)
+        {
+            InitializeTrayIcon();
             return;
+        }
 
         try
         {
