@@ -1,4 +1,5 @@
-﻿using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.ComponentModel;
@@ -21,6 +22,8 @@ public partial class App : Application
     private readonly PlayerViewModel _playerVm = new();
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
+    private DispatcherQueueTimer? _trayIconWatchdogTimer;
+    private ShellPage? _shellPage;
 
     public App()
     {
@@ -35,12 +38,11 @@ public partial class App : Application
     {
         // Check for single instance using a named mutex
         const string mutexName = "Global\\Trdo_SingleInstance_Mutex";
-        bool createdNew;
-        
+
         try
         {
-            _singleInstanceMutex = new Mutex(true, mutexName, out createdNew);
-            
+            _singleInstanceMutex = new Mutex(true, mutexName, out bool createdNew);
+
             if (!createdNew)
             {
                 // Another instance is already running
@@ -57,6 +59,7 @@ public partial class App : Application
 
         InitializeTrayIcon();
         await UpdateTrayIconAsync();
+        StartTrayIconWatchdog();
     }
 
     private void PlayerVmOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -81,13 +84,20 @@ public partial class App : Application
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
         _trayIcon.IsVisible = true;
+        _shellPage = new();
     }
 
     private void TrayIcon_ContextMenu(TrayIcon sender, TrayIconEventArgs args)
     {
         Flyout flyout = new()
         {
-            Content = new ShellPage()
+            Content = _shellPage
+        };
+
+        flyout.Closing += (s, e) =>
+        {
+            if (s is Flyout f)
+                f.Content = null;
         };
 
         args.Flyout = flyout;
@@ -163,6 +173,58 @@ public partial class App : Application
         else
         {
             _trayIcon.Tooltip = "Trdo - Play";
+        }
+    }
+
+    private void StartTrayIconWatchdog()
+    {
+        // Get the dispatcher queue for the current thread
+        DispatcherQueue? dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        if (dispatcherQueue is null)
+            return;
+
+        // Create a timer that checks tray icon visibility every 10 seconds
+        _trayIconWatchdogTimer = dispatcherQueue.CreateTimer();
+        _trayIconWatchdogTimer.Interval = TimeSpan.FromSeconds(10);
+        _trayIconWatchdogTimer.Tick += async (sender, args) =>
+        {
+            await EnsureTrayIconVisibleAsync();
+        };
+        _trayIconWatchdogTimer.Start();
+    }
+
+    private async Task EnsureTrayIconVisibleAsync()
+    {
+        if (_trayIcon is null)
+        {
+            InitializeTrayIcon();
+            return;
+        }
+
+        try
+        {
+            // Check if the tray icon is visible
+            if (!_trayIcon.IsVisible)
+            {
+                // Tray icon disappeared, restore it
+                _trayIcon.IsVisible = true;
+                await UpdateTrayIconAsync();
+                UpdatePlayPauseCommandText();
+            }
+        }
+        catch
+        {
+            // If there's an error checking/restoring visibility, try to recreate the tray icon
+            try
+            {
+                InitializeTrayIcon();
+                await UpdateTrayIconAsync();
+                UpdatePlayPauseCommandText();
+            }
+            catch
+            {
+                // Silent failure - will try again on next timer tick
+            }
         }
     }
 
