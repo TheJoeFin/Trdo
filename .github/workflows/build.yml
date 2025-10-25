@@ -16,10 +16,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '9.0.x'
         
@@ -27,4 +27,4 @@ jobs:
       run: dotnet restore Trdo.slnx
       
     - name: Build
-      run: dotnet build Trdo.slnx --configuration Release --no-restore
+      run: dotnet build Trdo.slnx --configuration Release --no-restore /p:PublishReadyToRun=false
