@@ -31,12 +31,12 @@
             <TextBlock FontWeight="SemiBold" Text="Add Station Method" />
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <RadioButton
-                    Content="Search Online"
-                    IsChecked="{x:Bind ViewModel.IsSearchMode, Mode=TwoWay}"
-                    GroupName="AddMode" />
-                <RadioButton
                     Content="Manual Entry"
                     IsChecked="{x:Bind ViewModel.IsManualMode, Mode=TwoWay}"
+                    GroupName="AddMode" />
+                <RadioButton
+                    Content="Search Online"
+                    IsChecked="{x:Bind ViewModel.IsSearchMode, Mode=OneWay}"
                     GroupName="AddMode" />
             </StackPanel>
         </StackPanel>
