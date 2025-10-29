@@ -56,11 +56,19 @@ public class AddStationViewModel : INotifyPropertyChanged
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsSearchMode));
             
-            // Clear search results when switching modes
+            // Clear search results when switching to search mode
             if (!_isManualMode)
             {
                 SearchResults.Clear();
                 SearchTerm = string.Empty;
+                SelectedSearchResult = null;
+            }
+            else
+            {
+                // Clear fields when switching to manual mode
+                SelectedSearchResult = null;
+                StationName = string.Empty;
+                StreamUrl = string.Empty;
             }
         }
     }

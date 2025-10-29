@@ -20,6 +20,11 @@ public class RadioBrowserService
         Timeout = TimeSpan.FromSeconds(10)
     };
 
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     static RadioBrowserService()
     {
         // Set a user agent as recommended by Radio Browser API
@@ -57,7 +62,7 @@ public class RadioBrowserService
             string content = await response.Content.ReadAsStringAsync(cancellationToken);
             Debug.WriteLine($"[RadioBrowserService] Received response, length: {content.Length}");
 
-            List<RadioBrowserStation>? stations = JsonSerializer.Deserialize<List<RadioBrowserStation>>(content);
+            List<RadioBrowserStation>? stations = JsonSerializer.Deserialize<List<RadioBrowserStation>>(content, _jsonOptions);
 
             Debug.WriteLine($"[RadioBrowserService] Found {stations?.Count ?? 0} stations");
 
@@ -98,7 +103,7 @@ public class RadioBrowserService
             response.EnsureSuccessStatusCode();
 
             string content = await response.Content.ReadAsStringAsync(cancellationToken);
-            List<RadioBrowserStation>? stations = JsonSerializer.Deserialize<List<RadioBrowserStation>>(content);
+            List<RadioBrowserStation>? stations = JsonSerializer.Deserialize<List<RadioBrowserStation>>(content, _jsonOptions);
 
             Debug.WriteLine($"[RadioBrowserService] Found {stations?.Count ?? 0} stations");
 
@@ -139,7 +144,7 @@ public class RadioBrowserService
             response.EnsureSuccessStatusCode();
 
             string content = await response.Content.ReadAsStringAsync(cancellationToken);
-            List<RadioBrowserStation>? stations = JsonSerializer.Deserialize<List<RadioBrowserStation>>(content);
+            List<RadioBrowserStation>? stations = JsonSerializer.Deserialize<List<RadioBrowserStation>>(content, _jsonOptions);
 
             Debug.WriteLine($"[RadioBrowserService] Found {stations?.Count ?? 0} stations");
 
