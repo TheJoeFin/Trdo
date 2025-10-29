@@ -65,10 +65,9 @@ public class AddStationViewModel : INotifyPropertyChanged
             }
             else
             {
-                // Clear fields when switching to manual mode
+                // Only clear the selected search result reference
+                // Keep the populated fields so users can edit them in manual mode
                 SelectedSearchResult = null;
-                StationName = string.Empty;
-                StreamUrl = string.Empty;
             }
         }
     }
