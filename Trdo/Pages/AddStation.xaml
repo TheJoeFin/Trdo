@@ -44,69 +44,104 @@
         <!--  Content Area  -->
         <Grid Grid.Row="2">
             <!--  Search Mode  -->
-            <Grid Visibility="{x:Bind ViewModel.IsSearchMode, Mode=OneWay}" RowDefinitions="Auto,*" RowSpacing="12">
+            <Grid Visibility="{x:Bind ViewModel.IsSearchMode, Mode=OneWay}" RowDefinitions="Auto,*,Auto" RowSpacing="12">
                 <!--  Search Input  -->
                 <StackPanel Grid.Row="0" Spacing="4">
                     <TextBlock FontWeight="SemiBold" Text="Search for Radio Stations" />
-                    <TextBox
-                        x:Name="SearchTextBox"
-                        PlaceholderText="Search by station name..."
-                        Text="{x:Bind ViewModel.SearchTerm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
-                        <TextBox.Resources>
-                            <ProgressRing
-                                x:Name="SearchProgressRing"
-                                Width="20"
-                                Height="20"
-                                IsActive="{x:Bind ViewModel.IsSearching, Mode=OneWay}" />
-                        </TextBox.Resources>
-                    </TextBox>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <TextBox
+                            Grid.Column="0"
+                            x:Name="SearchTextBox"
+                            PlaceholderText="Search by station name..."
+                            Text="{x:Bind ViewModel.SearchTerm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <ProgressRing
+                            Grid.Column="1"
+                            Width="20"
+                            Height="20"
+                            IsActive="{x:Bind ViewModel.IsSearching, Mode=OneWay}" />
+                    </Grid>
                 </StackPanel>
 
                 <!--  Search Results  -->
-                <Grid Grid.Row="1">
-                    <ScrollViewer>
-                        <StackPanel Spacing="8">
-                            <TextBlock
-                                FontStyle="Italic"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="No results found"
-                                Visibility="{x:Bind ViewModel.SearchResults.Count, Mode=OneWay, Converter={StaticResource EmptyCollectionVisibilityConverter}}" />
+                <ScrollViewer Grid.Row="1">
+                    <StackPanel Spacing="8">
+                        <TextBlock
+                            FontStyle="Italic"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Text="Enter a search term to find stations..."
+                            Visibility="{x:Bind ViewModel.SearchResults.Count, Mode=OneWay, Converter={StaticResource EmptyCollectionVisibilityConverter}}" />
 
-                            <ListView
-                                ItemsSource="{x:Bind ViewModel.SearchResults, Mode=OneWay}"
-                                SelectedItem="{x:Bind ViewModel.SelectedSearchResult, Mode=TwoWay}"
-                                SelectionMode="Single"
-                                Visibility="{x:Bind ViewModel.SearchResults.Count, Mode=OneWay, Converter={StaticResource HasItemsVisibilityConverter}}">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate x:DataType="models:RadioBrowserStation">
-                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Padding="8">
-                                            <FontIcon
-                                                Grid.Column="0"
-                                                FontSize="20"
-                                                Glyph="&#xE768;" />
-                                            <StackPanel Grid.Column="1" Spacing="4">
+                        <ListView
+                            ItemsSource="{x:Bind ViewModel.SearchResults, Mode=OneWay}"
+                            SelectedItem="{x:Bind ViewModel.SelectedSearchResult, Mode=TwoWay}"
+                            SelectionMode="Single"
+                            Visibility="{x:Bind ViewModel.SearchResults.Count, Mode=OneWay, Converter={StaticResource HasItemsVisibilityConverter}}">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="models:RadioBrowserStation">
+                                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12" Padding="8">
+                                        <FontIcon
+                                            Grid.Column="0"
+                                            FontSize="20"
+                                            Glyph="&#xE768;" />
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock
+                                                FontWeight="SemiBold"
+                                                Text="{x:Bind Name}"
+                                                TextWrapping="Wrap" />
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
                                                 <TextBlock
-                                                    FontWeight="SemiBold"
-                                                    Text="{x:Bind Name}"
-                                                    TextWrapping="Wrap" />
-                                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                                    <TextBlock
-                                                        FontSize="12"
-                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                        Text="{x:Bind Country}" />
-                                                    <TextBlock
-                                                        FontSize="12"
-                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                        Text="{x:Bind Tags}" />
-                                                </StackPanel>
+                                                    FontSize="12"
+                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                    Text="{x:Bind Country}" />
+                                                <TextBlock
+                                                    FontSize="12"
+                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                    Text="{x:Bind Tags}" />
                                             </StackPanel>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
+                </ScrollViewer>
+
+                <!--  Selected Station Display (in search mode)  -->
+                <Border
+                    Grid.Row="2"
+                    Padding="12"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Visibility="{x:Bind ViewModel.SelectedSearchResult, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}">
+                    <StackPanel Spacing="8">
+                        <TextBlock FontWeight="SemiBold" Text="Selected Station" />
+                        
+                        <!--  Station Name  -->
+                        <StackPanel Spacing="2">
+                            <TextBlock 
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Station Name" />
+                            <TextBlock
+                                Text="{x:Bind ViewModel.StationName, Mode=OneWay}"
+                                TextWrapping="Wrap" />
                         </StackPanel>
-                    </ScrollViewer>
-                </Grid>
+
+                        <!--  Stream URL  -->
+                        <StackPanel Spacing="2">
+                            <TextBlock 
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Stream URL" />
+                            <TextBlock
+                                FontSize="12"
+                                Text="{x:Bind ViewModel.StreamUrl, Mode=OneWay}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
             </Grid>
 
             <!--  Manual Mode  -->
@@ -129,46 +164,6 @@
                         Text="{x:Bind ViewModel.StreamUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         TextWrapping="Wrap" />
                 </StackPanel>
-            </StackPanel>
-
-            <!--  Selected Station Display (in search mode)  -->
-            <StackPanel 
-                Visibility="{x:Bind ViewModel.SelectedSearchResult, Mode=OneWay, Converter={StaticResource NullToVisibilityConverter}}" 
-                Spacing="12">
-                <Border
-                    Padding="12"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4">
-                    <StackPanel Spacing="8">
-                        <TextBlock FontWeight="SemiBold" Text="Selected Station" />
-                        
-                        <!--  Station Name  -->
-                        <StackPanel Spacing="4">
-                            <TextBlock 
-                                FontSize="12"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Station Name" />
-                            <TextBlock
-                                FontWeight="SemiBold"
-                                Text="{x:Bind ViewModel.StationName, Mode=OneWay}"
-                                TextWrapping="Wrap" />
-                        </StackPanel>
-
-                        <!--  Stream URL  -->
-                        <StackPanel Spacing="4">
-                            <TextBlock 
-                                FontSize="12"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Stream URL" />
-                            <TextBlock
-                                FontSize="12"
-                                Text="{x:Bind ViewModel.StreamUrl, Mode=OneWay}"
-                                TextWrapping="Wrap" />
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
             </StackPanel>
         </Grid>
 
