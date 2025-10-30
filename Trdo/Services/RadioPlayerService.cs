@@ -103,7 +103,7 @@ public sealed partial class RadioPlayerService : IDisposable
                 currentState = _player.PlaybackSession.PlaybackState;
                 isPlaying = currentState == MediaPlaybackState.Playing;
                 Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, State={currentState}, IsInternalChange={_isInternalStateChange}");
-                
+
                 // If state change was not initiated internally (e.g., from hardware buttons),
                 // notify the watchdog of user intention
                 if (!_isInternalStateChange)

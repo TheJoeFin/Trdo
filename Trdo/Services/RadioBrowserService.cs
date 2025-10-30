@@ -47,7 +47,7 @@ public class RadioBrowserService
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
             {
-                return new List<RadioBrowserStation>();
+                return [];
             }
 
             string encodedSearchTerm = Uri.EscapeDataString(searchTerm);
@@ -66,7 +66,7 @@ public class RadioBrowserService
 
             Debug.WriteLine($"[RadioBrowserService] Found {stations?.Count ?? 0} stations");
 
-            return stations ?? new List<RadioBrowserStation>();
+            return stations ?? [];
         }
         catch (Exception ex)
         {
@@ -91,7 +91,7 @@ public class RadioBrowserService
         {
             if (string.IsNullOrWhiteSpace(tag))
             {
-                return new List<RadioBrowserStation>();
+                return [];
             }
 
             string encodedTag = Uri.EscapeDataString(tag);
@@ -107,7 +107,7 @@ public class RadioBrowserService
 
             Debug.WriteLine($"[RadioBrowserService] Found {stations?.Count ?? 0} stations");
 
-            return stations ?? new List<RadioBrowserStation>();
+            return stations ?? [];
         }
         catch (Exception ex)
         {
@@ -132,7 +132,7 @@ public class RadioBrowserService
         {
             if (string.IsNullOrWhiteSpace(country))
             {
-                return new List<RadioBrowserStation>();
+                return [];
             }
 
             string encodedCountry = Uri.EscapeDataString(country);
@@ -148,7 +148,7 @@ public class RadioBrowserService
 
             Debug.WriteLine($"[RadioBrowserService] Found {stations?.Count ?? 0} stations");
 
-            return stations ?? new List<RadioBrowserStation>();
+            return stations ?? [];
         }
         catch (Exception ex)
         {

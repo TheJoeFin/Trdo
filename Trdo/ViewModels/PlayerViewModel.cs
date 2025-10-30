@@ -265,7 +265,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     /// </summary>
     public void AddStation(RadioStation station)
     {
-        if (station == null) return;
+        if (station is null)
+            return;
 
         Debug.WriteLine($"[PlayerViewModel] Adding station: {station.Name} ({station.StreamUrl})");
         Stations.Add(station);

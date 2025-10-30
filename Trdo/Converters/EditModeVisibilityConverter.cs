@@ -14,8 +14,8 @@ public class EditModeVisibilityConverter : IValueConverter
     {
         if (value is string title)
         {
-            return title.Contains("Edit", StringComparison.OrdinalIgnoreCase) 
-                ? Visibility.Collapsed 
+            return title.Contains("Edit", StringComparison.OrdinalIgnoreCase)
+                ? Visibility.Collapsed
                 : Visibility.Visible;
         }
 

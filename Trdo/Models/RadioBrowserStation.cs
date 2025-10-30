@@ -55,7 +55,10 @@ public class RadioBrowserStation
     /// <summary>
     /// Gets the best available stream URL (resolved URL if available, otherwise regular URL)
     /// </summary>
-    public string GetStreamUrl() => !string.IsNullOrWhiteSpace(UrlResolved) ? UrlResolved : Url;
+    public string GetStreamUrl()
+    {
+        return !string.IsNullOrWhiteSpace(UrlResolved) ? UrlResolved : Url;
+    }
 
     /// <summary>
     /// Converts this RadioBrowserStation to a RadioStation for local storage

@@ -6,7 +6,7 @@ using Windows.System;
 
 namespace Trdo.ViewModels;
 
-public class AboutViewModel : INotifyPropertyChanged
+public partial class AboutViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
