@@ -68,7 +68,7 @@
 
         <!--  Stations List  -->
         <Grid Grid.Row="2">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="StationsScrollViewer" VerticalScrollBarVisibility="Auto">
                 <ItemsControl x:Name="StationsItemsControl" ItemsSource="{x:Bind ViewModel.Stations, Mode=OneWay}">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="models:RadioStation">

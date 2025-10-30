@@ -56,6 +56,25 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] ShellViewModel found: {_shellViewModel != null}");
 
         Debug.WriteLine("=== PlayingPage_Loaded END ===");
+
+        // scroll to selected station
+        if (ViewModel.SelectedStation is not null)
+        {
+            int index = ViewModel.Stations.IndexOf(ViewModel.SelectedStation);
+            if (index > 3)
+            {
+                StationsScrollViewer.ScrollToVerticalOffset(index * 60); // assuming each item is approx 60 pixels high
+                Debug.WriteLine($"[PlayingPage] Scrolled to selected station at index {index}");
+            }
+            else
+            {
+                Debug.WriteLine("[PlayingPage] WARNING: SelectedStation not found in Stations list");
+            }
+        }
+        else
+        {
+            Debug.WriteLine("[PlayingPage] No SelectedStation to scroll to");
+        }
     }
 
     private ShellViewModel? FindShellViewModel()
