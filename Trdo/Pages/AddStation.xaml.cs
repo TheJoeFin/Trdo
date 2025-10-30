@@ -42,6 +42,7 @@ public sealed partial class AddStation : Page
     {
         // Find the ShellViewModel from the parent page
         _shellViewModel = FindShellViewModel();
+        SearchTextBox.Focus(FocusState.Programmatic);
     }
 
     private ShellViewModel? FindShellViewModel()
@@ -72,5 +73,11 @@ public sealed partial class AddStation : Page
     {
         // Navigate back without saving
         _shellViewModel?.GoBack();
+    }
+
+    private void ManualEntryButton_Click(object sender, RoutedEventArgs e)
+    {
+        // Switch to manual entry mode
+        ViewModel.IsManualMode = true;
     }
 }

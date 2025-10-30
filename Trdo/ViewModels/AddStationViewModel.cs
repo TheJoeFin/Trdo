@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -10,7 +11,7 @@ using Trdo.Services;
 
 namespace Trdo.ViewModels;
 
-public class AddStationViewModel : INotifyPropertyChanged
+public partial class AddStationViewModel : INotifyPropertyChanged
 {
     private string _stationName = string.Empty;
     private string _streamUrl = string.Empty;
@@ -21,7 +22,7 @@ public class AddStationViewModel : INotifyPropertyChanged
     private RadioStation? _editingStation;
     private string _searchTerm = string.Empty;
     private bool _isSearching;
-    private bool _isManualMode = true;
+    private bool _isManualMode = false;
     private RadioBrowserStation? _selectedSearchResult;
     private readonly RadioBrowserService _radioBrowserService = new();
     private CancellationTokenSource? _searchCancellationTokenSource;
@@ -29,7 +30,7 @@ public class AddStationViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler<RadioStation>? StationAdded;
 
-    public ObservableCollection<RadioBrowserStation> SearchResults { get; } = new();
+    public ObservableCollection<RadioBrowserStation> SearchResults { get; } = [];
 
     public void SetPlayerViewModel(PlayerViewModel playerViewModel)
     {
@@ -55,7 +56,8 @@ public class AddStationViewModel : INotifyPropertyChanged
             _isManualMode = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsSearchMode));
-            
+            OnPropertyChanged(nameof(ShowInitialState));
+
             // Clear search results when switching to search mode
             if (!_isManualMode)
             {
@@ -74,6 +76,11 @@ public class AddStationViewModel : INotifyPropertyChanged
 
     public bool IsSearchMode => !_isManualMode;
 
+    public bool ShowInitialState => IsSearchMode &&
+                string.IsNullOrWhiteSpace(SearchTerm) &&
+                SearchResults.Count == 0 &&
+                !IsSearching;
+
     public string SearchTerm
     {
         get => _searchTerm;
@@ -82,7 +89,8 @@ public class AddStationViewModel : INotifyPropertyChanged
             if (value == _searchTerm) return;
             _searchTerm = value;
             OnPropertyChanged();
-            
+            OnPropertyChanged(nameof(ShowInitialState));
+
             // Trigger search after a short delay
             _ = PerformSearchAsync();
         }
@@ -96,6 +104,7 @@ public class AddStationViewModel : INotifyPropertyChanged
             if (value == _isSearching) return;
             _isSearching = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowInitialState));
         }
     }
 
@@ -143,17 +152,18 @@ public class AddStationViewModel : INotifyPropertyChanged
 
         try
         {
-            var results = await _radioBrowserService.SearchByNameAsync(
+            List<RadioBrowserStation> results = await _radioBrowserService.SearchByNameAsync(
                 SearchTerm,
                 limit: 50,
                 cancellationToken: _searchCancellationTokenSource.Token);
 
             SearchResults.Clear();
-            foreach (var station in results)
+            foreach (RadioBrowserStation station in results)
             {
                 SearchResults.Add(station);
             }
 
+            OnPropertyChanged(nameof(ShowInitialState));
             Debug.WriteLine($"[AddStationViewModel] Search completed. Found {SearchResults.Count} stations");
         }
         catch (TaskCanceledException)
@@ -299,10 +309,7 @@ public class AddStationViewModel : INotifyPropertyChanged
             };
 
             // Add to PlayerViewModel if available
-            if (_playerViewModel != null)
-            {
-                _playerViewModel.AddStation(newStation);
-            }
+            _playerViewModel?.AddStation(newStation);
 
             // Raise event for listeners
             StationAdded?.Invoke(this, newStation);
