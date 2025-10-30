@@ -113,7 +113,6 @@
     <GenerateTemporaryStoreCertificate>True</GenerateTemporaryStoreCertificate>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
     <AppxBundlePlatforms>x64|arm64</AppxBundlePlatforms>
-    <PackageCertificateThumbprint>
-</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint />
   </PropertyGroup>
 </Project>
