@@ -75,7 +75,7 @@ foreach ($folderName in $folderNames) {
 
 $currentPath = (Get-Location).Path
 $trimmedMsixesFolder = $msixesFolder.TrimStart(".\\")
-$locationOfMakeAppx = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\makeappx.exe"
+$locationOfMakeAppx = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\makeappx.exe"
 $locationOfMsixes = "${currentPath}\${trimmedMsixesFolder}"
 $bundleName = "${currentPath}\${trimmedMsixesFolder}\Trdo_${largestVersion}.msixbundle"
 
