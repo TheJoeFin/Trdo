@@ -14,21 +14,35 @@ namespace Trdo.Services;
 /// </summary>
 public class RadioBrowserService
 {
-    private static readonly HttpClient _httpClient = new()
-    {
-        BaseAddress = new Uri("https://de1.api.radio-browser.info/"),
-        Timeout = TimeSpan.FromSeconds(10)
-    };
+    private static readonly HttpClient _httpClient = CreateHttpClient();
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true
     };
 
-    static RadioBrowserService()
+    private static HttpClient CreateHttpClient()
     {
+        // Use SocketsHttpHandler to avoid DNS resolution issues in packaged apps
+        // The WinINet-based handler can fail with error 8007277C in app containers
+        var handler = new SocketsHttpHandler
+        {
+            // Disable proxy to ensure direct connection works in packaged apps
+            UseProxy = false,
+            // Enable automatic decompression for better performance
+            AutomaticDecompression = System.Net.DecompressionMethods.All
+        };
+
+        var client = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://de1.api.radio-browser.info/"),
+            Timeout = TimeSpan.FromSeconds(10)
+        };
+
         // Set a user agent as recommended by Radio Browser API
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "Trdo/1.0");
+        client.DefaultRequestHeaders.Add("User-Agent", "Trdo/1.0");
+
+        return client;
     }
 
     /// <summary>
