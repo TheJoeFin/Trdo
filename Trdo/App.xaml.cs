@@ -59,6 +59,7 @@ public partial class App : Application
 
         InitializeTrayIcon();
         await UpdateTrayIconAsync();
+        UpdatePlayPauseCommandText();
         StartTrayIconWatchdog();
     }
 
@@ -69,6 +70,10 @@ public partial class App : Application
             UpdatePlayPauseCommandText();
             // Update tray icon to reflect play/pause state
             _ = UpdateTrayIconAsync();
+        }
+        else if (e.PropertyName == nameof(PlayerViewModel.CanPlay))
+        {
+            UpdatePlayPauseCommandText();
         }
     }
 
@@ -186,7 +191,11 @@ public partial class App : Application
         if (_trayIcon is null)
             return;
 
-        if (_playerVm.IsPlaying)
+        if (!_playerVm.CanPlay)
+        {
+            _trayIcon.Tooltip = "Trdo - Add a station to start listening";
+        }
+        else if (_playerVm.IsPlaying)
         {
             _trayIcon.Tooltip = "Trdo (Playing) - Click to Pause";
         }
