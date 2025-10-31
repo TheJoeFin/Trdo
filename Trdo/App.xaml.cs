@@ -94,6 +94,26 @@ public partial class App : Application
 
     private void TrayIcon_ContextMenu(TrayIcon sender, TrayIconEventArgs args)
     {
+        args.Flyout = CreateFlyout();
+    }
+
+    private void TrayIcon_Selected(TrayIcon sender, TrayIconEventArgs args)
+    {
+        // Check if we can play (have stations available)
+        if (!_playerVm.CanPlay)
+        {
+            // No stations available, show the flyout to encourage user to add a station
+            args.Flyout = CreateFlyout();
+            return;
+        }
+
+        // We have stations, toggle play/pause
+        _playerVm.Toggle();
+        _ = UpdateTrayIconAsync();
+    }
+
+    private Flyout CreateFlyout()
+    {
         Flyout flyout = new()
         {
             Content = _shellPage
@@ -105,33 +125,7 @@ public partial class App : Application
                 f.Content = null;
         };
 
-        args.Flyout = flyout;
-    }
-
-    private void TrayIcon_Selected(TrayIcon sender, TrayIconEventArgs args)
-    {
-        // Check if we can play (have stations available)
-        if (!_playerVm.CanPlay)
-        {
-            // No stations available, show the flyout to encourage user to add a station
-            Flyout flyout = new()
-            {
-                Content = _shellPage
-            };
-
-            flyout.Closing += (s, e) =>
-            {
-                if (s is Flyout f)
-                    f.Content = null;
-            };
-
-            args.Flyout = flyout;
-            return;
-        }
-
-        // We have stations, toggle play/pause
-        _playerVm.Toggle();
-        _ = UpdateTrayIconAsync();
+        return flyout;
     }
 
     private async Task UpdateTrayIconAsync()
