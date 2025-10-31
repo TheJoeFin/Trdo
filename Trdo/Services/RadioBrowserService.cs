@@ -16,16 +16,18 @@ public class RadioBrowserService
 {
     private static readonly HttpClient _httpClient = CreateHttpClient();
 
+    // Use source-generated JSON context to ensure trimming compatibility
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        TypeInfoResolver = RadioBrowserJsonContext.Default
     };
 
     private static HttpClient CreateHttpClient()
     {
         // Use SocketsHttpHandler to avoid DNS resolution issues in packaged apps
         // The WinINet-based handler can fail with error 8007277C in app containers
-        var handler = new SocketsHttpHandler
+        SocketsHttpHandler handler = new()
         {
             // Disable proxy to ensure direct connection works in packaged apps
             UseProxy = false,
@@ -33,7 +35,7 @@ public class RadioBrowserService
             AutomaticDecompression = System.Net.DecompressionMethods.All
         };
 
-        var client = new HttpClient(handler)
+        HttpClient client = new(handler)
         {
             BaseAddress = new Uri("https://de1.api.radio-browser.info/"),
             Timeout = TimeSpan.FromSeconds(10)
@@ -85,6 +87,7 @@ public class RadioBrowserService
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioBrowserService] Error searching stations: {ex.Message}");
+            Debug.WriteLine($"[RadioBrowserService] Stack trace: {ex.StackTrace}");
             throw;
         }
     }
@@ -126,6 +129,7 @@ public class RadioBrowserService
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioBrowserService] Error searching by tag: {ex.Message}");
+            Debug.WriteLine($"[RadioBrowserService] Stack trace: {ex.StackTrace}");
             throw;
         }
     }
@@ -167,6 +171,7 @@ public class RadioBrowserService
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioBrowserService] Error searching by country: {ex.Message}");
+            Debug.WriteLine($"[RadioBrowserService] Stack trace: {ex.StackTrace}");
             throw;
         }
     }
