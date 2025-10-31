@@ -15,6 +15,12 @@ public class RadioStationService
     private static readonly Lazy<RadioStationService> _instance = new(() => new RadioStationService());
     public static RadioStationService Instance => _instance.Value;
 
+    // Use source-generated JSON context to ensure trimming compatibility
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        TypeInfoResolver = RadioStationJsonContext.Default
+    };
+
     private RadioStationService()
     {
     }
@@ -27,7 +33,7 @@ public class RadioStationService
         try
         {
             List<RadioStation> stationList = stations.ToList();
-            string json = JsonSerializer.Serialize(stationList);
+            string json = JsonSerializer.Serialize(stationList, _jsonOptions);
             ApplicationData.Current.LocalSettings.Values[StationsKey] = json;
         }
         catch (Exception ex)
@@ -47,7 +53,7 @@ public class RadioStationService
             if (ApplicationData.Current.LocalSettings.Values.TryGetValue(StationsKey, out object? value) &&
                 value is string json)
             {
-                List<RadioStation>? stations = JsonSerializer.Deserialize<List<RadioStation>>(json);
+                List<RadioStation>? stations = JsonSerializer.Deserialize<List<RadioStation>>(json, _jsonOptions);
                 if (stations != null && stations.Count > 0)
                 {
                     return stations;

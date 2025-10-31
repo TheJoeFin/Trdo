@@ -14,21 +14,37 @@ namespace Trdo.Services;
 /// </summary>
 public class RadioBrowserService
 {
-    private static readonly HttpClient _httpClient = new()
-    {
-        BaseAddress = new Uri("https://de1.api.radio-browser.info/"),
-        Timeout = TimeSpan.FromSeconds(10)
-    };
+    private static readonly HttpClient _httpClient = CreateHttpClient();
 
+    // Use source-generated JSON context to ensure trimming compatibility
     private static readonly JsonSerializerOptions _jsonOptions = new()
     {
-        PropertyNameCaseInsensitive = true
+        PropertyNameCaseInsensitive = true,
+        TypeInfoResolver = RadioBrowserJsonContext.Default
     };
 
-    static RadioBrowserService()
+    private static HttpClient CreateHttpClient()
     {
+        // Use SocketsHttpHandler to avoid DNS resolution issues in packaged apps
+        // The WinINet-based handler can fail with error 8007277C in app containers
+        SocketsHttpHandler handler = new()
+        {
+            // Disable proxy to ensure direct connection works in packaged apps
+            UseProxy = false,
+            // Enable automatic decompression for better performance
+            AutomaticDecompression = System.Net.DecompressionMethods.All
+        };
+
+        HttpClient client = new(handler)
+        {
+            BaseAddress = new Uri("https://de1.api.radio-browser.info/"),
+            Timeout = TimeSpan.FromSeconds(10)
+        };
+
         // Set a user agent as recommended by Radio Browser API
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "Trdo/1.0");
+        client.DefaultRequestHeaders.Add("User-Agent", "Trdo/1.0");
+
+        return client;
     }
 
     /// <summary>
@@ -71,6 +87,7 @@ public class RadioBrowserService
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioBrowserService] Error searching stations: {ex.Message}");
+            Debug.WriteLine($"[RadioBrowserService] Stack trace: {ex.StackTrace}");
             throw;
         }
     }
@@ -112,6 +129,7 @@ public class RadioBrowserService
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioBrowserService] Error searching by tag: {ex.Message}");
+            Debug.WriteLine($"[RadioBrowserService] Stack trace: {ex.StackTrace}");
             throw;
         }
     }
@@ -153,6 +171,7 @@ public class RadioBrowserService
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioBrowserService] Error searching by country: {ex.Message}");
+            Debug.WriteLine($"[RadioBrowserService] Stack trace: {ex.StackTrace}");
             throw;
         }
     }
