@@ -105,6 +105,26 @@ public partial class App : Application
 
     private void TrayIcon_Selected(TrayIcon sender, TrayIconEventArgs args)
     {
+        // Check if we can play (have stations available)
+        if (!_playerVm.CanPlay)
+        {
+            // No stations available, show the flyout to encourage user to add a station
+            Flyout flyout = new()
+            {
+                Content = _shellPage
+            };
+
+            flyout.Closing += (s, e) =>
+            {
+                if (s is Flyout f)
+                    f.Content = null;
+            };
+
+            args.Flyout = flyout;
+            return;
+        }
+
+        // We have stations, toggle play/pause
         _playerVm.Toggle();
         _ = UpdateTrayIconAsync();
     }
