@@ -334,14 +334,6 @@ public sealed partial class PlayingPage : Page
         ViewModel.SaveStations();
         
         // Update the selected station index since the order might have changed
-        if (ViewModel.SelectedStation != null)
-        {
-            int newIndex = ViewModel.Stations.IndexOf(ViewModel.SelectedStation);
-            if (newIndex >= 0)
-            {
-                Debug.WriteLine($"[PlayingPage] Updating selected station index to {newIndex} after reorder");
-                ViewModel.UpdateSelectedStationIndex();
-            }
-        }
+        ViewModel.UpdateSelectedStationIndex();
     }
 }
