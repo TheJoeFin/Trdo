@@ -19,7 +19,7 @@ namespace Trdo;
 public partial class App : Application
 {
     private TrayIcon? _trayIcon;
-    private readonly PlayerViewModel _playerVm = new();
+    private readonly PlayerViewModel _playerVm = PlayerViewModel.Shared;
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
     private DispatcherQueueTimer? _trayIconWatchdogTimer;
@@ -59,6 +59,7 @@ public partial class App : Application
 
         InitializeTrayIcon();
         await UpdateTrayIconAsync();
+        UpdatePlayPauseCommandText();
         StartTrayIconWatchdog();
     }
 
@@ -69,6 +70,10 @@ public partial class App : Application
             UpdatePlayPauseCommandText();
             // Update tray icon to reflect play/pause state
             _ = UpdateTrayIconAsync();
+        }
+        else if (e.PropertyName == nameof(PlayerViewModel.CanPlay))
+        {
+            UpdatePlayPauseCommandText();
         }
     }
 
@@ -89,6 +94,26 @@ public partial class App : Application
 
     private void TrayIcon_ContextMenu(TrayIcon sender, TrayIconEventArgs args)
     {
+        args.Flyout = CreateFlyout();
+    }
+
+    private void TrayIcon_Selected(TrayIcon sender, TrayIconEventArgs args)
+    {
+        // Check if we can play (have stations available and one selected)
+        if (!_playerVm.CanPlay)
+        {
+            // No stations available, show the flyout to encourage user to add a station
+            args.Flyout = CreateFlyout();
+            return;
+        }
+
+        // We have stations, toggle play/pause
+        _playerVm.Toggle();
+        _ = UpdateTrayIconAsync();
+    }
+
+    private Flyout CreateFlyout()
+    {
         Flyout flyout = new()
         {
             Content = _shellPage
@@ -100,13 +125,7 @@ public partial class App : Application
                 f.Content = null;
         };
 
-        args.Flyout = flyout;
-    }
-
-    private void TrayIcon_Selected(TrayIcon sender, TrayIconEventArgs args)
-    {
-        _playerVm.Toggle();
-        _ = UpdateTrayIconAsync();
+        return flyout;
     }
 
     private async Task UpdateTrayIconAsync()
@@ -166,7 +185,11 @@ public partial class App : Application
         if (_trayIcon is null)
             return;
 
-        if (_playerVm.IsPlaying)
+        if (!_playerVm.CanPlay)
+        {
+            _trayIcon.Tooltip = "Trdo - Add a station to start listening";
+        }
+        else if (_playerVm.IsPlaying)
         {
             _trayIcon.Tooltip = "Trdo (Playing) - Click to Pause";
         }

@@ -51,6 +51,13 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         List<RadioStation> loadedStations = _stationService.LoadStations();
         Debug.WriteLine($"[PlayerViewModel] Loaded {loadedStations.Count} stations");
         Stations = new ObservableCollection<RadioStation>(loadedStations);
+        
+        // Subscribe to collection changes to update CanPlay
+        // We notify on all changes since CanPlay depends on Stations.Count > 0
+        Stations.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(CanPlay));
+        };
 
         // Load the previously selected station
         int selectedIndex = _stationService.LoadSelectedStationIndex();
@@ -108,6 +115,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
             _selectedStation = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(CanPlay));
 
             if (_selectedStation != null)
             {
@@ -224,6 +232,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
     public string? LastError => _lastError;
 
+    public bool CanPlay => Stations.Count > 0 && SelectedStation != null;
+
     public double Volume
     {
         get => _player.Volume;
@@ -310,6 +320,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 }
                 _selectedStation = null;
                 OnPropertyChanged(nameof(SelectedStation));
+                OnPropertyChanged(nameof(CanPlay));
             }
         }
 
