@@ -74,29 +74,21 @@
                 CanDragItems="True"
                 CanReorderItems="True"
                 DragItemsCompleted="StationsListView_DragItemsCompleted"
+                IsItemClickEnabled="True"
+                ItemClick="StationsListView_ItemClick"
                 ItemsSource="{x:Bind ViewModel.Stations, Mode=OneWay}"
                 SelectionMode="None">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Padding" Value="16,12" />
                         <Setter Property="Margin" Value="0,0,0,8" />
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:RadioStation">
-                        <Button
-                            x:Name="StationButton"
-                            Padding="16,12"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Left"
-                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                            BorderThickness="1"
-                            Click="StationButton_Click"
-                            CornerRadius="4"
-                            Tag="{x:Bind}">
-                            <Button.ContextFlyout>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <Grid.ContextFlyout>
                                 <MenuFlyout>
                                     <MenuFlyoutItem
                                         Click="EditStation_Click"
@@ -115,25 +107,24 @@
                                         </MenuFlyoutItem.Icon>
                                     </MenuFlyoutItem>
                                 </MenuFlyout>
-                            </Button.ContextFlyout>
-                            <Grid ColumnDefinitions="Auto,*">
-                                <!--  Selection indicator  -->
-                                <Border
-                                    x:Name="SelectionIndicator"
-                                    Grid.Column="0"
-                                    Width="4"
-                                    Margin="-16,-12,12,-12"
-                                    Background="{ThemeResource AccentFillColorDefaultBrush}"
-                                    CornerRadius="2,0,0,2"
-                                    Visibility="Collapsed" />
+                            </Grid.ContextFlyout>
+                            
+                            <!--  Selection indicator  -->
+                            <Border
+                                x:Name="SelectionIndicator"
+                                Grid.Column="0"
+                                Width="4"
+                                Margin="-16,-12,12,-12"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                CornerRadius="2,0,0,2"
+                                Visibility="Collapsed" />
 
-                                <TextBlock
-                                    Grid.Column="1"
-                                    FontSize="12"
-                                    Text="{x:Bind Name}"
-                                    TextWrapping="NoWrap" />
-                            </Grid>
-                        </Button>
+                            <TextBlock
+                                Grid.Column="1"
+                                FontSize="12"
+                                Text="{x:Bind Name}"
+                                TextWrapping="NoWrap" />
+                        </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>

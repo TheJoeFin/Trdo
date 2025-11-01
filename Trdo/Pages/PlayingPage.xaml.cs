@@ -163,7 +163,7 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine("[PlayingPage] UpdateStationSelection called");
         Debug.WriteLine($"[PlayingPage] Selected station: {ViewModel.SelectedStation?.Name ?? "null"}");
 
-        // Find all station buttons and update their selection state
+        // Find all station items and update their selection state
         if (StationsListView == null)
         {
             Debug.WriteLine("[PlayingPage] WARNING: StationsListView is null");
@@ -172,21 +172,19 @@ public sealed partial class PlayingPage : Page
 
         for (int i = 0; i < ViewModel.Stations.Count; i++)
         {
-            FrameworkElement? container = StationsListView.ContainerFromIndex(i) as FrameworkElement;
+            ListViewItem? container = StationsListView.ContainerFromIndex(i) as ListViewItem;
             if (container == null)
             {
                 continue;
             }
-            Button? button = FindDescendant<Button>(container);
-            if (button != null && button.Tag is RadioStation station)
+            
+            RadioStation station = ViewModel.Stations[i];
+            Border? indicator = FindDescendant<Border>(container, "SelectionIndicator");
+            if (indicator != null)
             {
-                Border? indicator = FindDescendant<Border>(button, "SelectionIndicator");
-                if (indicator != null)
-                {
-                    bool isSelected = station == ViewModel.SelectedStation;
-                    indicator.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
-                    Debug.WriteLine($"[PlayingPage] Station '{station.Name}' selection indicator: {(isSelected ? "Visible" : "Collapsed")}");
-                }
+                bool isSelected = station == ViewModel.SelectedStation;
+                indicator.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
+                Debug.WriteLine($"[PlayingPage] Station '{station.Name}' selection indicator: {(isSelected ? "Visible" : "Collapsed")}");
             }
         }
     }
@@ -215,13 +213,13 @@ public sealed partial class PlayingPage : Page
         return null;
     }
 
-    private void StationButton_Click(object sender, RoutedEventArgs e)
+    private void StationsListView_ItemClick(object sender, ItemClickEventArgs e)
     {
-        Debug.WriteLine("=== StationButton_Click START ===");
+        Debug.WriteLine("=== StationsListView_ItemClick START ===");
 
-        if (sender is Button button && button.Tag is RadioStation station)
+        if (e.ClickedItem is RadioStation station)
         {
-            Debug.WriteLine($"[PlayingPage] Station button clicked: {station.Name}");
+            Debug.WriteLine($"[PlayingPage] Station clicked: {station.Name}");
             Debug.WriteLine($"[PlayingPage] Station URL: {station.StreamUrl}");
             Debug.WriteLine($"[PlayingPage] Current selected station before change: {ViewModel.SelectedStation?.Name ?? "null"}");
 
@@ -231,10 +229,10 @@ public sealed partial class PlayingPage : Page
         }
         else
         {
-            Debug.WriteLine($"[PlayingPage] WARNING: StationButton_Click - Invalid sender or Tag (sender type: {sender?.GetType().Name}, Tag type: {(sender as Button)?.Tag?.GetType().Name})");
+            Debug.WriteLine($"[PlayingPage] WARNING: StationsListView_ItemClick - Invalid item type: {e.ClickedItem?.GetType().Name}");
         }
 
-        Debug.WriteLine("=== StationButton_Click END ===");
+        Debug.WriteLine("=== StationsListView_ItemClick END ===");
     }
 
     private void VolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
