@@ -99,7 +99,7 @@ public partial class App : Application
 
     private void TrayIcon_Selected(TrayIcon sender, TrayIconEventArgs args)
     {
-        // Check if we can play (have stations available)
+        // Check if we can play (have stations available and one selected)
         if (!_playerVm.CanPlay)
         {
             // No stations available, show the flyout to encourage user to add a station

@@ -53,6 +53,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         Stations = new ObservableCollection<RadioStation>(loadedStations);
         
         // Subscribe to collection changes to update CanPlay
+        // We notify on all changes since CanPlay depends on Stations.Count > 0
         Stations.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(CanPlay));
