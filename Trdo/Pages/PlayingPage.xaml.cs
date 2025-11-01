@@ -334,4 +334,10 @@ public sealed partial class PlayingPage : Page
         // Update the selected station index since the order might have changed
         ViewModel.UpdateSelectedStationIndex();
     }
+
+    private void StationsListView_DragOver(object sender, DragEventArgs e)
+    {
+        // Accept the drag operation to allow reordering
+        e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
+    }
 }

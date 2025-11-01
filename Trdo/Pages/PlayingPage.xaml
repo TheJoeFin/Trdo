@@ -74,9 +74,10 @@
                 CanDragItems="True"
                 CanReorderItems="True"
                 DragItemsCompleted="StationsListView_DragItemsCompleted"
+                DragOver="StationsListView_DragOver"
                 IsItemClickEnabled="True"
                 ItemClick="StationsListView_ItemClick"
-                ItemsSource="{x:Bind ViewModel.Stations, Mode=OneWay}"
+                ItemsSource="{x:Bind ViewModel.Stations}"
                 SelectionMode="None">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
