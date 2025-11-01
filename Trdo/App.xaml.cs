@@ -19,7 +19,7 @@ namespace Trdo;
 public partial class App : Application
 {
     private TrayIcon? _trayIcon;
-    private readonly PlayerViewModel _playerVm = new();
+    private readonly PlayerViewModel _playerVm = PlayerViewModel.Shared;
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
     private DispatcherQueueTimer? _trayIconWatchdogTimer;
