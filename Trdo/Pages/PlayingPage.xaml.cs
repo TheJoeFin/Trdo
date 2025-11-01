@@ -61,12 +61,12 @@ public sealed partial class PlayingPage : Page
         if (ViewModel.SelectedStation is not null)
         {
             int index = ViewModel.Stations.IndexOf(ViewModel.SelectedStation);
-            if (index > 3)
+            if (index >= 0 && index > 3)
             {
-                StationsScrollViewer.ScrollToVerticalOffset(index * 60); // assuming each item is approx 60 pixels high
+                StationsListView.ScrollIntoView(ViewModel.SelectedStation);
                 Debug.WriteLine($"[PlayingPage] Scrolled to selected station at index {index}");
             }
-            else
+            else if (index < 0)
             {
                 Debug.WriteLine("[PlayingPage] WARNING: SelectedStation not found in Stations list");
             }
@@ -164,15 +164,15 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] Selected station: {ViewModel.SelectedStation?.Name ?? "null"}");
 
         // Find all station buttons and update their selection state
-        if (StationsItemsControl == null)
+        if (StationsListView == null)
         {
-            Debug.WriteLine("[PlayingPage] WARNING: StationsItemsControl is null");
+            Debug.WriteLine("[PlayingPage] WARNING: StationsListView is null");
             return;
         }
 
         for (int i = 0; i < ViewModel.Stations.Count; i++)
         {
-            FrameworkElement? container = StationsItemsControl.ContainerFromIndex(i) as FrameworkElement;
+            FrameworkElement? container = StationsListView.ContainerFromIndex(i) as FrameworkElement;
             if (container == null)
             {
                 continue;
@@ -324,6 +324,24 @@ public sealed partial class PlayingPage : Page
             Debug.WriteLine($"[PlayingPage] Remove station clicked: {station.Name}");
             // Remove the station immediately - no dialog since it's in a flyout
             ViewModel.RemoveStation(station);
+        }
+    }
+
+    private void StationsListView_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    {
+        Debug.WriteLine("[PlayingPage] DragItemsCompleted - Station order changed");
+        // Save the new order to persistent storage
+        ViewModel.SaveStations();
+        
+        // Update the selected station index since the order might have changed
+        if (ViewModel.SelectedStation != null)
+        {
+            int newIndex = ViewModel.Stations.IndexOf(ViewModel.SelectedStation);
+            if (newIndex >= 0)
+            {
+                Debug.WriteLine($"[PlayingPage] Updating selected station index to {newIndex} after reorder");
+                ViewModel.UpdateSelectedStationIndex();
+            }
         }
     }
 }
