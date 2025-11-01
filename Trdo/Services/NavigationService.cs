@@ -7,7 +7,14 @@ namespace Trdo.Services;
 
 public class NavigationService : INotifyPropertyChanged
 {
+    private static readonly Lazy<NavigationService> _instance = new(() => new NavigationService());
     private Frame? _frame;
+
+    public static NavigationService Instance => _instance.Value;
+
+    private NavigationService()
+    {
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler? NavigationChanged;
@@ -47,6 +54,10 @@ public class NavigationService : INotifyPropertyChanged
     public bool Navigate(Type pageType, object? parameter = null)
     {
         if (_frame == null) return false;
+        // Don't navigate if we're already on the same page and no parameter is passed
+        if (_frame.Content?.GetType() == pageType && parameter == null)
+            return false;
+
         return _frame.Navigate(pageType, parameter);
     }
 
@@ -56,6 +67,14 @@ public class NavigationService : INotifyPropertyChanged
         {
             _frame.GoBack();
         }
+    }
+
+    public void ClearBackStack()
+    {
+        if (_frame == null) return;
+
+        _frame.BackStack.Clear();
+        OnPropertyChanged(nameof(CanGoBack));
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

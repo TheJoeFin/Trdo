@@ -6,7 +6,7 @@ using Trdo.Services;
 
 namespace Trdo.ViewModels;
 
-public class ShellViewModel : INotifyPropertyChanged
+public partial class ShellViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -14,14 +14,14 @@ public class ShellViewModel : INotifyPropertyChanged
 
     public ShellViewModel()
     {
-        _navigationService = new NavigationService();
+        _navigationService = NavigationService.Instance;
         _navigationService.PropertyChanged += (s, e) =>
-        {
-            if (e.PropertyName == nameof(NavigationService.CanGoBack))
-            {
-                OnPropertyChanged(nameof(CanGoBack));
-            }
-        };
+              {
+                  if (e.PropertyName == nameof(NavigationService.CanGoBack))
+                  {
+                      OnPropertyChanged(nameof(CanGoBack));
+                  }
+              };
     }
 
     public NavigationService NavigationService => _navigationService;

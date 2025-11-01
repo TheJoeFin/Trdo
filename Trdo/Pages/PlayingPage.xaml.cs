@@ -16,6 +16,8 @@ namespace Trdo.Pages;
 /// </summary>
 public sealed partial class PlayingPage : Page
 {
+    private const int MinIndexForScrolling = 3;
+    
     public PlayerViewModel ViewModel { get; }
     private ShellViewModel? _shellViewModel;
 
@@ -61,12 +63,12 @@ public sealed partial class PlayingPage : Page
         if (ViewModel.SelectedStation is not null)
         {
             int index = ViewModel.Stations.IndexOf(ViewModel.SelectedStation);
-            if (index > 3)
+            if (index is >= 0 and > MinIndexForScrolling)
             {
-                StationsScrollViewer.ScrollToVerticalOffset(index * 60); // assuming each item is approx 60 pixels high
+                StationsListView.ScrollIntoView(ViewModel.SelectedStation);
                 Debug.WriteLine($"[PlayingPage] Scrolled to selected station at index {index}");
             }
-            else
+            else if (index < 0)
             {
                 Debug.WriteLine("[PlayingPage] WARNING: SelectedStation not found in Stations list");
             }
@@ -163,30 +165,28 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine("[PlayingPage] UpdateStationSelection called");
         Debug.WriteLine($"[PlayingPage] Selected station: {ViewModel.SelectedStation?.Name ?? "null"}");
 
-        // Find all station buttons and update their selection state
-        if (StationsItemsControl == null)
+        // Find all station items and update their selection state
+        if (StationsListView == null)
         {
-            Debug.WriteLine("[PlayingPage] WARNING: StationsItemsControl is null");
+            Debug.WriteLine("[PlayingPage] WARNING: StationsListView is null");
             return;
         }
 
         for (int i = 0; i < ViewModel.Stations.Count; i++)
         {
-            FrameworkElement? container = StationsItemsControl.ContainerFromIndex(i) as FrameworkElement;
+            ListViewItem? container = StationsListView.ContainerFromIndex(i) as ListViewItem;
             if (container == null)
             {
                 continue;
             }
-            Button? button = FindDescendant<Button>(container);
-            if (button != null && button.Tag is RadioStation station)
+
+            RadioStation station = ViewModel.Stations[i];
+            Border? indicator = FindDescendant<Border>(container, "SelectionIndicator");
+            if (indicator != null)
             {
-                Border? indicator = FindDescendant<Border>(button, "SelectionIndicator");
-                if (indicator != null)
-                {
-                    bool isSelected = station == ViewModel.SelectedStation;
-                    indicator.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
-                    Debug.WriteLine($"[PlayingPage] Station '{station.Name}' selection indicator: {(isSelected ? "Visible" : "Collapsed")}");
-                }
+                bool isSelected = station == ViewModel.SelectedStation;
+                indicator.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
+                Debug.WriteLine($"[PlayingPage] Station '{station.Name}' selection indicator: {(isSelected ? "Visible" : "Collapsed")}");
             }
         }
     }
@@ -213,28 +213,6 @@ public sealed partial class PlayingPage : Page
             }
         }
         return null;
-    }
-
-    private void StationButton_Click(object sender, RoutedEventArgs e)
-    {
-        Debug.WriteLine("=== StationButton_Click START ===");
-
-        if (sender is Button button && button.Tag is RadioStation station)
-        {
-            Debug.WriteLine($"[PlayingPage] Station button clicked: {station.Name}");
-            Debug.WriteLine($"[PlayingPage] Station URL: {station.StreamUrl}");
-            Debug.WriteLine($"[PlayingPage] Current selected station before change: {ViewModel.SelectedStation?.Name ?? "null"}");
-
-            ViewModel.SelectedStation = station;
-
-            Debug.WriteLine($"[PlayingPage] Current selected station after change: {ViewModel.SelectedStation?.Name ?? "null"}");
-        }
-        else
-        {
-            Debug.WriteLine($"[PlayingPage] WARNING: StationButton_Click - Invalid sender or Tag (sender type: {sender?.GetType().Name}, Tag type: {(sender as Button)?.Tag?.GetType().Name})");
-        }
-
-        Debug.WriteLine("=== StationButton_Click END ===");
     }
 
     private void VolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -325,5 +303,37 @@ public sealed partial class PlayingPage : Page
             // Remove the station immediately - no dialog since it's in a flyout
             ViewModel.RemoveStation(station);
         }
+    }
+
+    private void StationsListView_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
+    {
+        Debug.WriteLine("[PlayingPage] DragItemsCompleted - Station order changed");
+        // Save the new order to persistent storage
+        ViewModel.SaveStations();
+
+        // Update the selected station index since the order might have changed
+        ViewModel.UpdateSelectedStationIndex();
+    }
+
+    private void StationsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        Debug.WriteLine("=== StationsListView_SelectionChanged START ===");
+
+        if (sender is ListView stations && stations.SelectedItem is RadioStation station)
+        {
+            Debug.WriteLine($"[PlayingPage] Station clicked: {station.Name}");
+            Debug.WriteLine($"[PlayingPage] Station URL: {station.StreamUrl}");
+            Debug.WriteLine($"[PlayingPage] Current selected station before change: {ViewModel.SelectedStation?.Name ?? "null"}");
+
+            ViewModel.SelectedStation = station;
+
+            Debug.WriteLine($"[PlayingPage] Current selected station after change: {ViewModel.SelectedStation?.Name ?? "null"}");
+        }
+        else
+        {
+            Debug.WriteLine($"[PlayingPage] WARNING: StationsListView_SelectionChanged - Invalid item type: {sender?.GetType().Name}");
+        }
+
+        Debug.WriteLine("=== StationsListView_SelectionChanged END ===");
     }
 }

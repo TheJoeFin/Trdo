@@ -369,6 +369,22 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// Update the saved index of the currently selected station (used after reordering)
+    /// </summary>
+    public void UpdateSelectedStationIndex()
+    {
+        if (_selectedStation != null)
+        {
+            int index = Stations.IndexOf(_selectedStation);
+            if (index >= 0)
+            {
+                Debug.WriteLine($"[PlayerViewModel] Updating selected station index to {index}");
+                _stationService.SaveSelectedStationIndex(index);
+            }
+        }
+    }
+
     private void InitializeStream(string streamUrl)
     {
         Debug.WriteLine($"[PlayerViewModel] InitializeStream called with URL: {streamUrl}");
