@@ -74,11 +74,9 @@
                 CanDragItems="True"
                 CanReorderItems="True"
                 DragItemsCompleted="StationsListView_DragItemsCompleted"
-                DragOver="StationsListView_DragOver"
-                IsItemClickEnabled="True"
-                ItemClick="StationsListView_ItemClick"
-                ItemsSource="{x:Bind ViewModel.Stations}"
-                SelectionMode="None">
+                ItemsSource="{x:Bind ViewModel.Stations, Mode=OneWay}"
+                SelectionChanged="StationsListView_SelectionChanged"
+                SelectionMode="Single">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -109,7 +107,7 @@
                                     </MenuFlyoutItem>
                                 </MenuFlyout>
                             </Grid.ContextFlyout>
-                            
+
                             <!--  Selection indicator  -->
                             <Border
                                 x:Name="SelectionIndicator"

@@ -1,6 +1,7 @@
 ﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.ComponentModel;
 using System.Threading;
@@ -116,13 +117,20 @@ public partial class App : Application
     {
         Flyout flyout = new()
         {
-            Content = _shellPage
+            Content = _shellPage,
+            AllowFocusOnInteraction = false
         };
 
         flyout.Closing += (s, e) =>
         {
             if (s is Flyout f)
                 f.Content = null;
+        };
+
+        flyout.Opened += (s, e) =>
+        {
+            // Clear the back stack when flyout opens to prevent accumulation
+            Services.NavigationService.Instance.ClearBackStack();
         };
 
         return flyout;

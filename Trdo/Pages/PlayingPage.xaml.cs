@@ -61,7 +61,7 @@ public sealed partial class PlayingPage : Page
         if (ViewModel.SelectedStation is not null)
         {
             int index = ViewModel.Stations.IndexOf(ViewModel.SelectedStation);
-            if (index >= 0 && index > 3)
+            if (index is >= 0 and > 3)
             {
                 StationsListView.ScrollIntoView(ViewModel.SelectedStation);
                 Debug.WriteLine($"[PlayingPage] Scrolled to selected station at index {index}");
@@ -177,7 +177,7 @@ public sealed partial class PlayingPage : Page
             {
                 continue;
             }
-            
+
             RadioStation station = ViewModel.Stations[i];
             Border? indicator = FindDescendant<Border>(container, "SelectionIndicator");
             if (indicator != null)
@@ -211,28 +211,6 @@ public sealed partial class PlayingPage : Page
             }
         }
         return null;
-    }
-
-    private void StationsListView_ItemClick(object sender, ItemClickEventArgs e)
-    {
-        Debug.WriteLine("=== StationsListView_ItemClick START ===");
-
-        if (e.ClickedItem is RadioStation station)
-        {
-            Debug.WriteLine($"[PlayingPage] Station clicked: {station.Name}");
-            Debug.WriteLine($"[PlayingPage] Station URL: {station.StreamUrl}");
-            Debug.WriteLine($"[PlayingPage] Current selected station before change: {ViewModel.SelectedStation?.Name ?? "null"}");
-
-            ViewModel.SelectedStation = station;
-
-            Debug.WriteLine($"[PlayingPage] Current selected station after change: {ViewModel.SelectedStation?.Name ?? "null"}");
-        }
-        else
-        {
-            Debug.WriteLine($"[PlayingPage] WARNING: StationsListView_ItemClick - Invalid item type: {e.ClickedItem?.GetType().Name}");
-        }
-
-        Debug.WriteLine("=== StationsListView_ItemClick END ===");
     }
 
     private void VolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -330,14 +308,30 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine("[PlayingPage] DragItemsCompleted - Station order changed");
         // Save the new order to persistent storage
         ViewModel.SaveStations();
-        
+
         // Update the selected station index since the order might have changed
         ViewModel.UpdateSelectedStationIndex();
     }
 
-    private void StationsListView_DragOver(object sender, DragEventArgs e)
+    private void StationsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        // Accept the drag operation to allow reordering
-        e.AcceptedOperation = Windows.ApplicationModel.DataTransfer.DataPackageOperation.Move;
+        Debug.WriteLine("=== StationsListView_SelectionChanged START ===");
+
+        if (sender is ListView stations && stations.SelectedItem is RadioStation station)
+        {
+            Debug.WriteLine($"[PlayingPage] Station clicked: {station.Name}");
+            Debug.WriteLine($"[PlayingPage] Station URL: {station.StreamUrl}");
+            Debug.WriteLine($"[PlayingPage] Current selected station before change: {ViewModel.SelectedStation?.Name ?? "null"}");
+
+            ViewModel.SelectedStation = station;
+
+            Debug.WriteLine($"[PlayingPage] Current selected station after change: {ViewModel.SelectedStation?.Name ?? "null"}");
+        }
+        else
+        {
+            Debug.WriteLine($"[PlayingPage] WARNING: StationsListView_SelectionChanged - Invalid item type: {sender?.GetType().Name}");
+        }
+
+        Debug.WriteLine("=== StationsListView_SelectionChanged END ===");
     }
 }
