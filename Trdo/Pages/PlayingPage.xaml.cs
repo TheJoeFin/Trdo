@@ -16,6 +16,8 @@ namespace Trdo.Pages;
 /// </summary>
 public sealed partial class PlayingPage : Page
 {
+    private const int MinIndexForScrolling = 3;
+    
     public PlayerViewModel ViewModel { get; }
     private ShellViewModel? _shellViewModel;
 
@@ -61,7 +63,7 @@ public sealed partial class PlayingPage : Page
         if (ViewModel.SelectedStation is not null)
         {
             int index = ViewModel.Stations.IndexOf(ViewModel.SelectedStation);
-            if (index is >= 0 and > 3)
+            if (index is >= 0 and > MinIndexForScrolling)
             {
                 StationsListView.ScrollIntoView(ViewModel.SelectedStation);
                 Debug.WriteLine($"[PlayingPage] Scrolled to selected station at index {index}");

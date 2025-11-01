@@ -7,10 +7,10 @@ namespace Trdo.Services;
 
 public class NavigationService : INotifyPropertyChanged
 {
-    private static NavigationService? _instance;
+    private static readonly Lazy<NavigationService> _instance = new(() => new NavigationService());
     private Frame? _frame;
 
-    public static NavigationService Instance => _instance ??= new NavigationService();
+    public static NavigationService Instance => _instance.Value;
 
     private NavigationService()
     {
