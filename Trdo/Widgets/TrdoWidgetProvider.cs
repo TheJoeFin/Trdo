@@ -1,6 +1,7 @@
 using Microsoft.Windows.Widgets.Providers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Trdo.Widgets;
@@ -41,9 +42,10 @@ public sealed class TrdoWidgetProvider : IWidgetProvider
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Silently handle recovery errors
+                // Widget recovery is not critical - log and continue
+                Debug.WriteLine($"Widget recovery failed: {ex.Message}");
             }
             finally
             {
@@ -62,7 +64,7 @@ public sealed class TrdoWidgetProvider : IWidgetProvider
     {
         if (!WidgetImpls.ContainsKey(widgetContext.DefinitionId))
         {
-            throw new Exception($"Invalid definition requested: {widgetContext.DefinitionId}");
+            throw new ArgumentException($"Invalid widget definition requested: {widgetContext.DefinitionId}", nameof(widgetContext));
         }
 
         var widgetInstance = WidgetImpls[widgetContext.DefinitionId](widgetContext.Id, "");

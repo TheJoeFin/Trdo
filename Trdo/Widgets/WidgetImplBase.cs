@@ -40,8 +40,14 @@ internal abstract class WidgetImplBase
             StorageFile file = StorageFile.GetFileFromApplicationUriAsync(resourceUri).GetAwaiter().GetResult();
             return FileIO.ReadTextAsync(file).GetAwaiter().GetResult();
         }
-        catch
+        catch (FileNotFoundException)
         {
+            // Template file not found, return empty string
+            return string.Empty;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Access denied to template file
             return string.Empty;
         }
     }
