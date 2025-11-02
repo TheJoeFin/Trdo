@@ -1,9 +1,9 @@
 ﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,9 +17,6 @@ using WinUIEx;
 
 namespace Trdo;
 
-/// <summary>
-/// Provides application-specific behavior to supplement the default Application class.
-/// </summary>
 public partial class App : Application
 {
     private TrayIcon? _trayIcon;
@@ -27,8 +24,11 @@ public partial class App : Application
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
     private DispatcherQueueTimer? _trayIconWatchdogTimer;
+    private DispatcherQueueTimer? _sharedStatePollingTimer;
     private ShellPage? _shellPage;
     private RegistrationManager<TrdoWidgetProvider>? _widgetRegistrationManager;
+    private bool _isComServerMode = false;
+    private bool _lastKnownPlayingState = false;
 
     public App()
     {
@@ -42,19 +42,26 @@ public partial class App : Application
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         // Check if launched to register COM server for widgets
-        var cmdLineArgs = Environment.GetCommandLineArgs();
+        string[] cmdLineArgs = Environment.GetCommandLineArgs();
         if (cmdLineArgs.Contains("-RegisterProcessAsComServer"))
         {
+            _isComServerMode = true;
+
             // Initialize COM wrappers for widget provider
             WinRT.ComWrappersSupport.InitializeComWrappers();
             _widgetRegistrationManager = RegistrationManager<TrdoWidgetProvider>.RegisterProvider();
-            
+
+            // Start shared state polling even in COM server mode
+            // This ensures the widget process syncs its MediaPlayer with main app
+            StartSharedStatePollingForComServer();
+
             // Keep the app running as a COM server
             // Widget provider will handle widget requests
+            // Don't initialize tray icon or UI in COM server mode
             return;
         }
 
-        // Check for single instance using a named mutex
+        // Normal app mode - check for single instance using a named mutex
         const string mutexName = "Global\\Trdo_SingleInstance_Mutex";
 
         try
@@ -79,6 +86,7 @@ public partial class App : Application
         await UpdateTrayIconAsync();
         UpdatePlayPauseCommandText();
         StartTrayIconWatchdog();
+        StartSharedStatePolling();
     }
 
     private void PlayerVmOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -91,6 +99,11 @@ public partial class App : Application
         }
         else if (e.PropertyName == nameof(PlayerViewModel.CanPlay))
         {
+            UpdatePlayPauseCommandText();
+        }
+        else if (e.PropertyName == nameof(PlayerViewModel.SelectedStation))
+        {
+            // Station changed, update tray icon tooltip
             UpdatePlayPauseCommandText();
         }
     }
@@ -276,6 +289,146 @@ public partial class App : Application
         }
     }
 
+    private void StartSharedStatePolling()
+    {
+        // Get the dispatcher queue for the current thread
+        DispatcherQueue? dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        if (dispatcherQueue is null)
+            return;
+
+        // Create a timer that polls shared state every 2 seconds
+        // This ensures we detect changes from the widget process
+        _sharedStatePollingTimer = dispatcherQueue.CreateTimer();
+        _sharedStatePollingTimer.Interval = TimeSpan.FromSeconds(2);
+        _sharedStatePollingTimer.Tick += (sender, args) =>
+        {
+            CheckSharedState();
+        };
+        _sharedStatePollingTimer.Start();
+        
+        // Initialize the last known state
+        _lastKnownPlayingState = _playerVm.IsPlaying;
+    }
+
+    private void CheckSharedState()
+    {
+        try
+        {
+            // Get shared state (what should be happening)
+            bool sharedIsPlaying = false;
+            try
+            {
+                if (Windows.Storage.ApplicationData.Current.LocalSettings.Values.TryGetValue("RadioIsPlaying", out object? storedValue))
+                {
+                    sharedIsPlaying = storedValue is bool b && b;
+                }
+            }
+            catch { }
+            
+            // Get local MediaPlayer state (what is actually happening)
+            var playerService = Services.RadioPlayerService.Instance;
+            bool localMediaPlayerIsPlaying = playerService.IsLocalMediaPlayerPlaying;
+            
+            // Check if shared state changed since last check
+            if (sharedIsPlaying != _lastKnownPlayingState)
+            {
+                Debug.WriteLine($"[App] Shared state changed: IsPlaying {_lastKnownPlayingState} → {sharedIsPlaying}");
+                _lastKnownPlayingState = sharedIsPlaying;
+                
+                // Sync the local MediaPlayer state to match shared state
+                // This is critical: if widget paused, we need to pause the main app's MediaPlayer too
+                if (sharedIsPlaying != localMediaPlayerIsPlaying)
+                {
+                    Debug.WriteLine($"[App] Syncing MediaPlayer: shared={sharedIsPlaying}, localMediaPlayer={localMediaPlayerIsPlaying}");
+                    
+                    try
+                    {
+                        if (sharedIsPlaying)
+                        {
+                            // Shared state says playing, but local MediaPlayer isn't - start it
+                            Debug.WriteLine("[App] Starting local MediaPlayer to match shared state");
+                            if (!string.IsNullOrEmpty(playerService.StreamUrl))
+                            {
+                                playerService.Play();
+                            }
+                        }
+                        else
+                        {
+                            // Shared state says paused, but local MediaPlayer is playing - pause it
+                            Debug.WriteLine("[App] Pausing local MediaPlayer to match shared state");
+                            playerService.Pause();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"[App] Error syncing MediaPlayer state: {ex.Message}");
+                    }
+                }
+                
+                // Manually trigger the property changed handler to update UI
+                PlayerVmOnPropertyChanged(this, new PropertyChangedEventArgs(nameof(PlayerViewModel.IsPlaying)));
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[App] Error checking shared state: {ex.Message}");
+        }
+    }
+
+    private void StartSharedStatePollingForComServer()
+    {
+        // Get the dispatcher queue for the current thread
+        DispatcherQueue? dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        if (dispatcherQueue is null)
+        {
+            Debug.WriteLine("[App] No DispatcherQueue in COM server mode, cannot start polling");
+            return;
+        }
+
+        // Create a timer that polls shared state every 2 seconds
+        _sharedStatePollingTimer = dispatcherQueue.CreateTimer();
+        _sharedStatePollingTimer.Interval = TimeSpan.FromSeconds(2);
+        _sharedStatePollingTimer.Tick += (sender, args) =>
+        {
+            CheckSharedStateForComServer();
+        };
+        _sharedStatePollingTimer.Start();
+        
+        // Initialize the last known state
+        _lastKnownPlayingState = _playerVm.IsPlaying;
+        Debug.WriteLine("[App] Started shared state polling for COM server mode");
+    }
+
+    private void CheckSharedStateForComServer()
+    {
+        try
+        {
+            // Get shared state (what should be happening)
+            bool sharedIsPlaying = false;
+            try
+            {
+                if (Windows.Storage.ApplicationData.Current.LocalSettings.Values.TryGetValue("RadioIsPlaying", out object? storedValue))
+                {
+                    sharedIsPlaying = storedValue is bool b && b;
+                }
+            }
+            catch { }
+            
+            // In COM server mode (widget), we should NOT sync the MediaPlayer
+            // Only the main app process should actually play audio
+            // The widget process only updates shared state, it doesn't play audio itself
+            
+            // Therefore, we don't sync MediaPlayer in COM server mode
+            // This prevents duplicate audio streams
+            
+            Debug.WriteLine($"[App-COM] Shared state: IsPlaying={sharedIsPlaying} (MediaPlayer sync disabled in COM server mode)");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[App-COM] Error checking shared state: {ex.Message}");
+        }
+    }
+
     /// <summary>
     /// Cleanup resources when the application exits
     /// </summary>
@@ -285,6 +438,9 @@ public partial class App : Application
         {
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();
+            _widgetRegistrationManager?.Dispose();
+            _trayIconWatchdogTimer?.Stop();
+            _sharedStatePollingTimer?.Stop();
         }
         catch
         {

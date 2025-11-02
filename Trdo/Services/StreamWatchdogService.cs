@@ -132,6 +132,7 @@ public sealed class StreamWatchdogService : IDisposable
         try
         {
             bool isPlaying = false;
+            bool sharedStateSaysPlaying = false;
 
             // Get current state on UI thread
             await RunOnUiThreadAsync(() =>
@@ -139,6 +140,22 @@ public sealed class StreamWatchdogService : IDisposable
                 try
                 {
                     isPlaying = _playerService.IsPlaying;
+
+                    // Also check the shared state directly to detect cross-process changes
+                    try
+                    {
+                        if (Windows.Storage.ApplicationData.Current.LocalSettings.Values.TryGetValue("RadioIsPlaying", out object? storedValue))
+                        {
+                            sharedStateSaysPlaying = storedValue is bool b && b;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // If we can't read shared state, use local state
+                        Debug.WriteLine($"[Watchdog] Error reading shared state: {ex.Message}");
+
+                        sharedStateSaysPlaying = isPlaying;
+                    }
                 }
                 catch
                 {
@@ -146,21 +163,33 @@ public sealed class StreamWatchdogService : IDisposable
                 }
             });
 
-            // If stream is playing, update state and return
-            if (isPlaying)
+            // If stream is playing (either locally or according to shared state), update state and return
+            if (isPlaying || sharedStateSaysPlaying)
             {
-                // Don't overwrite user intention if they manually started
-                if (!_userIntendedPlayback)
+                // Update user intention based on shared state
+                // This handles the case where another process (widget) started playback
+                if (sharedStateSaysPlaying && !_userIntendedPlayback)
                 {
                     _userIntendedPlayback = true;
-                    Debug.WriteLine("[Watchdog] Stream is playing - monitoring active");
+                    Debug.WriteLine("[Watchdog] Detected playback started by another process - monitoring active");
                 }
                 _consecutiveFailures = 0;
                 _lastStateCheck = DateTime.UtcNow;
                 return; // Stream is healthy
             }
 
-            // If we get here, the stream is not playing
+            // If we get here, the stream is not playing (in any process)
+            // Check if another process paused it by checking shared state history
+            if (!sharedStateSaysPlaying && _userIntendedPlayback)
+            {
+                // Shared state says not playing, but we thought user wanted playback
+                // This might be because another process (widget) paused it
+                Debug.WriteLine("[Watchdog] Detected pause by another process - disabling recovery");
+                _userIntendedPlayback = false;
+                _consecutiveFailures = 0;
+                return;
+            }
+
             // Only attempt recovery if user intended to have it playing
             if (!_userIntendedPlayback)
             {

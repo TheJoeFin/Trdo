@@ -160,6 +160,9 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     _player.SetStreamUrl(_selectedStation.StreamUrl);
                     Debug.WriteLine("[PlayerViewModel] Stream URL set successfully");
 
+                    // Update the now playing information
+                    _player.UpdateNowPlaying(_selectedStation.Name);
+
                     // Resume playback if we were playing before
                     if (wasPlaying)
                     {
@@ -394,6 +397,12 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             {
                 _player.Initialize(streamUrl);
                 Debug.WriteLine($"[PlayerViewModel] Player initialized with URL: {streamUrl}");
+                
+                // Update now playing info if we have a selected station
+                if (_selectedStation != null)
+                {
+                    _player.UpdateNowPlaying(_selectedStation.Name);
+                }
             }
             catch (Exception ex)
             {

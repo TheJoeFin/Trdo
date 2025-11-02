@@ -5,6 +5,14 @@
     },
     "Trdo (Unpackaged)": {
       "commandName": "Project"
+    },
+    "Trdo Widget Provider (Package)": {
+      "commandName": "MsixPackage",
+      "commandLineArgs": "-RegisterProcessAsComServer"
+    },
+    "Trdo Widget Provider (Unpackaged)": {
+      "commandName": "Project",
+      "commandLineArgs": "-RegisterProcessAsComServer"
     }
   }
 }

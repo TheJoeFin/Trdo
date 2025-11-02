@@ -67,14 +67,14 @@
             <uap3:Properties>
               <WidgetProvider>
                 <ProviderIcons>
-                  <Icon Path="Assets\Radio.png" />
+                  <Icon Path="Assets\Widget_Icon.png" />
                 </ProviderIcons>
                 <Activation>
                   <CreateInstance ClassId="D5A5B8F2-9C3A-4E1B-8F7D-6A4C3B2E1D9F" />
                 </Activation>
                 <Definitions>
                   <Definition Id="Trdo_RadioPlayer_Widget"
-                    DisplayName="Trdo Radio Player"
+                    DisplayName="Trdo - Radio Player"
                     Description="Control your internet radio playback from a widget">
                     <Capabilities>
                       <Capability>
@@ -83,16 +83,13 @@
                       <Capability>
                         <Size Name="medium" />
                       </Capability>
-                      <Capability>
-                        <Size Name="large" />
-                      </Capability>
                     </Capabilities>
                     <ThemeResources>
                       <Icons>
-                        <Icon Path="Widgets\Assets\Widget_Icon.png" />
+                        <Icon Path="Assets\Radio.png" />
                       </Icons>
                       <Screenshots>
-                        <Screenshot Path="Widgets\Assets\Widget_Screenshot.png" DisplayAltText="Trdo Widget" />
+                        <Screenshot Path="Assets\Widget_Screenshot.png" DisplayAltText="Trdo Widget" />
                       </Screenshots>
                       <DarkMode />
                       <LightMode />
