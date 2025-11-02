@@ -5,6 +5,23 @@ All notable changes to Trdo will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Windows 11 Widget Support**: Control your radio playback directly from the Windows Widgets panel
+  - Real-time playback status display
+  - Current station name and status
+  - Play/Pause control button
+  - Support for small, medium, and large widget sizes
+  - Automatic updates when playback state changes
+  - Comprehensive user and developer documentation
+
+### Technical
+- COM-based widget provider implementation
+- Adaptive Card UI template for widgets
+- Widget lifecycle management (create, activate, deactivate, delete)
+- Integration with existing PlayerViewModel for live updates
+
 ## [1.1.0] - 2025
 
 ### Added
