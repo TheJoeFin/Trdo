@@ -4,10 +4,13 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Trdo.Pages;
 using Trdo.ViewModels;
+using Trdo.Widgets;
+using Trdo.Widgets.Helper;
 using Windows.UI;
 using Windows.UI.ViewManagement;
 using WinUIEx;
@@ -25,6 +28,7 @@ public partial class App : Application
     private Mutex? _singleInstanceMutex;
     private DispatcherQueueTimer? _trayIconWatchdogTimer;
     private ShellPage? _shellPage;
+    private RegistrationManager<TrdoWidgetProvider>? _widgetRegistrationManager;
 
     public App()
     {
@@ -37,6 +41,19 @@ public partial class App : Application
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
+        // Check if launched to register COM server for widgets
+        var cmdLineArgs = Environment.GetCommandLineArgs();
+        if (cmdLineArgs.Contains("-RegisterProcessAsComServer"))
+        {
+            // Initialize COM wrappers for widget provider
+            WinRT.ComWrappersSupport.InitializeComWrappers();
+            _widgetRegistrationManager = RegistrationManager<TrdoWidgetProvider>.RegisterProvider();
+            
+            // Keep the app running as a COM server
+            // Widget provider will handle widget requests
+            return;
+        }
+
         // Check for single instance using a named mutex
         const string mutexName = "Global\\Trdo_SingleInstance_Mutex";
 

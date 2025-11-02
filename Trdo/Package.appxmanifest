@@ -4,9 +4,11 @@
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
   xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
   xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap5 rescap">
+  IgnorableNamespaces="uap uap3 uap5 com rescap">
 
   <Identity
     Name="40087JoeFinApps.Trdo"
@@ -49,6 +51,58 @@
         <uap5:Extension Category="windows.startupTask">
           <uap5:StartupTask TaskId="TrdoStartup" Enabled="false" DisplayName="Trdo" />
         </uap5:Extension>
+        
+        <!-- COM Server for Widget Provider -->
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:ExeServer Executable="Trdo.exe" Arguments="-RegisterProcessAsComServer" DisplayName="Trdo Widget Provider">
+              <com:Class Id="D5A5B8F2-9C3A-4E1B-8F7D-6A4C3B2E1D9F" DisplayName="Trdo Widget Provider" />
+            </com:ExeServer>
+          </com:ComServer>
+        </com:Extension>
+        
+        <!-- Widget Provider Extension -->
+        <uap3:Extension Category="windows.appExtension">
+          <uap3:AppExtension Name="com.microsoft.windows.widgets" DisplayName="Trdo Widgets" Id="TrdoWidgets" PublicFolder="Widgets">
+            <uap3:Properties>
+              <WidgetProvider>
+                <ProviderIcons>
+                  <Icon Path="Assets\Radio.png" />
+                </ProviderIcons>
+                <Activation>
+                  <CreateInstance ClassId="D5A5B8F2-9C3A-4E1B-8F7D-6A4C3B2E1D9F" />
+                </Activation>
+                <Definitions>
+                  <Definition Id="Trdo_RadioPlayer_Widget"
+                    DisplayName="Trdo Radio Player"
+                    Description="Control your internet radio playback from a widget">
+                    <Capabilities>
+                      <Capability>
+                        <Size Name="small" />
+                      </Capability>
+                      <Capability>
+                        <Size Name="medium" />
+                      </Capability>
+                      <Capability>
+                        <Size Name="large" />
+                      </Capability>
+                    </Capabilities>
+                    <ThemeResources>
+                      <Icons>
+                        <Icon Path="Widgets\Assets\Widget_Icon.png" />
+                      </Icons>
+                      <Screenshots>
+                        <Screenshot Path="Widgets\Assets\Widget_Screenshot.png" DisplayAltText="Trdo Widget" />
+                      </Screenshots>
+                      <DarkMode />
+                      <LightMode />
+                    </ThemeResources>
+                  </Definition>
+                </Definitions>
+              </WidgetProvider>
+            </uap3:Properties>
+          </uap3:AppExtension>
+        </uap3:Extension>
       </Extensions>
     </Application>
   </Applications>

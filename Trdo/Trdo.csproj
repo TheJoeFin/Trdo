@@ -23,6 +23,7 @@
     <None Remove="Pages\SettingsPage.xaml" />
     <None Remove="Pages\ShellPage.xaml" />
     <None Remove="Pages\AboutPage.xaml" />
+    <None Remove="Widgets\Templates\RadioPlayerWidgetTemplate.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +33,15 @@
     <Content Include="Assets\Square44x44Logo.scale-200.png" />
     <Content Include="Assets\Square44x44Logo.targetsize-24_altform-unplated.png" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
+    <Content Include="Widgets\Templates\RadioPlayerWidgetTemplate.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Widgets\Assets\Widget_Icon.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Widgets\Assets\Widget_Screenshot.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
