@@ -47,6 +47,7 @@ Get the code:
 - 💾 Save and organize your favorite stations
 - 🎵 Now playing information display
 - 🌙 Support for Windows 11 themes
+- 🪟 **Windows 11 Widget support** - Control playback from the Widgets panel
 
 ## 🛠️ Built With
 
