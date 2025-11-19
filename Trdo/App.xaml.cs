@@ -87,7 +87,6 @@ public partial class App : Application
         InitializeTrayIcon();
         await UpdateTrayIconAsync();
         UpdatePlayPauseCommandText();
-        StartTrayIconWatchdog();
         StartRestoreEventMonitor();
     }
 
@@ -113,6 +112,7 @@ public partial class App : Application
 
     private void InitializeTrayIcon()
     {
+        _trayIcon = null;
         _trayIcon = new(0, "Assets/Radio.ico", "Trdo");
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
@@ -234,23 +234,6 @@ public partial class App : Application
         }
     }
 
-    private void StartTrayIconWatchdog()
-    {
-        // Get the dispatcher queue for the current thread
-        DispatcherQueue? dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-        if (dispatcherQueue is null)
-            return;
-
-        // Create a timer that checks tray icon visibility every 10 seconds
-        _trayIconWatchdogTimer = dispatcherQueue.CreateTimer();
-        _trayIconWatchdogTimer.Interval = TimeSpan.FromSeconds(10);
-        _trayIconWatchdogTimer.Tick += async (sender, args) =>
-        {
-            await EnsureTrayIconVisibleAsync();
-        };
-        _trayIconWatchdogTimer.Start();
-    }
-
     private void StartRestoreEventMonitor()
     {
         // Only start monitoring if the event handle was created successfully
@@ -286,36 +269,15 @@ public partial class App : Application
 
     private async Task EnsureTrayIconVisibleAsync()
     {
-        if (_trayIcon is null)
-        {
-            InitializeTrayIcon();
-            return;
-        }
-
         try
         {
-            // Check if the tray icon is visible
-            if (!_trayIcon.IsVisible)
-            {
-                // Tray icon disappeared, restore it
-                _trayIcon.IsVisible = true;
-                await UpdateTrayIconAsync();
-                UpdatePlayPauseCommandText();
-            }
+            InitializeTrayIcon();
+            await UpdateTrayIconAsync();
+            UpdatePlayPauseCommandText();
         }
         catch
         {
-            // If there's an error checking/restoring visibility, try to recreate the tray icon
-            try
-            {
-                InitializeTrayIcon();
-                await UpdateTrayIconAsync();
-                UpdatePlayPauseCommandText();
-            }
-            catch
-            {
-                // Silent failure - will try again on next timer tick
-            }
+            // Silent failure
         }
     }
 
