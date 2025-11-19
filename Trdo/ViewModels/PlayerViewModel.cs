@@ -33,6 +33,12 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsPlaying));
         };
 
+        _player.BufferingStateChanged += (_, _) =>
+        {
+            Debug.WriteLine($"[PlayerViewModel] BufferingStateChanged event fired. IsBuffering={IsBuffering}");
+            OnPropertyChanged(nameof(IsBuffering));
+        };
+
         _player.VolumeChanged += (_, _) =>
         {
             Debug.WriteLine($"[PlayerViewModel] VolumeChanged event fired. Volume={Volume}");
@@ -194,6 +200,16 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             bool isPlaying = _player.IsPlaying;
             Debug.WriteLine($"[PlayerViewModel] IsPlaying getter called, value: {isPlaying}");
             return isPlaying;
+        }
+    }
+
+    public bool IsBuffering
+    {
+        get
+        {
+            bool isBuffering = _player.IsBuffering;
+            Debug.WriteLine($"[PlayerViewModel] IsBuffering getter called, value: {isBuffering}");
+            return isBuffering;
         }
     }
 
