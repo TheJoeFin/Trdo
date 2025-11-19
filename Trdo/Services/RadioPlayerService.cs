@@ -42,6 +42,44 @@ public sealed partial class RadioPlayerService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Gets the buffering progress as a value between 0 and 1.
+    /// For live streams, this can help detect if the stream is actually delivering data.
+    /// </summary>
+    public double BufferingProgress
+    {
+        get
+        {
+            try
+            {
+                return _player.PlaybackSession.BufferingProgress;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the current playback position.
+    /// For live streams, this can help detect if audio is actually progressing.
+    /// </summary>
+    public TimeSpan Position
+    {
+        get
+        {
+            try
+            {
+                return _player.PlaybackSession.Position;
+            }
+            catch
+            {
+                return TimeSpan.Zero;
+            }
+        }
+    }
+
     public StreamWatchdogService Watchdog => _watchdog;
 
     public double Volume
