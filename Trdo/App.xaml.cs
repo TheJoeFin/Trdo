@@ -23,7 +23,9 @@ public partial class App : Application
     private readonly PlayerViewModel _playerVm = PlayerViewModel.Shared;
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
+    private EventWaitHandle? _trayIconRestoreEvent;
     private DispatcherQueueTimer? _trayIconWatchdogTimer;
+    private DispatcherQueueTimer? _restoreEventMonitorTimer;
     private ShellPage? _shellPage;
 
     public App()
@@ -39,6 +41,7 @@ public partial class App : Application
     {
         // Check for single instance using a named mutex
         const string mutexName = "Global\\Trdo_SingleInstance_Mutex";
+        const string restoreEventName = "Global\\Trdo_RestoreTrayIcon_Event";
 
         try
         {
@@ -47,6 +50,18 @@ public partial class App : Application
             if (!createdNew)
             {
                 // Another instance is already running
+                // Signal it to restore the tray icon before exiting
+                try
+                {
+                    using EventWaitHandle restoreEvent = EventWaitHandle.OpenExisting(restoreEventName);
+                    restoreEvent.Set();
+                }
+                catch
+                {
+                    // Event handle doesn't exist or couldn't be opened
+                    // This is acceptable - the watchdog timer will eventually restore the icon
+                }
+
                 // Exit this instance gracefully
                 Exit();
                 return;
@@ -58,10 +73,21 @@ public partial class App : Application
             // This could happen in restricted environments
         }
 
+        // Create the event handle for other instances to signal us
+        try
+        {
+            _trayIconRestoreEvent = new EventWaitHandle(false, EventResetMode.AutoReset, restoreEventName);
+        }
+        catch
+        {
+            // If we can't create the event handle, continue without it
+            // The watchdog timer will still provide periodic restoration
+        }
+
         InitializeTrayIcon();
         await UpdateTrayIconAsync();
         UpdatePlayPauseCommandText();
-        StartTrayIconWatchdog();
+        StartRestoreEventMonitor();
     }
 
     private void PlayerVmOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -86,6 +112,7 @@ public partial class App : Application
 
     private void InitializeTrayIcon()
     {
+        _trayIcon = null;
         _trayIcon = new(0, "Assets/Radio.ico", "Trdo");
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
@@ -207,55 +234,50 @@ public partial class App : Application
         }
     }
 
-    private void StartTrayIconWatchdog()
+    private void StartRestoreEventMonitor()
     {
+        // Only start monitoring if the event handle was created successfully
+        if (_trayIconRestoreEvent is null)
+            return;
+
         // Get the dispatcher queue for the current thread
         DispatcherQueue? dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         if (dispatcherQueue is null)
             return;
 
-        // Create a timer that checks tray icon visibility every 10 seconds
-        _trayIconWatchdogTimer = dispatcherQueue.CreateTimer();
-        _trayIconWatchdogTimer.Interval = TimeSpan.FromSeconds(10);
-        _trayIconWatchdogTimer.Tick += async (sender, args) =>
+        // Create a timer that checks for restore signals frequently (every 2 seconds)
+        _restoreEventMonitorTimer = dispatcherQueue.CreateTimer();
+        _restoreEventMonitorTimer.Interval = TimeSpan.FromSeconds(2);
+        _restoreEventMonitorTimer.Tick += async (sender, args) =>
         {
-            await EnsureTrayIconVisibleAsync();
+            try
+            {
+                // Check if the event was signaled without blocking
+                if (_trayIconRestoreEvent?.WaitOne(0) == true)
+                {
+                    // Another instance requested tray icon restoration
+                    await EnsureTrayIconVisibleAsync();
+                }
+            }
+            catch
+            {
+                // Ignore any errors checking the event
+            }
         };
-        _trayIconWatchdogTimer.Start();
+        _restoreEventMonitorTimer.Start();
     }
 
     private async Task EnsureTrayIconVisibleAsync()
     {
-        if (_trayIcon is null)
-        {
-            InitializeTrayIcon();
-            return;
-        }
-
         try
         {
-            // Check if the tray icon is visible
-            if (!_trayIcon.IsVisible)
-            {
-                // Tray icon disappeared, restore it
-                _trayIcon.IsVisible = true;
-                await UpdateTrayIconAsync();
-                UpdatePlayPauseCommandText();
-            }
+            InitializeTrayIcon();
+            await UpdateTrayIconAsync();
+            UpdatePlayPauseCommandText();
         }
         catch
         {
-            // If there's an error checking/restoring visibility, try to recreate the tray icon
-            try
-            {
-                InitializeTrayIcon();
-                await UpdateTrayIconAsync();
-                UpdatePlayPauseCommandText();
-            }
-            catch
-            {
-                // Silent failure - will try again on next timer tick
-            }
+            // Silent failure
         }
     }
 
@@ -268,6 +290,7 @@ public partial class App : Application
         {
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();
+            _trayIconRestoreEvent?.Dispose();
         }
         catch
         {
