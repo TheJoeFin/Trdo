@@ -19,12 +19,18 @@ public sealed class StreamWatchdogService : IDisposable
     private bool _userIntendedPlayback;
     private DateTime _lastStateCheck;
     private int _consecutiveFailures;
+    private TimeSpan _lastPosition;
+    private DateTime _lastPositionChangeTime;
+    private double _lastBufferingProgress;
+    private int _consecutiveSilentChecks;
 
     // Configuration
     private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(5);
     private readonly TimeSpan _recoveryDelay = TimeSpan.FromSeconds(3);
     private readonly int _maxConsecutiveFailures = 3;
     private readonly TimeSpan _backoffDelay = TimeSpan.FromSeconds(30);
+    private readonly TimeSpan _silenceDetectionThreshold = TimeSpan.FromSeconds(10);
+    private readonly int _maxConsecutiveSilentChecks = 2; // 2 checks * 5 seconds = 10 seconds
 
     public event EventHandler<StreamWatchdogEventArgs>? StreamStatusChanged;
 
@@ -49,6 +55,10 @@ public sealed class StreamWatchdogService : IDisposable
         _uiQueue = DispatcherQueue.GetForCurrentThread();
         _lastStateCheck = DateTime.UtcNow;
         _userIntendedPlayback = false;
+        _lastPosition = TimeSpan.Zero;
+        _lastPositionChangeTime = DateTime.UtcNow;
+        _lastBufferingProgress = 0;
+        _consecutiveSilentChecks = 0;
     }
 
     /// <summary>
@@ -58,6 +68,8 @@ public sealed class StreamWatchdogService : IDisposable
     {
         _userIntendedPlayback = true;
         _consecutiveFailures = 0;
+        _consecutiveSilentChecks = 0;
+        _lastPositionChangeTime = DateTime.UtcNow;
         Debug.WriteLine("[Watchdog] User started playback - monitoring active");
     }
 
@@ -68,6 +80,7 @@ public sealed class StreamWatchdogService : IDisposable
     {
         _userIntendedPlayback = false;
         _consecutiveFailures = 0;
+        _consecutiveSilentChecks = 0;
         Debug.WriteLine("[Watchdog] User paused playback - recovery disabled");
     }
 
@@ -81,6 +94,8 @@ public sealed class StreamWatchdogService : IDisposable
 
         _cts = new CancellationTokenSource();
         _consecutiveFailures = 0;
+        _consecutiveSilentChecks = 0;
+        _lastPositionChangeTime = DateTime.UtcNow;
         _monitoringTask = Task.Run(() => MonitorStreamAsync(_cts.Token));
 
         RaiseStatusChanged("Watchdog started", StreamWatchdogStatus.Monitoring);
@@ -132,6 +147,8 @@ public sealed class StreamWatchdogService : IDisposable
         try
         {
             bool isPlaying = false;
+            TimeSpan currentPosition = TimeSpan.Zero;
+            double currentBufferingProgress = 0;
 
             // Get current state on UI thread
             await RunOnUiThreadAsync(() =>
@@ -139,6 +156,8 @@ public sealed class StreamWatchdogService : IDisposable
                 try
                 {
                     isPlaying = _playerService.IsPlaying;
+                    currentPosition = _playerService.Position;
+                    currentBufferingProgress = _playerService.BufferingProgress;
                 }
                 catch
                 {
@@ -146,53 +165,97 @@ public sealed class StreamWatchdogService : IDisposable
                 }
             });
 
-            // If stream is playing, update state and return
-            if (isPlaying)
+            // If stream is not playing, handle it as before
+            if (!isPlaying)
             {
-                // Don't overwrite user intention if they manually started
+                // Only attempt recovery if user intended to have it playing
                 if (!_userIntendedPlayback)
                 {
-                    _userIntendedPlayback = true;
-                    Debug.WriteLine("[Watchdog] Stream is playing - monitoring active");
+                    // User intentionally stopped/paused - don't attempt recovery
+                    return;
                 }
-                _consecutiveFailures = 0;
-                _lastStateCheck = DateTime.UtcNow;
-                return; // Stream is healthy
-            }
 
-            // If we get here, the stream is not playing
-            // Only attempt recovery if user intended to have it playing
-            if (!_userIntendedPlayback)
-            {
-                // User intentionally stopped/paused - don't attempt recovery
+                // Stream stopped unexpectedly - attempt recovery
+                TimeSpan timeSinceLastCheck = DateTime.UtcNow - _lastStateCheck;
+
+                // Only attempt recovery if enough time has passed
+                if (timeSinceLastCheck > _checkInterval)
+                {
+                    _consecutiveFailures++;
+                    _consecutiveSilentChecks = 0; // Reset silent checks when not playing
+                    Debug.WriteLine($"[Watchdog] Stream stopped unexpectedly. Attempt {_consecutiveFailures}/{_maxConsecutiveFailures}");
+
+                    RaiseStatusChanged($"Stream stopped. Recovery attempt {_consecutiveFailures}/{_maxConsecutiveFailures}",
+                        StreamWatchdogStatus.Recovering);
+
+                    if (_consecutiveFailures <= _maxConsecutiveFailures)
+                    {
+                        await AttemptRecoveryAsync(cancellationToken);
+                    }
+                    else
+                    {
+                        Debug.WriteLine("[Watchdog] Max recovery attempts reached. Backing off.");
+                        RaiseStatusChanged("Max recovery attempts reached. Will retry later.",
+                            StreamWatchdogStatus.BackingOff);
+
+                        // Wait longer before next attempt
+                        await Task.Delay(_backoffDelay, cancellationToken);
+                        _consecutiveFailures = 0; // Reset after backoff
+                    }
+                }
+
+                _lastStateCheck = DateTime.UtcNow;
                 return;
             }
 
-            // Stream stopped unexpectedly - attempt recovery
-            TimeSpan timeSinceLastCheck = DateTime.UtcNow - _lastStateCheck;
-
-            // Only attempt recovery if enough time has passed
-            if (timeSinceLastCheck > _checkInterval)
+            // Stream is playing - check if audio is actually progressing
+            // Don't overwrite user intention if they manually started
+            if (!_userIntendedPlayback)
             {
-                _consecutiveFailures++;
-                Debug.WriteLine($"[Watchdog] Stream stopped unexpectedly. Attempt {_consecutiveFailures}/{_maxConsecutiveFailures}");
+                _userIntendedPlayback = true;
+                Debug.WriteLine("[Watchdog] Stream is playing - monitoring active");
+            }
+            _consecutiveFailures = 0;
 
-                RaiseStatusChanged($"Stream stopped. Recovery attempt {_consecutiveFailures}/{_maxConsecutiveFailures}",
-                    StreamWatchdogStatus.Recovering);
+            // Check if position or buffering progress has changed
+            bool positionChanged = currentPosition != _lastPosition;
+            bool bufferingProgressChanged = Math.Abs(currentBufferingProgress - _lastBufferingProgress) > 0.01;
 
-                if (_consecutiveFailures <= _maxConsecutiveFailures)
+            if (positionChanged || bufferingProgressChanged)
+            {
+                // Stream is healthy - audio is progressing
+                _lastPosition = currentPosition;
+                _lastBufferingProgress = currentBufferingProgress;
+                _lastPositionChangeTime = DateTime.UtcNow;
+                _consecutiveSilentChecks = 0;
+                Debug.WriteLine($"[Watchdog] Stream healthy - Position: {currentPosition}, Buffering: {currentBufferingProgress:P0}");
+            }
+            else
+            {
+                // Position hasn't changed - potential silent stream
+                TimeSpan silenceDuration = DateTime.UtcNow - _lastPositionChangeTime;
+                
+                if (silenceDuration > _silenceDetectionThreshold)
                 {
-                    await AttemptRecoveryAsync(cancellationToken);
+                    _consecutiveSilentChecks++;
+                    Debug.WriteLine($"[Watchdog] Silent stream detected for {silenceDuration.TotalSeconds:F1}s. Check {_consecutiveSilentChecks}/{_maxConsecutiveSilentChecks}");
+
+                    if (_consecutiveSilentChecks >= _maxConsecutiveSilentChecks)
+                    {
+                        // Stream is playing but no audio for too long - attempt recovery
+                        Debug.WriteLine("[Watchdog] Stream is silent - attempting recovery");
+                        RaiseStatusChanged("Stream is silent - refreshing", StreamWatchdogStatus.Recovering);
+                        
+                        _consecutiveSilentChecks = 0;
+                        _lastPositionChangeTime = DateTime.UtcNow;
+                        
+                        await AttemptRecoveryAsync(cancellationToken);
+                    }
                 }
                 else
                 {
-                    Debug.WriteLine("[Watchdog] Max recovery attempts reached. Backing off.");
-                    RaiseStatusChanged("Max recovery attempts reached. Will retry later.",
-                        StreamWatchdogStatus.BackingOff);
-
-                    // Wait longer before next attempt
-                    await Task.Delay(_backoffDelay, cancellationToken);
-                    _consecutiveFailures = 0; // Reset after backoff
+                    // Within threshold, keep monitoring
+                    Debug.WriteLine($"[Watchdog] Position unchanged for {silenceDuration.TotalSeconds:F1}s (threshold: {_silenceDetectionThreshold.TotalSeconds}s)");
                 }
             }
 

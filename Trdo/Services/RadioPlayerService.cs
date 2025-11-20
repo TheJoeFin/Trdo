@@ -22,6 +22,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
     public event EventHandler<bool>? PlaybackStateChanged;
     public event EventHandler<double>? VolumeChanged;
+    public event EventHandler<bool>? BufferingStateChanged;
 
     public bool IsPlaying
     {
@@ -33,12 +34,68 @@ public sealed partial class RadioPlayerService : IDisposable
         }
     }
 
+    public bool IsBuffering
+    {
+        get
+        {
+            try
+            {
+                MediaPlaybackState state = _player.PlaybackSession.PlaybackState;
+                bool isBuffering = state == MediaPlaybackState.Opening || state == MediaPlaybackState.Buffering;
+                Debug.WriteLine($"[RadioPlayerService] IsBuffering getter: {isBuffering}, PlaybackState: {state}");
+                return isBuffering;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
     public string? StreamUrl
     {
         get
         {
             Debug.WriteLine($"[RadioPlayerService] StreamUrl getter: {_streamUrl}");
             return _streamUrl;
+        }
+    }
+
+    /// <summary>
+    /// Gets the buffering progress as a value between 0 and 1.
+    /// For live streams, this can help detect if the stream is actually delivering data.
+    /// </summary>
+    public double BufferingProgress
+    {
+        get
+        {
+            try
+            {
+                return _player.PlaybackSession.BufferingProgress;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the current playback position.
+    /// For live streams, this can help detect if audio is actually progressing.
+    /// </summary>
+    public TimeSpan Position
+    {
+        get
+        {
+            try
+            {
+                return _player.PlaybackSession.Position;
+            }
+            catch
+            {
+                return TimeSpan.Zero;
+            }
         }
     }
 
@@ -97,12 +154,14 @@ public sealed partial class RadioPlayerService : IDisposable
         _player.PlaybackSession.PlaybackStateChanged += (_, _) =>
         {
             bool isPlaying;
+            bool isBuffering;
             MediaPlaybackState currentState;
             try
             {
                 currentState = _player.PlaybackSession.PlaybackState;
                 isPlaying = currentState == MediaPlaybackState.Playing;
-                Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, State={currentState}, IsInternalChange={_isInternalStateChange}");
+                isBuffering = currentState == MediaPlaybackState.Opening || currentState == MediaPlaybackState.Buffering;
+                Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, IsBuffering={isBuffering}, State={currentState}, IsInternalChange={_isInternalStateChange}");
 
                 // If state change was not initiated internally (e.g., from hardware buttons),
                 // notify the watchdog of user intention
@@ -129,7 +188,11 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine($"[RadioPlayerService] EXCEPTION in PlaybackStateChanged: {ex.Message}");
                 return;
             }
-            TryEnqueueOnUi(() => PlaybackStateChanged?.Invoke(this, isPlaying));
+            TryEnqueueOnUi(() => 
+            {
+                PlaybackStateChanged?.Invoke(this, isPlaying);
+                BufferingStateChanged?.Invoke(this, isBuffering);
+            });
         };
 
         _watchdog = new StreamWatchdogService(this);

@@ -98,6 +98,11 @@ public partial class App : Application
             // Update tray icon to reflect play/pause state
             _ = UpdateTrayIconAsync();
         }
+        else if (e.PropertyName == nameof(PlayerViewModel.IsBuffering))
+        {
+            // Update tray icon to show loading state
+            _ = UpdateTrayIconAsync();
+        }
         else if (e.PropertyName == nameof(PlayerViewModel.CanPlay))
         {
             UpdatePlayPauseCommandText();
@@ -171,9 +176,15 @@ public partial class App : Application
         // Detect system theme (true = dark theme, false = light theme)
         bool isDarkTheme = IsSystemInDarkMode();
 
-        // Choose icon based on theme and play state
+        // Choose icon based on buffering, theme, and play state
         string iconUri;
-        if (_playerVm.IsPlaying)
+        
+        if (_playerVm.IsBuffering)
+        {
+            // When buffering/loading, use the hourglass icon
+            iconUri = "Assets/Hourglass.ico";
+        }
+        else if (_playerVm.IsPlaying)
         {
             // When playing, use the regular Radio icon
             iconUri = "Assets/Radio.ico";
