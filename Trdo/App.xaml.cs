@@ -1,7 +1,6 @@
 ﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
 using System;
 using System.ComponentModel;
 using System.Threading;
@@ -26,7 +25,6 @@ public partial class App : Application
     private EventWaitHandle? _trayIconRestoreEvent;
     private DispatcherQueueTimer? _trayIconWatchdogTimer;
     private DispatcherQueueTimer? _restoreEventMonitorTimer;
-    private ShellPage? _shellPage;
 
     public App()
     {
@@ -122,7 +120,6 @@ public partial class App : Application
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
         _trayIcon.IsVisible = true;
-        _shellPage = new();
     }
 
     private void TrayIcon_ContextMenu(TrayIcon sender, TrayIconEventArgs args)
@@ -149,7 +146,7 @@ public partial class App : Application
     {
         Flyout flyout = new()
         {
-            Content = _shellPage,
+            Content = new ShellPage(),
             AllowFocusOnInteraction = false
         };
 
@@ -178,7 +175,7 @@ public partial class App : Application
 
         // Choose icon based on buffering, theme, and play state
         string iconUri;
-        
+
         if (_playerVm.IsBuffering)
         {
             // When buffering/loading, use the hourglass icon
