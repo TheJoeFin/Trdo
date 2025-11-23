@@ -8,7 +8,7 @@ using Trdo.ViewModels;
 namespace Trdo.Pages;
 
 /// <summary>
-/// An empty page that can be used on its own or navigated to within a Frame.
+/// Page for manually adding or editing a radio station.
 /// </summary>
 public sealed partial class AddStation : Page
 {
@@ -31,10 +31,15 @@ public sealed partial class AddStation : Page
     {
         base.OnNavigatedTo(e);
 
-        // Check if we're editing an existing station
+        // Check if we're editing an existing station or adding from search
         if (e.Parameter is RadioStation station)
         {
             ViewModel.LoadStationForEdit(station);
+        }
+        else if (e.Parameter is RadioBrowserStation searchStation)
+        {
+            // Pre-fill from search result
+            ViewModel.LoadFromSearchResult(searchStation);
         }
     }
 
@@ -42,7 +47,7 @@ public sealed partial class AddStation : Page
     {
         // Find the ShellViewModel from the parent page
         _shellViewModel = FindShellViewModel();
-        SearchTextBox.Focus(FocusState.Programmatic);
+        StationNameTextBox.Focus(FocusState.Programmatic);
     }
 
     private ShellViewModel? FindShellViewModel()
@@ -73,11 +78,5 @@ public sealed partial class AddStation : Page
     {
         // Navigate back without saving
         _shellViewModel?.GoBack();
-    }
-
-    private void ManualEntryButton_Click(object sender, RoutedEventArgs e)
-    {
-        // Switch to manual entry mode
-        ViewModel.IsManualMode = true;
     }
 }
