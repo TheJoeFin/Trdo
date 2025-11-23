@@ -31,6 +31,7 @@
             <Grid
                 RowDefinitions="Auto,*,Auto"
                 RowSpacing="12"
+                IsHitTestVisible="{x:Bind ViewModel.IsSearchMode, Mode=OneWay}"
                 Visibility="{x:Bind ViewModel.IsSearchMode, Mode=OneWay}">
                 <!--  Search Input  -->
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -133,7 +134,10 @@
             </Grid>
 
             <!--  Manual Mode  -->
-            <StackPanel Spacing="12" Visibility="{x:Bind ViewModel.IsManualMode, Mode=OneWay}">
+            <StackPanel
+                Spacing="12"
+                IsHitTestVisible="{x:Bind ViewModel.IsManualMode, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.IsManualMode, Mode=OneWay}">
                 <!--  Station Name Input  -->
                 <StackPanel Spacing="4">
                     <TextBlock FontWeight="SemiBold" Text="Station Name" />
