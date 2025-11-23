@@ -247,8 +247,8 @@ public sealed partial class PlayingPage : Page
         // Use navigation service if available
         if (_shellViewModel != null)
         {
-            Debug.WriteLine("[PlayingPage] Navigating to Add Station page via ShellViewModel");
-            _shellViewModel.NavigateToAddStationPage();
+            Debug.WriteLine("[PlayingPage] Navigating to Search Station page via ShellViewModel");
+            _shellViewModel.NavigateToSearchStationPage();
         }
         else
         {

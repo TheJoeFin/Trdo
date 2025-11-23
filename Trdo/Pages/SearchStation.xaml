@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="Trdo.Pages.SearchStation"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:Trdo.Converters"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:Trdo.Models"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <converters:CountToHasItemsVisibilityConverter x:Key="HasItemsVisibilityConverter" />
+    </Page.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+
+        <!--  Title  -->
+        <TextBlock
+            Grid.Row="0"
+            FontSize="20"
+            FontWeight="SemiBold"
+            Text="Search Radio Stations" />
+
+        <!--  Search Input  -->
+        <Grid
+            Grid.Row="1"
+            ColumnDefinitions="*,Auto"
+            ColumnSpacing="8">
+            <TextBox
+                x:Name="SearchTextBox"
+                Grid.Column="0"
+                PlaceholderText="Search by station name..."
+                Text="{x:Bind ViewModel.SearchTerm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <ProgressRing
+                Grid.Column="1"
+                Width="20"
+                Height="20"
+                IsActive="{x:Bind ViewModel.IsSearching, Mode=OneWay}" />
+        </Grid>
+
+        <!--  Search Results  -->
+        <ScrollViewer Grid.Row="2">
+            <StackPanel Spacing="8">
+                <!--  Initial state  -->
+                <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.ShowInitialState, Mode=OneWay}">
+                    <TextBlock
+                        FontStyle="Italic"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Enter a search term to find stations..."
+                        TextAlignment="Center" />
+                    <HyperlinkButton
+                        HorizontalAlignment="Center"
+                        Click="ManualEntryButton_Click"
+                        Content="Or add station manually" />
+                </StackPanel>
+
+                <!--  Results List  -->
+                <ListView
+                    Margin="0"
+                    Padding="0"
+                    ItemsSource="{x:Bind ViewModel.SearchResults, Mode=OneWay}"
+                    SelectionMode="None"
+                    Visibility="{x:Bind ViewModel.SearchResults.Count, Mode=OneWay, Converter={StaticResource HasItemsVisibilityConverter}}">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="models:RadioBrowserStation">
+                            <Grid
+                                Margin="0,6"
+                                RowDefinitions="Auto,Auto,Auto"
+                                RowSpacing="4">
+                                <TextBlock
+                                    FontWeight="SemiBold"
+                                    Text="{x:Bind Name}"
+                                    TextWrapping="WrapWholeWords" />
+                                <TextBlock Grid.Row="1" TextWrapping="WrapWholeWords">
+                                    <Run
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Text="{x:Bind Country}" />
+                                    <Run
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Text=" • " />
+                                    <Run
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Text="{x:Bind Tags}" />
+                                </TextBlock>
+                                <Button
+                                    Grid.Row="2"
+                                    Margin="0,4,0,0"
+                                    Click="AddStationButton_Click"
+                                    Content="Add Station"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    Tag="{x:Bind}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!--  Cancel Button  -->
+        <Button
+            Grid.Row="3"
+            HorizontalAlignment="Stretch"
+            Click="CancelButton_Click">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <FontIcon FontSize="16" Glyph="&#xE711;" />
+                <TextBlock Text="Cancel" />
+            </StackPanel>
+        </Button>
+    </Grid>
+</Page>

@@ -1,6 +1,7 @@
 ﻿using Microsoft.UI.Xaml.Controls;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using Trdo.Models;
 using Trdo.Pages;
 using Trdo.Services;
 
@@ -44,9 +45,19 @@ public partial class ShellViewModel : INotifyPropertyChanged
         _navigationService.Navigate(typeof(SettingsPage));
     }
 
-    public void NavigateToAddStationPage(Models.RadioStation? stationToEdit = null)
+    public void NavigateToSearchStationPage()
+    {
+        _navigationService.Navigate(typeof(SearchStation));
+    }
+
+    public void NavigateToAddStationPage(RadioStation? stationToEdit = null)
     {
         _navigationService.Navigate(typeof(AddStation), stationToEdit);
+    }
+
+    public void NavigateToAddStationPage(RadioBrowserStation? searchResult)
+    {
+        _navigationService.Navigate(typeof(AddStation), searchResult);
     }
 
     public void NavigateToAboutPage()

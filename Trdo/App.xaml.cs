@@ -129,6 +129,13 @@ public partial class App : Application
 
     private void TrayIcon_Selected(TrayIcon sender, TrayIconEventArgs args)
     {
+
+        Window window = new();
+        window.Content = new ShellPage();
+        window.Show();
+
+        return;
+
         // Check if we can play (have stations available and one selected)
         if (!_playerVm.CanPlay)
         {
@@ -146,8 +153,7 @@ public partial class App : Application
     {
         Flyout flyout = new()
         {
-            Content = new ShellPage(),
-            AllowFocusOnInteraction = false
+            Content = new ShellPage()
         };
 
         flyout.Closing += (s, e) =>
