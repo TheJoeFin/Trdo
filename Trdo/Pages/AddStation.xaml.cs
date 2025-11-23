@@ -69,8 +69,8 @@ public sealed partial class AddStation : Page
     {
         if (ViewModel.Save())
         {
-            // Navigate back after successful save
-            _shellViewModel?.GoBack();
+            // Navigate to main page after successful save
+            _shellViewModel?.NavigateToPlayingPage();
         }
     }
 
