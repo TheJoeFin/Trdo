@@ -415,6 +415,9 @@ public sealed partial class RadioPlayerService : IDisposable
 
         // Play() already creates a fresh MediaSource to ensure live streaming,
         // so we just delegate to it to avoid code duplication.
+        // Exceptions are caught here because this method is called from event handlers
+        // where unhandled exceptions could crash the application. The watchdog service
+        // will attempt recovery if the stream fails to start.
         try
         {
             Play();
@@ -423,6 +426,7 @@ public sealed partial class RadioPlayerService : IDisposable
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioPlayerService] EXCEPTION in RefreshStreamForLivePlayback: {ex.Message}");
+            Debug.WriteLine($"[RadioPlayerService] The watchdog service will attempt recovery if enabled");
         }
 
         Debug.WriteLine("=== RefreshStreamForLivePlayback END ===");
