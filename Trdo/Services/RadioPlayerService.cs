@@ -170,8 +170,21 @@ public sealed partial class RadioPlayerService : IDisposable
                     Debug.WriteLine("[RadioPlayerService] External state change detected (likely hardware button)");
                     if (currentState == MediaPlaybackState.Playing)
                     {
-                        _watchdog.NotifyUserIntentionToPlay();
-                        Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play (hardware button)");
+                        // For live radio streams, when resuming via hardware buttons we need to
+                        // refresh the stream to get the live position instead of resuming from
+                        // the buffered position. Queue a refresh on the UI thread.
+                        Debug.WriteLine("[RadioPlayerService] External play detected - will refresh stream for live playback");
+                        TryEnqueueOnUi(() =>
+                        {
+                            try
+                            {
+                                RefreshStreamForLivePlayback();
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"[RadioPlayerService] Failed to refresh stream: {ex.Message}");
+                            }
+                        });
                     }
                     else if (currentState == MediaPlaybackState.Paused)
                     {
@@ -328,18 +341,20 @@ public sealed partial class RadioPlayerService : IDisposable
 
         try
         {
-            // Ensure we have a fresh media source
-            if (_player.Source == null)
+            // Always create a fresh media source to ensure we're streaming live content.
+            // For live radio streams, resuming from a paused position causes issues
+            // if there's been a long gap, so we always seek to the live stream.
+            if (_player.Source is MediaSource oldMedia)
             {
-                Debug.WriteLine("[RadioPlayerService] Player.Source is null, creating new MediaSource");
-                Uri uri = new(_streamUrl);
-                _player.Source = MediaSource.CreateFromUri(uri);
-                Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
+                Debug.WriteLine("[RadioPlayerService] Disposing old MediaSource to ensure live stream");
+                oldMedia.Reset();
+                oldMedia.Dispose();
             }
-            else
-            {
-                Debug.WriteLine($"[RadioPlayerService] Player.Source exists, current state: {(_player.Source as MediaSource)?.State}");
-            }
+
+            Debug.WriteLine("[RadioPlayerService] Creating fresh MediaSource for live stream");
+            Uri uri = new(_streamUrl);
+            _player.Source = MediaSource.CreateFromUri(uri);
+            Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
 
             Debug.WriteLine("[RadioPlayerService] Calling _player.Play()...");
             _isInternalStateChange = true;
@@ -380,6 +395,52 @@ public sealed partial class RadioPlayerService : IDisposable
         }
 
         Debug.WriteLine($"=== Play END ===");
+    }
+
+    /// <summary>
+    /// Refreshes the stream to ensure live playback.
+    /// Used when external controls (like hardware buttons) resume playback,
+    /// to ensure we're always streaming live content instead of resuming from a buffered position.
+    /// </summary>
+    private void RefreshStreamForLivePlayback()
+    {
+        Debug.WriteLine("=== RefreshStreamForLivePlayback START ===");
+
+        if (string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            Debug.WriteLine("[RadioPlayerService] No stream URL set, skipping refresh");
+            Debug.WriteLine("=== RefreshStreamForLivePlayback END ===");
+            return;
+        }
+
+        try
+        {
+            // Create a fresh media source to get the live stream position
+            if (_player.Source is MediaSource oldMedia)
+            {
+                Debug.WriteLine("[RadioPlayerService] Disposing old MediaSource for live stream refresh");
+                oldMedia.Reset();
+                oldMedia.Dispose();
+            }
+
+            Debug.WriteLine("[RadioPlayerService] Creating fresh MediaSource for live stream");
+            Uri uri = new(_streamUrl);
+            _isInternalStateChange = true;
+            _player.Source = MediaSource.CreateFromUri(uri);
+            _player.Play();
+            _isInternalStateChange = false;
+            Debug.WriteLine($"[RadioPlayerService] Stream refreshed for live playback: {_streamUrl}");
+
+            _watchdog.NotifyUserIntentionToPlay();
+            Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
+        }
+        catch (Exception ex)
+        {
+            _isInternalStateChange = false;
+            Debug.WriteLine($"[RadioPlayerService] EXCEPTION in RefreshStreamForLivePlayback: {ex.Message}");
+        }
+
+        Debug.WriteLine("=== RefreshStreamForLivePlayback END ===");
     }
 
     /// <summary>
