@@ -413,30 +413,15 @@ public sealed partial class RadioPlayerService : IDisposable
             return;
         }
 
+        // Play() already creates a fresh MediaSource to ensure live streaming,
+        // so we just delegate to it to avoid code duplication.
         try
         {
-            // Create a fresh media source to get the live stream position
-            if (_player.Source is MediaSource oldMedia)
-            {
-                Debug.WriteLine("[RadioPlayerService] Disposing old MediaSource for live stream refresh");
-                oldMedia.Reset();
-                oldMedia.Dispose();
-            }
-
-            Debug.WriteLine("[RadioPlayerService] Creating fresh MediaSource for live stream");
-            Uri uri = new(_streamUrl);
-            _isInternalStateChange = true;
-            _player.Source = MediaSource.CreateFromUri(uri);
-            _player.Play();
-            _isInternalStateChange = false;
-            Debug.WriteLine($"[RadioPlayerService] Stream refreshed for live playback: {_streamUrl}");
-
-            _watchdog.NotifyUserIntentionToPlay();
-            Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
+            Play();
+            Debug.WriteLine("[RadioPlayerService] Stream refreshed for live playback via Play()");
         }
         catch (Exception ex)
         {
-            _isInternalStateChange = false;
             Debug.WriteLine($"[RadioPlayerService] EXCEPTION in RefreshStreamForLivePlayback: {ex.Message}");
         }
 
