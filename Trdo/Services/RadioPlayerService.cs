@@ -411,7 +411,7 @@ public sealed partial class RadioPlayerService : IDisposable
             MediaPlaybackSession session = _player.PlaybackSession;
             
             // Check if there's a seekable range (for live streams, this represents the buffer)
-            if (session.IsSeekable && session.NaturalDuration.TotalSeconds > 0)
+            if (session.CanSeek)
             {
                 // Seek to the end of the buffer (live edge)
                 TimeSpan livePosition = session.NaturalDuration;
