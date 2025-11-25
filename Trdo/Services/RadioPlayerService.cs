@@ -171,18 +171,17 @@ public sealed partial class RadioPlayerService : IDisposable
                     if (currentState == MediaPlaybackState.Playing)
                     {
                         // For live radio streams, when resuming via hardware buttons we need to
-                        // refresh the stream to get the live position instead of resuming from
-                        // the buffered position. Queue a refresh on the UI thread.
-                        Debug.WriteLine("[RadioPlayerService] External play detected - will refresh stream for live playback");
+                        // seek to the live position instead of resuming from the buffered position.
+                        Debug.WriteLine("[RadioPlayerService] External play detected - will seek to live position");
                         TryEnqueueOnUi(() =>
                         {
                             try
                             {
-                                RefreshStreamForLivePlayback();
+                                SeekToLiveOnResume();
                             }
                             catch (Exception ex)
                             {
-                                Debug.WriteLine($"[RadioPlayerService] Failed to refresh stream: {ex.Message}");
+                                Debug.WriteLine($"[RadioPlayerService] Failed to seek to live: {ex.Message}");
                             }
                         });
                     }
@@ -341,26 +340,27 @@ public sealed partial class RadioPlayerService : IDisposable
 
         try
         {
-            // Always create a fresh media source to ensure we're streaming live content.
-            // For live radio streams, resuming from a paused position causes issues
-            // if there's been a long gap, so we always seek to the live stream.
-            if (_player.Source is MediaSource oldMedia)
+            // Ensure we have a media source
+            if (_player.Source == null)
             {
-                Debug.WriteLine("[RadioPlayerService] Disposing old MediaSource to ensure live stream");
-                oldMedia.Reset();
-                oldMedia.Dispose();
+                Debug.WriteLine("[RadioPlayerService] Player.Source is null, creating new MediaSource");
+                Uri uri = new(_streamUrl);
+                _player.Source = MediaSource.CreateFromUri(uri);
+                Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
             }
-
-            Debug.WriteLine("[RadioPlayerService] Creating fresh MediaSource for live stream");
-            Uri uri = new(_streamUrl);
-            _player.Source = MediaSource.CreateFromUri(uri);
-            Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
+            else
+            {
+                Debug.WriteLine($"[RadioPlayerService] Player.Source exists, current state: {(_player.Source as MediaSource)?.State}");
+            }
 
             Debug.WriteLine("[RadioPlayerService] Calling _player.Play()...");
             _isInternalStateChange = true;
             _player.Play();
             _isInternalStateChange = false;
             Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully");
+
+            // For live streams, seek to the live position to avoid playing from buffered content
+            SeekToLive();
 
             _watchdog.NotifyUserIntentionToPlay();
             Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
@@ -383,6 +383,8 @@ public sealed partial class RadioPlayerService : IDisposable
                 _isInternalStateChange = false;
                 Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully (retry)");
 
+                SeekToLive();
+
                 _watchdog.NotifyUserIntentionToPlay();
                 Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
             }
@@ -398,38 +400,58 @@ public sealed partial class RadioPlayerService : IDisposable
     }
 
     /// <summary>
-    /// Refreshes the stream to ensure live playback.
-    /// Used when external controls (like hardware buttons) resume playback,
-    /// to ensure we're always streaming live content instead of resuming from a buffered position.
+    /// Seeks the player to the live position.
+    /// For live streams, this moves the playback position to the end of the seekable range,
+    /// ensuring we're streaming live content rather than buffered content from an earlier time.
     /// </summary>
-    private void RefreshStreamForLivePlayback()
+    private void SeekToLive()
     {
-        Debug.WriteLine("=== RefreshStreamForLivePlayback START ===");
-
-        if (string.IsNullOrWhiteSpace(_streamUrl))
-        {
-            Debug.WriteLine("[RadioPlayerService] No stream URL set, skipping refresh");
-            Debug.WriteLine("=== RefreshStreamForLivePlayback END ===");
-            return;
-        }
-
-        // Play() already creates a fresh MediaSource to ensure live streaming,
-        // so we just delegate to it to avoid code duplication.
-        // Exceptions are caught here because this method is called from event handlers
-        // where unhandled exceptions could crash the application. The watchdog service
-        // will attempt recovery if the stream fails to start.
         try
         {
-            Play();
-            Debug.WriteLine("[RadioPlayerService] Stream refreshed for live playback via Play()");
+            MediaPlaybackSession session = _player.PlaybackSession;
+            
+            // Check if there's a seekable range (for live streams, this represents the buffer)
+            if (session.IsSeekable && session.NaturalDuration.TotalSeconds > 0)
+            {
+                // Seek to the end of the buffer (live edge)
+                TimeSpan livePosition = session.NaturalDuration;
+                Debug.WriteLine($"[RadioPlayerService] Seeking to live position: {livePosition}");
+                session.Position = livePosition;
+            }
+            else
+            {
+                Debug.WriteLine("[RadioPlayerService] Stream is not seekable or has no duration, skipping seek to live");
+            }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[RadioPlayerService] EXCEPTION in RefreshStreamForLivePlayback: {ex.Message}");
-            Debug.WriteLine($"[RadioPlayerService] The watchdog service will attempt recovery if enabled");
+            // Seeking to live is a best-effort operation - don't fail playback if it doesn't work
+            Debug.WriteLine($"[RadioPlayerService] Failed to seek to live: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Seeks the player to the live position when resuming from external controls.
+    /// Used when external controls (like hardware buttons) resume playback,
+    /// to ensure we're streaming live content instead of resuming from a buffered position.
+    /// </summary>
+    private void SeekToLiveOnResume()
+    {
+        Debug.WriteLine("=== SeekToLiveOnResume START ===");
+
+        if (string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            Debug.WriteLine("[RadioPlayerService] No stream URL set, skipping seek to live");
+            Debug.WriteLine("=== SeekToLiveOnResume END ===");
+            return;
         }
 
-        Debug.WriteLine("=== RefreshStreamForLivePlayback END ===");
+        // Just seek to the live position - no need to recreate the MediaSource
+        SeekToLive();
+        _watchdog.NotifyUserIntentionToPlay();
+        Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
+
+        Debug.WriteLine("=== SeekToLiveOnResume END ===");
     }
 
     /// <summary>
