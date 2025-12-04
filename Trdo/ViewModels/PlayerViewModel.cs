@@ -52,6 +52,15 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine($"[PlayerViewModel] Watchdog status: {WatchdogStatus}");
         };
 
+        // Subscribe to stream metadata changes
+        _player.StreamMetadataChanged += (_, metadata) =>
+        {
+            Debug.WriteLine($"[PlayerViewModel] StreamMetadataChanged event fired. NowPlaying={metadata.DisplayText}");
+            OnPropertyChanged(nameof(CurrentMetadata));
+            OnPropertyChanged(nameof(NowPlaying));
+            OnPropertyChanged(nameof(HasNowPlaying));
+        };
+
         // Load stations from settings
         Debug.WriteLine("[PlayerViewModel] Loading stations from settings...");
         List<RadioStation> loadedStations = _stationService.LoadStations();
@@ -249,6 +258,21 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     public string? LastError => _lastError;
 
     public bool CanPlay => Stations.Count > 0 && SelectedStation != null;
+
+    /// <summary>
+    /// Gets the current stream metadata (now playing information).
+    /// </summary>
+    public StreamMetadata CurrentMetadata => _player.CurrentMetadata;
+
+    /// <summary>
+    /// Gets the current now playing text for display.
+    /// </summary>
+    public string NowPlaying => CurrentMetadata?.DisplayText ?? string.Empty;
+
+    /// <summary>
+    /// Indicates whether there is now playing information to display.
+    /// </summary>
+    public bool HasNowPlaying => CurrentMetadata?.HasMetadata ?? false;
 
     public double Volume
     {
