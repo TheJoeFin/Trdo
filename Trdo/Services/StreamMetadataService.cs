@@ -15,6 +15,7 @@ namespace Trdo.Services;
 public sealed class StreamMetadataService : IDisposable
 {
     private readonly HttpClient _httpClient;
+    private readonly object _pollingLock = new();
     private CancellationTokenSource? _pollingCts;
     private Task? _pollingTask;
     private string? _currentStreamUrl;
@@ -67,43 +68,71 @@ public sealed class StreamMetadataService : IDisposable
             return;
         }
 
-        // Stop any existing polling
-        StopPolling();
-
-        _currentStreamUrl = streamUrl;
-        _pollingCts = new CancellationTokenSource();
-
-        Debug.WriteLine($"[StreamMetadataService] Starting metadata polling for: {streamUrl}");
-
-        _pollingTask = Task.Run(async () =>
+        lock (_pollingLock)
         {
-            // Fetch initial metadata immediately
-            await FetchMetadataAsync(_pollingCts.Token);
+            // Stop any existing polling
+            StopPollingCore();
 
-            // Then poll periodically
-            while (!_pollingCts.Token.IsCancellationRequested)
+            _currentStreamUrl = streamUrl;
+            _pollingCts = new CancellationTokenSource();
+
+            Debug.WriteLine($"[StreamMetadataService] Starting metadata polling for: {streamUrl}");
+
+            CancellationToken token = _pollingCts.Token;
+            _pollingTask = Task.Run(async () =>
             {
                 try
                 {
-                    await Task.Delay(_pollingInterval, _pollingCts.Token);
-                    await FetchMetadataAsync(_pollingCts.Token);
+                    // Fetch initial metadata immediately
+                    await FetchMetadataAsync(token);
+
+                    // Then poll periodically
+                    while (!token.IsCancellationRequested)
+                    {
+                        try
+                        {
+                            await Task.Delay(_pollingInterval, token);
+                            await FetchMetadataAsync(token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break;
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine($"[StreamMetadataService] Polling error: {ex.Message}");
+                        }
+                    }
                 }
                 catch (OperationCanceledException)
                 {
-                    break;
+                    // Task was cancelled, this is expected during disposal
+                    Debug.WriteLine("[StreamMetadataService] Polling task cancelled");
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[StreamMetadataService] Polling error: {ex.Message}");
+                    // Log any unhandled exceptions to prevent unobserved task exceptions
+                    Debug.WriteLine($"[StreamMetadataService] Unhandled polling error: {ex.Message}");
                 }
-            }
-        });
+            });
+        }
     }
 
     /// <summary>
     /// Stops polling for metadata.
     /// </summary>
     public void StopPolling()
+    {
+        lock (_pollingLock)
+        {
+            StopPollingCore();
+        }
+    }
+
+    /// <summary>
+    /// Core stop logic - must be called under lock.
+    /// </summary>
+    private void StopPollingCore()
     {
         Debug.WriteLine("[StreamMetadataService] Stopping metadata polling");
         _pollingCts?.Cancel();
@@ -142,33 +171,8 @@ public sealed class StreamMetadataService : IDisposable
                 return;
             }
 
-            // Check for ICY metadata interval header
-            int metaInterval = 0;
-            if (response.Headers.TryGetValues("icy-metaint", out var metaIntValues))
-            {
-                foreach (var metaIntStr in metaIntValues)
-                {
-                    if (int.TryParse(metaIntStr, out int parsed))
-                    {
-                        metaInterval = parsed;
-                        break;
-                    }
-                }
-            }
-
-            // Also check for ICY metadata interval in content headers (some servers)
-            if (metaInterval == 0 && response.Content.Headers.TryGetValues("icy-metaint", out var contentMetaIntValues))
-            {
-                foreach (var val in contentMetaIntValues)
-                {
-                    if (int.TryParse(val, out int parsed))
-                    {
-                        metaInterval = parsed;
-                        break;
-                    }
-                }
-            }
-
+            // Check for ICY metadata interval header in response headers and content headers
+            int metaInterval = GetIcyMetaInterval(response);
             Debug.WriteLine($"[StreamMetadataService] icy-metaint: {metaInterval}");
 
             if (metaInterval <= 0)
@@ -179,6 +183,9 @@ public sealed class StreamMetadataService : IDisposable
             }
 
             // Read stream data to find metadata
+            // Using ResponseHeadersRead allows us to start processing the stream immediately
+            // The 'using' statement ensures the stream is disposed after reading just enough data
+            // to extract the first metadata block, minimizing bandwidth usage
             using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
             StreamMetadata? metadata = await ReadIcyMetadataAsync(stream, metaInterval, cancellationToken);
 
@@ -211,14 +218,17 @@ public sealed class StreamMetadataService : IDisposable
     {
         try
         {
-            // Read and discard audio data until we reach the metadata
-            byte[] audioBuffer = new byte[metaInterval];
+            // Read and discard audio data in chunks until we reach the metadata
+            // Using a fixed buffer size reduces memory allocation for large metaInterval values
+            const int chunkSize = 8192;
+            byte[] discardBuffer = new byte[Math.Min(chunkSize, metaInterval)];
             int totalRead = 0;
 
             while (totalRead < metaInterval)
             {
+                int bytesToRead = Math.Min(discardBuffer.Length, metaInterval - totalRead);
                 int bytesRead = await stream.ReadAsync(
-                    audioBuffer.AsMemory(totalRead, metaInterval - totalRead),
+                    discardBuffer.AsMemory(0, bytesToRead),
                     cancellationToken);
 
                 if (bytesRead == 0)
@@ -231,14 +241,15 @@ public sealed class StreamMetadataService : IDisposable
             }
 
             // Read metadata length byte (multiply by 16 to get actual length)
-            int metaLengthByte = stream.ReadByte();
-            if (metaLengthByte < 0)
+            // Reuse the first byte of the discard buffer for efficiency
+            int lengthBytesRead = await stream.ReadAsync(discardBuffer.AsMemory(0, 1), cancellationToken);
+            if (lengthBytesRead == 0)
             {
                 Debug.WriteLine("[StreamMetadataService] Could not read metadata length");
                 return null;
             }
 
-            int metaLength = metaLengthByte * 16;
+            int metaLength = discardBuffer[0] * 16;
             if (metaLength == 0)
             {
                 // No metadata in this block
@@ -340,6 +351,38 @@ public sealed class StreamMetadataService : IDisposable
 
         // If no separator found, use the whole string as Title
         metadata.Title = metadata.StreamTitle;
+    }
+
+    /// <summary>
+    /// Extracts the ICY metadata interval from response headers.
+    /// </summary>
+    private static int GetIcyMetaInterval(HttpResponseMessage response)
+    {
+        // Check response headers first
+        if (response.Headers.TryGetValues("icy-metaint", out var metaIntValues))
+        {
+            foreach (var metaIntStr in metaIntValues)
+            {
+                if (int.TryParse(metaIntStr, out int parsed))
+                {
+                    return parsed;
+                }
+            }
+        }
+
+        // Also check content headers (some servers send it there)
+        if (response.Content.Headers.TryGetValues("icy-metaint", out var contentMetaIntValues))
+        {
+            foreach (var val in contentMetaIntValues)
+            {
+                if (int.TryParse(val, out int parsed))
+                {
+                    return parsed;
+                }
+            }
+        }
+
+        return 0;
     }
 
     /// <summary>
