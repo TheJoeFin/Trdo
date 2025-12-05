@@ -26,6 +26,11 @@ public partial class App : Application
     private DispatcherQueueTimer? _trayIconWatchdogTimer;
     private DispatcherQueueTimer? _restoreEventMonitorTimer;
 
+    /// <summary>
+    /// Maximum length for the now playing text in the tooltip before truncation.
+    /// </summary>
+    private const int MaxTooltipNowPlayingLength = 60;
+
     public App()
     {
         InitializeComponent();
@@ -103,6 +108,12 @@ public partial class App : Application
         }
         else if (e.PropertyName == nameof(PlayerViewModel.CanPlay))
         {
+            UpdatePlayPauseCommandText();
+        }
+        else if (e.PropertyName == nameof(PlayerViewModel.NowPlaying) ||
+                 e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
+        {
+            // Update tooltip when now playing info changes
             UpdatePlayPauseCommandText();
         }
     }
@@ -233,11 +244,25 @@ public partial class App : Application
         }
         else if (_playerVm.IsPlaying)
         {
-            _trayIcon.Tooltip = "Trdo (Playing) - Click to Pause";
+            // Include now playing info if available
+            if (_playerVm.HasNowPlaying)
+            {
+                // Truncate long now playing text to keep tooltip readable
+                string nowPlaying = _playerVm.NowPlaying;
+                if (nowPlaying.Length > MaxTooltipNowPlayingLength)
+                {
+                    nowPlaying = string.Concat(nowPlaying.AsSpan(0, MaxTooltipNowPlayingLength - 3), "...");
+                }
+                _trayIcon.Tooltip = $"Trdo (Playing)\n{nowPlaying}";
+            }
+            else
+            {
+                _trayIcon.Tooltip = "Trdo (Playing)";
+            }
         }
         else
         {
-            _trayIcon.Tooltip = "Trdo - Play";
+            _trayIcon.Tooltip = "Trdo (Paused)";
         }
     }
 

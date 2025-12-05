@@ -18,11 +18,15 @@
   <ItemGroup>
     <None Remove="Assets\Radio-Black.ico" />
     <None Remove="Assets\Radio-White.ico" />
+    <None Remove="Assets\spotify.svg" />
     <None Remove="Pages\AddStation.xaml" />
     <None Remove="Pages\PlayingPage.xaml" />
     <None Remove="Pages\SettingsPage.xaml" />
     <None Remove="Pages\ShellPage.xaml" />
     <None Remove="Pages\AboutPage.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Pages\NowPlayingPage.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,6 +51,7 @@
     <ProjectCapability Include="Msix" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7175" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
     <PackageReference Include="WinUIEx" Version="2.9.0" />
@@ -67,6 +72,14 @@
     <Content Update="Assets\Radio.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Update="Assets\spotify.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\NowPlayingPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\AboutPage.xaml">

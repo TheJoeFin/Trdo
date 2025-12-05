@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Trdo.Models;
+using Trdo.Services;
 using Trdo.ViewModels;
 
 namespace Trdo.Pages;
@@ -71,6 +72,9 @@ public sealed partial class AddStation : Page
         {
             // Navigate to main page after successful save
             _shellViewModel?.NavigateToPlayingPage();
+
+            // Reset navigation stack history when going home after adding a station
+            NavigationService.Instance.ClearBackStack();
         }
     }
 

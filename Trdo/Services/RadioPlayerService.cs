@@ -1,6 +1,7 @@
 using Microsoft.UI.Dispatching;
 using System;
 using System.Diagnostics;
+using Trdo.Models;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
@@ -12,6 +13,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private readonly MediaPlayer _player;
     private readonly DispatcherQueue _uiQueue;
     private readonly StreamWatchdogService _watchdog;
+    private readonly StreamMetadataService _metadataService;
     private double _volume = 0.5;
     private const string VolumeKey = "RadioVolume";
     private const string WatchdogEnabledKey = "WatchdogEnabled";
@@ -23,6 +25,7 @@ public sealed partial class RadioPlayerService : IDisposable
     public event EventHandler<bool>? PlaybackStateChanged;
     public event EventHandler<double>? VolumeChanged;
     public event EventHandler<bool>? BufferingStateChanged;
+    public event EventHandler<StreamMetadata>? StreamMetadataChanged;
 
     public bool IsPlaying
     {
@@ -100,6 +103,11 @@ public sealed partial class RadioPlayerService : IDisposable
     }
 
     public StreamWatchdogService Watchdog => _watchdog;
+
+    /// <summary>
+    /// Gets the current stream metadata (now playing information).
+    /// </summary>
+    public StreamMetadata CurrentMetadata => _metadataService.CurrentMetadata;
 
     public double Volume
     {
@@ -197,6 +205,14 @@ public sealed partial class RadioPlayerService : IDisposable
 
         _watchdog = new StreamWatchdogService(this);
         Debug.WriteLine("[RadioPlayerService] StreamWatchdogService created");
+
+        _metadataService = new StreamMetadataService();
+        _metadataService.MetadataChanged += (_, metadata) =>
+        {
+            Debug.WriteLine($"[RadioPlayerService] Metadata changed: {metadata.DisplayText}");
+            TryEnqueueOnUi(() => StreamMetadataChanged?.Invoke(this, metadata));
+        };
+        Debug.WriteLine("[RadioPlayerService] StreamMetadataService created");
 
         LoadSettings();
 
@@ -349,6 +365,10 @@ public sealed partial class RadioPlayerService : IDisposable
 
             _watchdog.NotifyUserIntentionToPlay();
             Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
+
+            // Start metadata polling
+            _metadataService.StartPolling(_streamUrl);
+            Debug.WriteLine("[RadioPlayerService] Started metadata polling");
         }
         catch (Exception ex)
         {
@@ -370,6 +390,10 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 _watchdog.NotifyUserIntentionToPlay();
                 Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
+
+                // Start metadata polling
+                _metadataService.StartPolling(_streamUrl);
+                Debug.WriteLine("[RadioPlayerService] Started metadata polling (retry)");
             }
             catch (Exception retryEx)
             {
@@ -419,6 +443,10 @@ public sealed partial class RadioPlayerService : IDisposable
 
             _watchdog.NotifyUserIntentionToPause();
             Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause");
+
+            // Stop metadata polling
+            _metadataService.StopPolling();
+            Debug.WriteLine("[RadioPlayerService] Stopped metadata polling");
 
             // DO NOT prepare the stream here - let Play() or SetStreamUrl() handle it
             // The previous code was creating a MediaSource with the current URL,
@@ -481,6 +509,7 @@ public sealed partial class RadioPlayerService : IDisposable
     {
         Debug.WriteLine("[RadioPlayerService] Dispose called");
         _watchdog.Dispose();
+        _metadataService.Dispose();
 
         if (_player.Source is MediaSource media)
         {
