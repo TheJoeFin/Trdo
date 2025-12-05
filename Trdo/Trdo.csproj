@@ -24,6 +24,9 @@
     <None Remove="Pages\ShellPage.xaml" />
     <None Remove="Pages\AboutPage.xaml" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="Pages\NowPlayingPage.xaml" />
+  </ItemGroup>
 
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -67,6 +70,11 @@
     <Content Update="Assets\Radio.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\NowPlayingPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\AboutPage.xaml">
