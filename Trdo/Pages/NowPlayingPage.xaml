@@ -50,9 +50,7 @@
             </StackPanel>
 
             <!--  Track Info Display  -->
-            <Grid
-                VerticalAlignment="Center"
-                Visibility="{x:Bind ViewModel.HasMetadata, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid VerticalAlignment="Center" Visibility="{x:Bind ViewModel.HasMetadata, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid
                     Padding="20"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -100,16 +98,34 @@
                             TextWrapping="Wrap"
                             Visibility="{x:Bind ViewModel.ShowStreamTitleOnly, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-                        <!--  Search on Discogs  -->
-                        <HyperlinkButton
+                        <!--  Search Links  -->
+                        <StackPanel
                             Margin="0,4,0,0"
                             HorizontalAlignment="Center"
-                            Click="DiscogsLink_Click">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon FontSize="14" Glyph="&#xE721;" />
-                                <TextBlock Text="Search on Discogs" />
-                            </StackPanel>
-                        </HyperlinkButton>
+                            Orientation="Horizontal"
+                            Spacing="16">
+
+                            <!--  Search on Spotify  -->
+                            <HyperlinkButton Click="SpotifyLink_Click">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Image Width="20" Height="20">
+                                        <Image.Source>
+                                            <SvgImageSource UriSource="ms-appx:///Assets/spotify.svg" />
+                                        </Image.Source>
+                                    </Image>
+                                    <TextBlock Text="Spotify" />
+                                </StackPanel>
+                            </HyperlinkButton>
+
+                            <!--  Search on Discogs  -->
+                            <HyperlinkButton Click="DiscogsLink_Click">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="14" Glyph="&#xE721;" />
+                                    <TextBlock Text="Discogs" />
+                                </StackPanel>
+                            </HyperlinkButton>
+
+                        </StackPanel>
 
                     </StackPanel>
                 </Grid>

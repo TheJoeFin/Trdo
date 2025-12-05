@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Trdo.Models;
@@ -30,6 +31,7 @@ public partial class NowPlayingViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(ShowStreamTitleOnly));
             OnPropertyChanged(nameof(ShowRawStreamTitle));
             OnPropertyChanged(nameof(DiscogsSearchQuery));
+            OnPropertyChanged(nameof(SpotifySearchQuery));
         };
     }
 
@@ -93,7 +95,22 @@ public partial class NowPlayingViewModel : INotifyPropertyChanged
             string searchText = DisplayText;
             if (string.IsNullOrWhiteSpace(searchText))
                 searchText = StreamTitle;
-            
+
+            return Uri.EscapeDataString(searchText);
+        }
+    }
+
+    /// <summary>
+    /// Gets the search query for Spotify, URL-encoded.
+    /// </summary>
+    public string SpotifySearchQuery
+    {
+        get
+        {
+            string searchText = DisplayText;
+            if (string.IsNullOrWhiteSpace(searchText))
+                searchText = StreamTitle;
+
             return Uri.EscapeDataString(searchText);
         }
     }
@@ -108,6 +125,46 @@ public partial class NowPlayingViewModel : INotifyPropertyChanged
 
         string url = $"https://www.discogs.com/search?q={DiscogsSearchQuery}";
         await Launcher.LaunchUriAsync(new Uri(url));
+    }
+
+    /// <summary>
+    /// Opens Spotify search with the current track information.
+    /// Tries to open the local Spotify app first, falls back to web.
+    /// </summary>
+    public async Task SearchOnSpotify()
+    {
+        if (!HasMetadata)
+            return;
+
+        // Try to open the Spotify app first using the spotify: URI scheme
+        string spotifyAppUri = $"spotify:search:{SpotifySearchQuery}";
+
+        try
+        {
+            bool success = await Launcher.LaunchUriAsync(new Uri(spotifyAppUri));
+
+            if (!success)
+            {
+                // Spotify app not installed or couldn't launch, fall back to web
+                Debug.WriteLine("[NowPlayingViewModel] Spotify app not available, falling back to web");
+                await OpenSpotifyWeb();
+            }
+        }
+        catch (Exception ex)
+        {
+            // URI scheme not recognized or other error, fall back to web
+            Debug.WriteLine($"[NowPlayingViewModel] Error launching Spotify app: {ex.Message}");
+            await OpenSpotifyWeb();
+        }
+    }
+
+    /// <summary>
+    /// Opens Spotify web search as a fallback.
+    /// </summary>
+    private async Task OpenSpotifyWeb()
+    {
+        string webUrl = $"https://open.spotify.com/search/{SpotifySearchQuery}";
+        await Launcher.LaunchUriAsync(new Uri(webUrl));
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

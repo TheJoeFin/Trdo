@@ -30,4 +30,10 @@ public sealed partial class NowPlayingPage : Page
         Debug.WriteLine("[NowPlayingPage] Discogs link clicked");
         await ViewModel.SearchOnDiscogs();
     }
+
+    private async void SpotifyLink_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[NowPlayingPage] Spotify link clicked");
+        await ViewModel.SearchOnSpotify();
+    }
 }
