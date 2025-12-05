@@ -65,6 +65,11 @@ public partial class ShellViewModel : INotifyPropertyChanged
         _navigationService.Navigate(typeof(AboutPage));
     }
 
+    public void NavigateToNowPlayingPage()
+    {
+        _navigationService.Navigate(typeof(NowPlayingPage));
+    }
+
     public void GoBack()
     {
         _navigationService.GoBack();

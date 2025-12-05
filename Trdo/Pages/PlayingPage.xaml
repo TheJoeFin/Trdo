@@ -203,29 +203,46 @@
         </Grid>
 
         <!--  Now Playing Info  -->
-        <Grid
+        <Button
+            x:Name="NowPlayingButton"
             Grid.Row="4"
             Padding="8,4"
+            HorizontalAlignment="Stretch"
+            HorizontalContentAlignment="Left"
             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderThickness="0"
+            Click="NowPlayingInfo_Click"
             CornerRadius="4"
+            ToolTipService.ToolTip="Click for details"
             Visibility="{x:Bind ViewModel.HasNowPlaying, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <StackPanel Orientation="Horizontal" Spacing="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                    <FontIcon
+                        VerticalAlignment="Center"
+                        FontSize="14"
+                        Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                        Glyph="&#xE8D6;" />
+                    <TextBlock
+                        x:Name="NowPlayingText"
+                        VerticalAlignment="Center"
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{x:Bind ViewModel.NowPlaying, Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis"
+                        TextWrapping="NoWrap" />
+                </StackPanel>
                 <FontIcon
-                    VerticalAlignment="Center"
-                    FontSize="14"
-                    Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                    Glyph="&#xE8D6;" />
-                <TextBlock
-                    x:Name="NowPlayingText"
+                    Grid.Column="1"
                     VerticalAlignment="Center"
                     FontSize="12"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="{x:Bind ViewModel.NowPlaying, Mode=OneWay}"
-                    TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap"
-                    ToolTipService.ToolTip="{x:Bind ViewModel.NowPlaying, Mode=OneWay}" />
-            </StackPanel>
-        </Grid>
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Glyph="&#xE76C;" />
+            </Grid>
+        </Button>
 
         <!--  Play and Quit Buttons  -->
         <Grid Grid.Row="5" ColumnSpacing="4">

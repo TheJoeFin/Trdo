@@ -285,6 +285,13 @@ public sealed partial class PlayingPage : Page
         _shellViewModel?.NavigateToAboutPage();
     }
 
+    private void NowPlayingInfo_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[PlayingPage] Now Playing info clicked");
+        // Navigate to Now Playing details page
+        _shellViewModel?.NavigateToNowPlayingPage();
+    }
+
     private void EditStation_Click(object sender, RoutedEventArgs e)
     {
         if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
