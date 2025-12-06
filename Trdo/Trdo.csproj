@@ -20,6 +20,7 @@
     <None Remove="Assets\Radio-White.ico" />
     <None Remove="Assets\spotify.svg" />
     <None Remove="Pages\AddStation.xaml" />
+    <None Remove="Pages\FavoritesPage.xaml" />
     <None Remove="Pages\PlayingPage.xaml" />
     <None Remove="Pages\SettingsPage.xaml" />
     <None Remove="Pages\ShellPage.xaml" />
@@ -78,6 +79,11 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\NowPlayingPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\FavoritesPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

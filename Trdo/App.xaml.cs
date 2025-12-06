@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Trdo.Pages;
+using Trdo.Services;
 using Trdo.ViewModels;
 using Windows.UI;
 using Windows.UI.ViewManagement;
@@ -35,6 +36,9 @@ public partial class App : Application
     {
         InitializeComponent();
         _playerVm.PropertyChanged += PlayerVmOnPropertyChanged;
+
+        // Initialize PlaylistHistoryService early so it captures metadata from the start
+        PlaylistHistoryService.EnsureInitialized();
 
         // Subscribe to theme change events
         _uiSettings.ColorValuesChanged += OnColorValuesChanged;
