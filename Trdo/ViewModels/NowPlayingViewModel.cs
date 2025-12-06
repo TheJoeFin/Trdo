@@ -1,4 +1,5 @@
 using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -9,30 +10,96 @@ using Windows.System;
 
 namespace Trdo.ViewModels;
 
-public partial class NowPlayingViewModel : INotifyPropertyChanged
+public class NowPlayingViewModel : INotifyPropertyChanged
 {
     private readonly RadioPlayerService _player = RadioPlayerService.Instance;
+    private readonly FavoritesService _favoritesService = FavoritesService.Instance;
+    private readonly PlaylistHistoryService _historyService = PlaylistHistoryService.Instance;
+
+    private bool _isCurrentTrackFavorited;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    public bool IsCurrentTrackFavorited
+    {
+        get => _isCurrentTrackFavorited;
+        set
+        {
+            if (_isCurrentTrackFavorited == value) return;
+            _isCurrentTrackFavorited = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// The playlist history showing recent tracks (from singleton service).
+    /// </summary>
+    public ObservableCollection<PlaylistHistoryItem> PlaylistHistory => _historyService.History;
+
     public NowPlayingViewModel()
     {
-        // Subscribe to metadata changes
-        _player.StreamMetadataChanged += (_, _) =>
+        // Subscribe to metadata changes for UI updates
+        _player.StreamMetadataChanged += OnStreamMetadataChanged;
+
+        // Subscribe to favorites changes to update UI
+        _favoritesService.FavoritesChanged += (_, _) =>
         {
-            OnPropertyChanged(nameof(CurrentMetadata));
-            OnPropertyChanged(nameof(StreamTitle));
-            OnPropertyChanged(nameof(Artist));
-            OnPropertyChanged(nameof(Title));
-            OnPropertyChanged(nameof(DisplayText));
-            OnPropertyChanged(nameof(HasMetadata));
-            OnPropertyChanged(nameof(HasArtist));
-            OnPropertyChanged(nameof(HasTitle));
-            OnPropertyChanged(nameof(ShowStreamTitleOnly));
-            OnPropertyChanged(nameof(ShowRawStreamTitle));
-            OnPropertyChanged(nameof(DiscogsSearchQuery));
-            OnPropertyChanged(nameof(SpotifySearchQuery));
+            UpdateCurrentTrackFavoriteStatus();
         };
+
+        // Initialize current track favorite status
+        UpdateCurrentTrackFavoriteStatus();
+
+        Debug.WriteLine($"[NowPlayingViewModel] Initialized with {PlaylistHistory.Count} history items from service");
+    }
+
+    private void OnStreamMetadataChanged(object? sender, StreamMetadata metadata)
+    {
+        OnPropertyChanged(nameof(CurrentMetadata));
+        OnPropertyChanged(nameof(StreamTitle));
+        OnPropertyChanged(nameof(Artist));
+        OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(DisplayText));
+        OnPropertyChanged(nameof(HasMetadata));
+        OnPropertyChanged(nameof(HasArtist));
+        OnPropertyChanged(nameof(HasTitle));
+        OnPropertyChanged(nameof(ShowStreamTitleOnly));
+        OnPropertyChanged(nameof(ShowRawStreamTitle));
+        OnPropertyChanged(nameof(DiscogsSearchQuery));
+        OnPropertyChanged(nameof(SpotifySearchQuery));
+
+        // History is now managed by PlaylistHistoryService singleton
+        UpdateCurrentTrackFavoriteStatus();
+    }
+
+    private void UpdateCurrentTrackFavoriteStatus()
+    {
+        IsCurrentTrackFavorited = _favoritesService.IsFavorited(CurrentMetadata);
+    }
+
+    public void ToggleCurrentTrackFavorite()
+    {
+        if (CurrentMetadata?.HasMetadata != true)
+            return;
+
+        string stationName = PlayerViewModel.Shared.SelectedStation?.Name ?? "Unknown Station";
+        IsCurrentTrackFavorited = _favoritesService.ToggleFavorite(CurrentMetadata, stationName);
+        Debug.WriteLine($"[NowPlayingViewModel] Toggled favorite for current track. IsFavorited: {IsCurrentTrackFavorited}");
+    }
+
+    public void ToggleHistoryItemFavorite(PlaylistHistoryItem? item)
+    {
+        if (item == null)
+            return;
+
+        item.ToggleFavorite();
+        Debug.WriteLine($"[NowPlayingViewModel] Toggled favorite for history item: {item.DisplayText}. IsFavorited: {item.IsFavorited}");
+
+        // If this is the current track, update that status too
+        if (CurrentMetadata != null && item.UniqueKey == $"{CurrentMetadata.Artist?.ToLowerInvariant()}|{CurrentMetadata.Title?.ToLowerInvariant()}|{CurrentMetadata.StreamTitle?.ToLowerInvariant()}".Trim())
+        {
+            UpdateCurrentTrackFavoriteStatus();
+        }
     }
 
     /// <summary>
