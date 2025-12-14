@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -292,6 +293,8 @@ public sealed class StreamMetadataService : IDisposable
     /// <summary>
     /// Parses an ICY metadata string into a StreamMetadata object.
     /// Format is typically: StreamTitle='Artist - Song';StreamUrl='...';
+    /// Alternative format: Exploring title="Song",artist="Artist",url="...",amgArtworkURL="..."
+    /// Another format: StreamTitle='Artist - text="Song" amgArtworkURL="..."';
     /// </summary>
     private static StreamMetadata ParseIcyMetadata(string metadataStr)
     {
@@ -302,6 +305,16 @@ public sealed class StreamMetadataService : IDisposable
             return metadata;
         }
 
+        Debug.WriteLine($"[StreamMetadataService] Raw metadata String: {metadataStr}");
+
+        // Check for "Exploring" format (used by iHeartRadio and some other stations)
+        if (metadataStr.Contains("Exploring ", StringComparison.OrdinalIgnoreCase))
+        {
+            ParseExploringFormat(metadataStr, metadata);
+            return metadata;
+        }
+
+        // Standard ICY format parsing
         // Extract StreamTitle
         const string streamTitleKey = "StreamTitle='";
         int titleStart = metadataStr.IndexOf(streamTitleKey, StringComparison.OrdinalIgnoreCase);
@@ -316,12 +329,168 @@ public sealed class StreamMetadataService : IDisposable
                 metadata.StreamTitle = metadataStr[titleStart..titleEnd];
                 Debug.WriteLine($"[StreamMetadataService] StreamTitle: {metadata.StreamTitle}");
 
-                // Try to parse "Artist - Title" format
-                ParseArtistAndTitle(metadata);
+                // Check if this is the "Artist - text=" format (iHeartRadio variant)
+                if (metadata.StreamTitle.Contains(" - text=\"", StringComparison.OrdinalIgnoreCase))
+                {
+                    ParseIHeartRadioFormat(metadata.StreamTitle, metadata);
+                }
+                else
+                {
+                    // Try to parse "Artist - Title" format
+                    ParseArtistAndTitle(metadata);
+                }
+
+                // Try to extract album artwork from within StreamTitle if present
+                string? artworkUrl = ExtractAttribute(metadata.StreamTitle, "amgArtworkURL");
+                if (!string.IsNullOrWhiteSpace(artworkUrl) && IsImageUrl(artworkUrl))
+                {
+                    metadata.AlbumArtUrl = artworkUrl;
+                    Debug.WriteLine($"[StreamMetadataService] AlbumArtUrl from StreamTitle: {metadata.AlbumArtUrl}");
+                }
+            }
+        }
+
+        // Extract StreamUrl (often contains album art URL)
+        const string streamUrlKey = "StreamUrl='";
+        int urlStart = metadataStr.IndexOf(streamUrlKey, StringComparison.OrdinalIgnoreCase);
+
+        if (urlStart >= 0)
+        {
+            urlStart += streamUrlKey.Length;
+            int urlEnd = metadataStr.IndexOf("';", urlStart, StringComparison.Ordinal);
+
+            if (urlEnd > urlStart)
+            {
+                string streamUrl = metadataStr[urlStart..urlEnd];
+                // Check if it's an image URL
+                if (IsImageUrl(streamUrl))
+                {
+                    metadata.AlbumArtUrl = streamUrl;
+                    Debug.WriteLine($"[StreamMetadataService] AlbumArtUrl: {metadata.AlbumArtUrl}");
+                }
             }
         }
 
         return metadata;
+    }
+
+    /// <summary>
+    /// Parses the iHeartRadio variant format where StreamTitle contains structured data.
+    /// Format: "Artist - text="Song Title" amgArtworkURL="..." ..."
+    /// </summary>
+    private static void ParseIHeartRadioFormat(string streamTitle, StreamMetadata metadata)
+    {
+        // Find the " - text=" separator
+        int separatorIndex = streamTitle.IndexOf(" - text=\"", StringComparison.OrdinalIgnoreCase);
+        if (separatorIndex < 0)
+            return;
+
+        // Extract artist (everything before " - text=")
+        string artist = streamTitle[..separatorIndex].Trim();
+        if (!string.IsNullOrWhiteSpace(artist))
+        {
+            metadata.Artist = artist;
+            Debug.WriteLine($"[StreamMetadataService] iHeartRadio format - Artist: {artist}");
+        }
+
+        // Extract title from text attribute
+        string? title = ExtractAttribute(streamTitle, "text");
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            metadata.Title = title;
+            Debug.WriteLine($"[StreamMetadataService] iHeartRadio format - Title: {title}");
+        }
+
+        // Update StreamTitle to clean format
+        if (!string.IsNullOrWhiteSpace(artist) && !string.IsNullOrWhiteSpace(title))
+        {
+            metadata.StreamTitle = $"{artist} - {title}";
+            Debug.WriteLine($"[StreamMetadataService] iHeartRadio format - Cleaned StreamTitle: {metadata.StreamTitle}");
+        }
+    }
+
+    /// <summary>
+    /// Parses the "Exploring" metadata format used by iHeartRadio and similar stations.
+    /// Format: Exploring title="Song",artist="Artist",amgArtworkURL="http://..."
+    /// </summary>
+    private static void ParseExploringFormat(string metadataStr, StreamMetadata metadata)
+    {
+        // Extract title
+        string? title = ExtractAttribute(metadataStr, "title");
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            metadata.Title = title;
+            Debug.WriteLine($"[StreamMetadataService] Exploring format - Title: {title}");
+        }
+
+        // Extract artist
+        string? artist = ExtractAttribute(metadataStr, "artist");
+        if (!string.IsNullOrWhiteSpace(artist))
+        {
+            metadata.Artist = artist;
+            Debug.WriteLine($"[StreamMetadataService] Exploring format - Artist: {artist}");
+        }
+
+        // Build StreamTitle from artist and title
+        if (!string.IsNullOrWhiteSpace(artist) && !string.IsNullOrWhiteSpace(title))
+        {
+            metadata.StreamTitle = $"{artist} - {title}";
+        }
+        else if (!string.IsNullOrWhiteSpace(title))
+        {
+            metadata.StreamTitle = title;
+        }
+
+        // Extract album artwork URL (try multiple possible attribute names)
+        string? artworkUrl = ExtractAttribute(metadataStr, "amgArtworkURL") 
+                          ?? ExtractAttribute(metadataStr, "artworkURL")
+                          ?? ExtractAttribute(metadataStr, "url");
+
+        if (!string.IsNullOrWhiteSpace(artworkUrl) && IsImageUrl(artworkUrl))
+        {
+            metadata.AlbumArtUrl = artworkUrl;
+            Debug.WriteLine($"[StreamMetadataService] Exploring format - AlbumArtUrl: {artworkUrl}");
+        }
+    }
+
+    /// <summary>
+    /// Extracts an attribute value from a metadata string.
+    /// Example: title="Without Me" returns "Without Me"
+    /// </summary>
+    private static string? ExtractAttribute(string metadataStr, string attributeName)
+    {
+        string pattern = $"{attributeName}=\"";
+        int startIndex = metadataStr.IndexOf(pattern, StringComparison.OrdinalIgnoreCase);
+
+        if (startIndex < 0)
+            return null;
+
+        startIndex += pattern.Length;
+        int endIndex = metadataStr.IndexOf('"', startIndex);
+
+        if (endIndex < 0)
+            return null;
+
+        return metadataStr[startIndex..endIndex];
+    }
+
+    /// <summary>
+    /// Checks if a URL appears to be an image URL based on extension.
+    /// </summary>
+    private static bool IsImageUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return false;
+
+        string lowerUrl = url.ToLowerInvariant();
+        return lowerUrl.EndsWith(".jpg") ||
+               lowerUrl.EndsWith(".jpeg") ||
+               lowerUrl.EndsWith(".png") ||
+               lowerUrl.EndsWith(".gif") ||
+               lowerUrl.EndsWith(".webp") ||
+               lowerUrl.Contains(".jpg?") ||
+               lowerUrl.Contains(".jpeg?") ||
+               lowerUrl.Contains(".png?");
     }
 
     /// <summary>
@@ -359,9 +528,9 @@ public sealed class StreamMetadataService : IDisposable
     private static int GetIcyMetaInterval(HttpResponseMessage response)
     {
         // Check response headers first
-        if (response.Headers.TryGetValues("icy-metaint", out var metaIntValues))
+        if (response.Headers.TryGetValues("icy-metaint", out IEnumerable<string>? metaIntValues))
         {
-            foreach (var metaIntStr in metaIntValues)
+            foreach (string metaIntStr in metaIntValues)
             {
                 if (int.TryParse(metaIntStr, out int parsed))
                 {
@@ -371,9 +540,9 @@ public sealed class StreamMetadataService : IDisposable
         }
 
         // Also check content headers (some servers send it there)
-        if (response.Content.Headers.TryGetValues("icy-metaint", out var contentMetaIntValues))
+        if (response.Content.Headers.TryGetValues("icy-metaint", out IEnumerable<string>? contentMetaIntValues))
         {
-            foreach (var val in contentMetaIntValues)
+            foreach (string val in contentMetaIntValues)
             {
                 if (int.TryParse(val, out int parsed))
                 {
@@ -393,7 +562,8 @@ public sealed class StreamMetadataService : IDisposable
         // Check if metadata actually changed
         if (_currentMetadata.StreamTitle == newMetadata.StreamTitle &&
             _currentMetadata.Artist == newMetadata.Artist &&
-            _currentMetadata.Title == newMetadata.Title)
+            _currentMetadata.Title == newMetadata.Title &&
+            _currentMetadata.AlbumArtUrl == newMetadata.AlbumArtUrl)
         {
             return;
         }
