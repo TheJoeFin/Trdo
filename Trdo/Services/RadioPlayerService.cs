@@ -186,6 +186,22 @@ public sealed partial class RadioPlayerService : IDisposable
                         // Only notify pause intent if explicitly paused (not buffering, opening, or other states)
                         _watchdog.NotifyUserIntentionToPause();
                         Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause (hardware button)");
+
+                        // Clean up the media source when paused externally (e.g., headphones removed, media keys)
+                        // This ensures the stream is ready to seek to real-time when resumed
+                        Debug.WriteLine("[RadioPlayerService] Cleaning up MediaSource after external pause");
+                        if (_player.Source is MediaSource media)
+                        {
+                            Debug.WriteLine("[RadioPlayerService] Disposing MediaSource");
+                            media.Reset();
+                            media.Dispose();
+                        }
+                        _player.Source = null;
+                        Debug.WriteLine("[RadioPlayerService] Player.Source set to null");
+
+                        // Stop metadata polling
+                        _metadataService.StopPolling();
+                        Debug.WriteLine("[RadioPlayerService] Stopped metadata polling after external pause");
                     }
                     // For other states (Buffering, Opening, None), don't change watchdog intent
                     // This allows the watchdog to recover if a stream stops unexpectedly
