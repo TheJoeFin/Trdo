@@ -30,33 +30,227 @@
             </TitleBar.IconSource>
         </TitleBar>
 
-        <StackPanel
-            Grid.Row="1"
-            Orientation="Vertical"
-            Spacing="8">
-            <TextBlock
-                HorizontalAlignment="Center"
-                Style="{StaticResource SubheaderTextBlockStyle}"
-                Text="Welcome to Trdo" />
-            <TextBlock
-                HorizontalAlignment="Center"
-                Style="{StaticResource SubtitleTextBlockStyle}"
-                Text="A tiny tray radio for Windows" />
-            <TextBlock HorizontalAlignment="Center">
-                How to use:<LineBreak />
-                1. Pin the icon to be visibile<LineBreak />
-                2. Left click to play/pause<LineBreak />
-                3. Right click for everything else!<LineBreak />
-            </TextBlock>
-            <Image Grid.Row="1" Source="/Assets/Tutorial.gif" />
-        </StackPanel>
-        <Button
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel
+                Margin="32,24,32,24"
+                Orientation="Vertical"
+                Spacing="20">
+
+                <!--  Welcome Header with Icon  -->
+                <StackPanel
+                    HorizontalAlignment="Center"
+                    Orientation="Vertical"
+                    Spacing="12">
+                    <Image
+                        Width="64"
+                        Height="64"
+                        HorizontalAlignment="Center"
+                        Source="/Assets/Radio.ico" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Style="{StaticResource TitleLargeTextBlockStyle}"
+                        Text="Welcome to Trdo!" />
+                    <TextBlock
+                        HorizontalAlignment="Center"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource SubheaderTextBlockStyle}"
+                        Text="Your tiny tray radio for Windows"
+                        TextAlignment="Center" />
+                </StackPanel>
+
+                <!--  Tutorial Steps  -->
+                <StackPanel
+                    Margin="0,8,0,0"
+                    Orientation="Vertical"
+                    Spacing="16">
+                    <TextBlock
+                        FontSize="18"
+                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                        Text="Quick Start Guide" />
+
+                    <!--  Step 1  -->
+                    <Border
+                        Padding="16"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Grid.Column="0"
+                                Width="32"
+                                Height="32"
+                                VerticalAlignment="Top"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                CornerRadius="20">
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="1" />
+                            </Border>
+                            <StackPanel
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Orientation="Vertical"
+                                Spacing="4">
+                                <TextBlock FontWeight="SemiBold" Text="Pin the Tray Icon" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="Make sure the Trdo icon is always visible in your system tray"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!--  Step 2  -->
+                    <Border
+                        Padding="16"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Grid.Column="0"
+                                Width="32"
+                                Height="32"
+                                VerticalAlignment="Top"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                CornerRadius="20">
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="2" />
+                            </Border>
+                            <StackPanel
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Orientation="Vertical"
+                                Spacing="4">
+                                <TextBlock FontWeight="SemiBold" Text="Left Click to Play/Pause" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="Quick and easy playback control at your fingertips"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!--  Step 3  -->
+                    <Border
+                        Padding="16"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Border
+                                Grid.Column="0"
+                                Width="32"
+                                Height="32"
+                                VerticalAlignment="Top"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                CornerRadius="20">
+                                <TextBlock
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    FontSize="16"
+                                    FontWeight="Bold"
+                                    Foreground="White"
+                                    Text="3" />
+                            </Border>
+                            <StackPanel
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Orientation="Vertical"
+                                Spacing="4">
+                                <TextBlock FontWeight="SemiBold" Text="Right Click for More Options" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="Browse stations, adjust settings, and explore all features"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </StackPanel>
+
+                <!--  Tutorial GIF  -->
+                <Border
+                    Margin="0,8,0,0"
+                    Padding="8"
+                    Background="{ThemeResource LayerFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                    <Image
+                        HorizontalAlignment="Center"
+                        Source="/Assets/Tutorial.gif"
+                        Stretch="Uniform" />
+                </Border>
+
+                <!--  Feature Highlights  -->
+                <StackPanel
+                    Margin="0,8,0,0"
+                    Orientation="Vertical"
+                    Spacing="8">
+                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="✨ What makes Trdo special:" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="• Lightweight and minimalistic design"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="• Access thousands of radio stations worldwide"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="• Beautiful Mica backdrop and modern UI"
+                        TextWrapping="Wrap" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="• Lives quietly in your system tray"
+                        TextWrapping="Wrap" />
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!--  Bottom Action Button  -->
+        <Border
             Grid.Row="2"
-            Margin="0,12"
-            HorizontalAlignment="Center"
-            Click="Button_Click"
-            Content="Ready to go!"
-            Style="{StaticResource AccentButtonStyle}" />
+            Padding="32,16,32,20"
+            Background="{ThemeResource LayerFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="0,1,0,0">
+            <Button
+                Padding="16,8"
+                HorizontalAlignment="Stretch"
+                Click="Button_Click"
+                FontSize="16"
+                Style="{StaticResource AccentButtonStyle}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock FontSize="18" Text="🚀" />
+                    <TextBlock FontWeight="SemiBold" Text="Let's Get Started!" />
+                </StackPanel>
+            </Button>
+        </Border>
 
     </Grid>
 

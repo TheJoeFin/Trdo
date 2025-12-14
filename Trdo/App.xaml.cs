@@ -145,8 +145,12 @@ public partial class App : Application
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
         _trayIcon.IsVisible = true;
 
-        TutorialWindow tutorialWindow = new();
-        tutorialWindow.Show();
+        // Only show tutorial window on first run
+        if (SettingsService.IsFirstRun)
+        {
+            TutorialWindow tutorialWindow = new();
+            tutorialWindow.Show();
+        }
     }
 
     private void TrayIcon_ContextMenu(TrayIcon sender, TrayIconEventArgs args)

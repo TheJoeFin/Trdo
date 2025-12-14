@@ -1,3 +1,4 @@
+using Trdo.Services;
 using WinUIEx;
 
 namespace Trdo.Controls;
@@ -16,6 +17,9 @@ public sealed partial class TutorialWindow : WindowEx
 
     private void Button_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
+        // Mark first run as complete
+        SettingsService.MarkFirstRunComplete();
+
         Close();
 
         if (App.Current is App currentApp)

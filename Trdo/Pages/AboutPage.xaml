@@ -183,22 +183,103 @@
                                 TextWrapping="Wrap" />
                         </Grid>
 
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                            <FontIcon
-                                Grid.Column="0"
-                                VerticalAlignment="Top"
-                                FontSize="14"
-                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                                Glyph="&#xE73E;" />
-                            <TextBlock
-                                Grid.Column="1"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Start with Windows option"
-                                TextWrapping="Wrap" />
-                        </Grid>
-                    </StackPanel>
-                </StackPanel>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
-</Page>
+                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                                    <FontIcon
+                                                        Grid.Column="0"
+                                                        VerticalAlignment="Top"
+                                                        FontSize="14"
+                                                        Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                                        Glyph="&#xE73E;" />
+                                                    <TextBlock
+                                                        Grid.Column="1"
+                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                        Text="Start with Windows option"
+                                                        TextWrapping="Wrap" />
+                                                </Grid>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!--  Radio Browser Section  -->
+                                        <StackPanel Spacing="8">
+                                            <TextBlock
+                                                FontSize="16"
+                                                FontWeight="SemiBold"
+                                                Text="Radio Database"
+                                                TextWrapping="Wrap" />
+
+                                            <TextBlock
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="{x:Bind ViewModel.RadioBrowserDescription}"
+                                                TextWrapping="Wrap" />
+
+                                            <HyperlinkButton
+                                                Margin="0,8,0,0"
+                                                Click="RadioBrowserButton_Click">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <FontIcon FontSize="16" Glyph="&#xE774;" />
+                                                    <TextBlock Text="{x:Bind ViewModel.RadioBrowserDisplayText}" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
+                                        </StackPanel>
+
+                                        <!--  Open Source Libraries Section  -->
+                                        <StackPanel Spacing="8">
+                                            <TextBlock
+                                                FontSize="16"
+                                                FontWeight="SemiBold"
+                                                Text="Built With Open Source"
+                                                TextWrapping="Wrap" />
+
+                                            <TextBlock
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="This app uses the following open source libraries:"
+                                                TextWrapping="Wrap" />
+
+                                            <StackPanel Margin="0,8,0,0" Spacing="4">
+                                                <HyperlinkButton
+                                                    Padding="0,4"
+                                                    Click="WinUIExButton_Click">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <FontIcon FontSize="14" Glyph="&#xE774;" />
+                                                        <TextBlock Text="{x:Bind ViewModel.WinUIExDisplayText}" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                </HyperlinkButton>
+
+                                                <HyperlinkButton
+                                                    Padding="0,4"
+                                                    Click="CommunityToolkitButton_Click">
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <FontIcon FontSize="14" Glyph="&#xE774;" />
+                                                        <TextBlock Text="{x:Bind ViewModel.CommunityToolkitDisplayText}" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                </HyperlinkButton>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <!--  Tutorial Section  -->
+                                        <StackPanel Spacing="8">
+                                            <TextBlock
+                                                FontSize="16"
+                                                FontWeight="SemiBold"
+                                                Text="Need Help?"
+                                                TextWrapping="Wrap" />
+
+                                            <TextBlock
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Text="View the tutorial again to learn how to use Trdo."
+                                                TextWrapping="Wrap" />
+
+                                            <Button
+                                                Margin="0,8,0,0"
+                                                HorizontalAlignment="Stretch"
+                                                Click="TutorialButton_Click">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <FontIcon FontSize="16" Glyph="&#xE8F1;" />
+                                                    <TextBlock Text="View Tutorial" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Grid>
+                        </Page>
