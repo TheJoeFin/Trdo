@@ -19,6 +19,8 @@
     <None Remove="Assets\Radio-Black.ico" />
     <None Remove="Assets\Radio-White.ico" />
     <None Remove="Assets\spotify.svg" />
+    <None Remove="Assets\Tutorial.gif" />
+    <None Remove="Controls\TutorialWindow.xaml" />
     <None Remove="Pages\AddStation.xaml" />
     <None Remove="Pages\FavoritesPage.xaml" />
     <None Remove="Pages\PlayingPage.xaml" />
@@ -76,6 +78,9 @@
     <Content Update="Assets\spotify.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Update="Assets\Tutorial.gif">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\NowPlayingPage.xaml">
@@ -109,6 +114,11 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\ShellPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\TutorialWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Page
     x:Class="Trdo.Pages.FavoritesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -54,8 +54,8 @@
 
             <!--  Favorites List  -->
             <ListView
+                x:Name="FavoritesListView"
                 Padding="0,0,12,0"
-                x:Name="FavoritesListView" 
                 ItemsSource="{x:Bind ViewModel.Favorites, Mode=OneWay}"
                 SelectionChanged="FavoritesListView_SelectionChanged"
                 SelectionMode="Single"
@@ -137,8 +137,8 @@
 
                                 <!--  Search on Spotify  -->
                                 <HyperlinkButton
-                                    Click="SpotifyLink_Click"
                                     Padding="4"
+                                    Click="SpotifyLink_Click"
                                     Tag="{x:Bind}">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <Image Width="16" Height="16">
@@ -152,8 +152,8 @@
 
                                 <!--  Search on Discogs  -->
                                 <HyperlinkButton
-                                    Click="DiscogsLink_Click"
                                     Padding="4"
+                                    Click="DiscogsLink_Click"
                                     Tag="{x:Bind}">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <FontIcon FontSize="12" Glyph="&#xE721;" />

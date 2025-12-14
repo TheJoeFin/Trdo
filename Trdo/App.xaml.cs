@@ -5,6 +5,7 @@ using System;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
+using Trdo.Controls;
 using Trdo.Pages;
 using Trdo.Services;
 using Trdo.ViewModels;
@@ -42,6 +43,14 @@ public partial class App : Application
 
         // Subscribe to theme change events
         _uiSettings.ColorValuesChanged += OnColorValuesChanged;
+    }
+
+    public void TryShowFlyout()
+    {
+        if (_trayIcon is null)
+            return;
+
+        // TODO: find a way to programmatically show the flyout on the Icon
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
@@ -135,6 +144,9 @@ public partial class App : Application
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
         _trayIcon.IsVisible = true;
+
+        TutorialWindow tutorialWindow = new();
+        tutorialWindow.Show();
     }
 
     private void TrayIcon_ContextMenu(TrayIcon sender, TrayIconEventArgs args)
