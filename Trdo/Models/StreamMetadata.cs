@@ -22,6 +22,11 @@ public class StreamMetadata
     public string Title { get; set; } = string.Empty;
 
     /// <summary>
+    /// The URL to album artwork, if available.
+    /// </summary>
+    public string? AlbumArtUrl { get; set; }
+
+    /// <summary>
     /// Indicates whether any meaningful metadata was found.
     /// </summary>
     public bool HasMetadata => !string.IsNullOrWhiteSpace(StreamTitle) ||
