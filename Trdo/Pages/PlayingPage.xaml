@@ -12,6 +12,8 @@
     <Page.Resources>
         <converters:CountToEmptyStateVisibilityConverter x:Key="CountToEmptyStateVisibilityConverter" />
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
     </Page.Resources>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowSpacing="12">
@@ -100,7 +102,7 @@
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:RadioStation">
-                        <Grid ColumnDefinitions="Auto,*">
+                        <Grid ColumnDefinitions="Auto,Auto,*">
                             <Grid.ContextFlyout>
                                 <MenuFlyout>
                                     <MenuFlyoutItem
@@ -132,10 +134,30 @@
                                 CornerRadius="2,0,0,2"
                                 Visibility="Collapsed" />
 
-                            <TextBlock
+                            <!--  Favicon  -->
+                            <Grid
                                 Grid.Column="1"
+                                Width="24"
+                                Height="24"
+                                Margin="0,0,12,0"
+                                VerticalAlignment="Center"
+                                Visibility="{x:Bind FaviconUrl, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}">
+                                <Border
+                                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                    CornerRadius="4">
+                                    <Image
+                                        Source="{x:Bind FaviconUrl, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}"
+                                        Stretch="UniformToFill" />
+                                </Border>
+                            </Grid>
+
+                            <!--  Station Name  -->
+                            <TextBlock
+                                Grid.Column="2"
+                                VerticalAlignment="Center"
                                 FontSize="12"
                                 Text="{x:Bind Name}"
+                                TextTrimming="CharacterEllipsis"
                                 TextWrapping="NoWrap" />
                         </Grid>
                     </DataTemplate>

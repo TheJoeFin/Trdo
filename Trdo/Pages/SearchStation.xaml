@@ -11,6 +11,8 @@
 
     <Page.Resources>
         <converters:CountToHasItemsVisibilityConverter x:Key="HasItemsVisibilityConverter" />
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
     </Page.Resources>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
@@ -66,13 +68,42 @@
                         <DataTemplate x:DataType="models:RadioBrowserStation">
                             <Grid
                                 Margin="0,6"
+                                ColumnDefinitions="Auto,*"
+                                ColumnSpacing="12"
                                 RowDefinitions="Auto,Auto,Auto"
                                 RowSpacing="4">
+
+                                <!--  Favicon  -->
+                                <Grid
+                                    Grid.Row="0"
+                                    Grid.RowSpan="2"
+                                    Grid.Column="0"
+                                    Width="40"
+                                    Height="40"
+                                    VerticalAlignment="Top"
+                                    Visibility="{x:Bind Favicon, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}">
+                                    <Border
+                                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                        CornerRadius="6">
+                                        <Image
+                                            Source="{x:Bind Favicon, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}"
+                                            Stretch="UniformToFill" />
+                                    </Border>
+                                </Grid>
+
+                                <!--  Station Name  -->
                                 <TextBlock
+                                    Grid.Row="0"
+                                    Grid.Column="1"
                                     FontWeight="SemiBold"
                                     Text="{x:Bind Name}"
                                     TextWrapping="WrapWholeWords" />
-                                <TextBlock Grid.Row="1" TextWrapping="WrapWholeWords">
+
+                                <!--  Station Info  -->
+                                <TextBlock
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    TextWrapping="WrapWholeWords">
                                     <Run
                                         FontSize="12"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -86,8 +117,12 @@
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                         Text="{x:Bind Tags}" />
                                 </TextBlock>
+
+                                <!--  Add Button  -->
                                 <Button
                                     Grid.Row="2"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="2"
                                     Margin="0,4,0,0"
                                     Click="AddStationButton_Click"
                                     Content="Add Station"
