@@ -19,6 +19,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private const string WatchdogEnabledKey = "WatchdogEnabled";
     private string? _streamUrl;
     private bool _isInternalStateChange;
+    private bool _wasExternalPause;
 
     public static RadioPlayerService Instance { get; } = new();
 
@@ -180,6 +181,37 @@ public sealed partial class RadioPlayerService : IDisposable
                     {
                         _watchdog.NotifyUserIntentionToPlay();
                         Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play (hardware button)");
+
+                        // If this play follows an external pause, the stream may be behind
+                        // We need to dispose and recreate to seek to real-time
+                        if (_wasExternalPause)
+                        {
+                            Debug.WriteLine("[RadioPlayerService] Detected play after external pause - disposing MediaSource to seek to real-time");
+                            _wasExternalPause = false;
+
+                            // Pause first to stop the old stream
+                            _player.Pause();
+
+                            // Dispose the old media source
+                            if (_player.Source is MediaSource media)
+                            {
+                                Debug.WriteLine("[RadioPlayerService] Disposing old MediaSource");
+                                media.Reset();
+                                media.Dispose();
+                            }
+
+                            // Create a fresh media source
+                            if (!string.IsNullOrWhiteSpace(_streamUrl))
+                            {
+                                Debug.WriteLine("[RadioPlayerService] Creating fresh MediaSource");
+                                Uri uri = new(_streamUrl);
+                                _player.Source = MediaSource.CreateFromUri(uri);
+
+                                // Resume playback with the fresh stream
+                                _player.Play();
+                                Debug.WriteLine("[RadioPlayerService] Resumed playback with fresh MediaSource");
+                            }
+                        }
                     }
                     else if (currentState == MediaPlaybackState.Paused)
                     {
@@ -187,19 +219,11 @@ public sealed partial class RadioPlayerService : IDisposable
                         _watchdog.NotifyUserIntentionToPause();
                         Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause (hardware button)");
 
-                        // Clean up the media source when paused externally (e.g., headphones removed, media keys)
-                        // This ensures the stream is ready to seek to real-time when resumed
-                        Debug.WriteLine("[RadioPlayerService] Cleaning up MediaSource after external pause");
-                        if (_player.Source is MediaSource media)
-                        {
-                            Debug.WriteLine("[RadioPlayerService] Disposing MediaSource");
-                            media.Reset();
-                            media.Dispose();
-                        }
-                        _player.Source = null;
-                        Debug.WriteLine("[RadioPlayerService] Player.Source set to null");
+                        // Mark that this was an external pause
+                        _wasExternalPause = true;
+                        Debug.WriteLine("[RadioPlayerService] Marked as external pause - will refresh stream on next play");
 
-                        // Stop metadata polling
+                        // Stop metadata polling when paused
                         _metadataService.StopPolling();
                         Debug.WriteLine("[RadioPlayerService] Stopped metadata polling after external pause");
                     }
@@ -360,24 +384,29 @@ public sealed partial class RadioPlayerService : IDisposable
 
         try
         {
-            // Ensure we have a fresh media source
-            if (_player.Source == null)
+            // Always dispose and recreate the media source to ensure we seek to real-time
+            // This is especially important after a pause from hardware controls
+            if (_player.Source is MediaSource oldMedia)
             {
-                Debug.WriteLine("[RadioPlayerService] Player.Source is null, creating new MediaSource");
-                Uri uri = new(_streamUrl);
-                _player.Source = MediaSource.CreateFromUri(uri);
-                Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
+                Debug.WriteLine("[RadioPlayerService] Disposing existing MediaSource to start fresh");
+                oldMedia.Reset();
+                oldMedia.Dispose();
             }
-            else
-            {
-                Debug.WriteLine($"[RadioPlayerService] Player.Source exists, current state: {(_player.Source as MediaSource)?.State}");
-            }
+
+            Debug.WriteLine("[RadioPlayerService] Creating fresh MediaSource to seek to real-time");
+            Uri uri = new(_streamUrl);
+            _player.Source = MediaSource.CreateFromUri(uri);
+            Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
 
             Debug.WriteLine("[RadioPlayerService] Calling _player.Play()...");
             _isInternalStateChange = true;
             _player.Play();
             _isInternalStateChange = false;
             Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully");
+
+            // Clear the external pause flag since we're starting fresh
+            _wasExternalPause = false;
+            Debug.WriteLine("[RadioPlayerService] Cleared external pause flag");
 
             _watchdog.NotifyUserIntentionToPlay();
             Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
@@ -403,6 +432,10 @@ public sealed partial class RadioPlayerService : IDisposable
                 _player.Play();
                 _isInternalStateChange = false;
                 Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully (retry)");
+
+                // Clear the external pause flag since we're starting fresh
+                _wasExternalPause = false;
+                Debug.WriteLine("[RadioPlayerService] Cleared external pause flag (retry)");
 
                 _watchdog.NotifyUserIntentionToPlay();
                 Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
@@ -447,15 +480,9 @@ public sealed partial class RadioPlayerService : IDisposable
             _isInternalStateChange = false;
             Debug.WriteLine("[RadioPlayerService] _player.Pause() called successfully");
 
-            // Clean up the media source for live streams
-            if (_player.Source is MediaSource media)
-            {
-                Debug.WriteLine("[RadioPlayerService] Disposing MediaSource");
-                media.Reset();
-                media.Dispose();
-            }
-            _player.Source = null;
-            Debug.WriteLine("[RadioPlayerService] Player.Source set to null");
+            // Clear the external pause flag since this is an internal pause
+            _wasExternalPause = false;
+            Debug.WriteLine("[RadioPlayerService] Cleared external pause flag (internal pause)");
 
             _watchdog.NotifyUserIntentionToPause();
             Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause");
@@ -464,11 +491,9 @@ public sealed partial class RadioPlayerService : IDisposable
             _metadataService.StopPolling();
             Debug.WriteLine("[RadioPlayerService] Stopped metadata polling");
 
-            // DO NOT prepare the stream here - let Play() or SetStreamUrl() handle it
-            // The previous code was creating a MediaSource with the current URL,
-            // but if the user then selects a different station, the MediaSource
-            // would be in "Opening" state with the OLD URL, preventing the new station from playing
-            Debug.WriteLine("[RadioPlayerService] Stream cleanup complete, ready for next operation");
+            // Keep the media source intact so media controls remain available
+            // The Play() method will dispose and recreate it to ensure fresh stream
+            Debug.WriteLine("[RadioPlayerService] Media source kept intact for media controls");
         }
         catch (Exception ex)
         {
