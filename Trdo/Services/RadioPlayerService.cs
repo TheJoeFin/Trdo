@@ -564,9 +564,9 @@ public sealed partial class RadioPlayerService : IDisposable
             _player.Pause();
             Debug.WriteLine("[RadioPlayerService] _player.Pause() called successfully");
 
-            // Clear the external pause flag since this is an internal pause
-            _wasExternalPause = false;
-            Debug.WriteLine("[RadioPlayerService] Cleared external pause flag (internal pause)");
+            // Mark that pause occurred - next play should recreate MediaSource to ensure live position
+            _wasExternalPause = true;
+            Debug.WriteLine("[RadioPlayerService] Marked for MediaSource recreation on next play (ensures live position)");
 
             _watchdog.NotifyUserIntentionToPause();
             Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause");
