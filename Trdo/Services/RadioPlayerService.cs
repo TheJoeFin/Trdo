@@ -804,45 +804,77 @@ public sealed partial class RadioPlayerService : IDisposable
             }
 
             // Handle album art with proper priority: metadata album art > station favicon > none
-            if (!string.IsNullOrWhiteSpace(metadata.AlbumArtUrl))
+            // Use async/await pattern to handle fallback properly
+            _ = Task.Run(async () =>
             {
-                // Metadata has album art - use it if different from current
-                if (metadata.AlbumArtUrl != _currentAlbumArtUrl)
+                bool thumbnailSet = false;
+
+                // Try metadata album art first
+                if (!string.IsNullOrWhiteSpace(metadata.AlbumArtUrl))
                 {
-                    _currentAlbumArtUrl = metadata.AlbumArtUrl;
-                    Debug.WriteLine($"[RadioPlayerService] New album art URL detected: {_currentAlbumArtUrl}");
-                    _ = SetAlbumArtAsync(updater, _currentAlbumArtUrl);
+                    if (metadata.AlbumArtUrl != _currentAlbumArtUrl)
+                    {
+                        Debug.WriteLine($"[RadioPlayerService] Attempting to set album art from metadata: {metadata.AlbumArtUrl}");
+                        thumbnailSet = await SetAlbumArtAsync(updater, metadata.AlbumArtUrl);
+
+                        if (thumbnailSet)
+                        {
+                            _currentAlbumArtUrl = metadata.AlbumArtUrl;
+                            Debug.WriteLine($"[RadioPlayerService] Successfully set album art from metadata");
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"[RadioPlayerService] Failed to set album art from metadata, will try favicon");
+                        }
+                    }
+                    else
+                    {
+                        thumbnailSet = true; // Already set, no need to update
+                        TryEnqueueOnUi(() => updater.Update());
+                    }
                 }
-                else
+
+                // If metadata album art failed or wasn't available, try station favicon
+                if (!thumbnailSet && !string.IsNullOrWhiteSpace(_currentStationFaviconUrl))
                 {
-                    updater.Update();
+                    if (_currentStationFaviconUrl != _currentAlbumArtUrl)
+                    {
+                        Debug.WriteLine($"[RadioPlayerService] Attempting to set favicon as fallback: {_currentStationFaviconUrl}");
+                        thumbnailSet = await SetAlbumArtAsync(updater, _currentStationFaviconUrl);
+
+                        if (thumbnailSet)
+                        {
+                            _currentAlbumArtUrl = _currentStationFaviconUrl;
+                            Debug.WriteLine($"[RadioPlayerService] Successfully set favicon as thumbnail");
+                        }
+                        else
+                        {
+                            Debug.WriteLine($"[RadioPlayerService] Failed to set favicon as thumbnail");
+                            _currentAlbumArtUrl = null; // Reset so we can retry later
+                        }
+                    }
+                    else
+                    {
+                        thumbnailSet = true; // Already set, no need to update
+                        TryEnqueueOnUi(() => updater.Update());
+                    }
                 }
-            }
-            else if (!string.IsNullOrWhiteSpace(_currentStationFaviconUrl))
-            {
-                // No metadata album art, but we have a station favicon - use it if different from current
-                if (_currentStationFaviconUrl != _currentAlbumArtUrl)
+
+                // If both failed or weren't available, clear the thumbnail
+                if (!thumbnailSet)
                 {
-                    _currentAlbumArtUrl = _currentStationFaviconUrl;
-                    Debug.WriteLine($"[RadioPlayerService] Using station favicon: {_currentStationFaviconUrl}");
-                    _ = SetAlbumArtAsync(updater, _currentStationFaviconUrl);
+                    TryEnqueueOnUi(() =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(_currentAlbumArtUrl))
+                        {
+                            _currentAlbumArtUrl = null;
+                            updater.Thumbnail = null;
+                            Debug.WriteLine("[RadioPlayerService] Cleared album art");
+                        }
+                        updater.Update();
+                    });
                 }
-                else
-                {
-                    updater.Update();
-                }
-            }
-            else
-            {
-                // No album art and no favicon - clear if we had something before
-                if (!string.IsNullOrWhiteSpace(_currentAlbumArtUrl))
-                {
-                    _currentAlbumArtUrl = null;
-                    updater.Thumbnail = null;
-                    Debug.WriteLine("[RadioPlayerService] Cleared album art");
-                }
-                updater.Update();
-            }
+            });
         }
         catch (Exception ex)
         {
@@ -850,7 +882,7 @@ public sealed partial class RadioPlayerService : IDisposable
         }
     }
 
-    private async Task SetAlbumArtAsync(SystemMediaTransportControlsDisplayUpdater updater, string imageUrl)
+    private async Task<bool> SetAlbumArtAsync(SystemMediaTransportControlsDisplayUpdater updater, string imageUrl)
     {
         try
         {
@@ -876,6 +908,7 @@ public sealed partial class RadioPlayerService : IDisposable
             RandomAccessStreamReference thumbnail = RandomAccessStreamReference.CreateFromStream(stream);
 
             // Set the thumbnail on the UI thread
+            bool success = false;
             TryEnqueueOnUi(() =>
             {
                 try
@@ -883,6 +916,7 @@ public sealed partial class RadioPlayerService : IDisposable
                     updater.Thumbnail = thumbnail;
                     updater.Update();
                     Debug.WriteLine("[RadioPlayerService] Album art set successfully");
+                    success = true;
                 }
                 catch (Exception ex)
                 {
@@ -894,14 +928,17 @@ public sealed partial class RadioPlayerService : IDisposable
                     stream?.Dispose();
                 }
             });
+            return success;
         }
         catch (HttpRequestException ex)
         {
             Debug.WriteLine($"[RadioPlayerService] Failed to download album art: {ex.Message}");
+            return false;
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioPlayerService] Error setting album art: {ex.Message}");
+            return false;
         }
     }
 
