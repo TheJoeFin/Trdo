@@ -4,8 +4,10 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Trdo.Models;
 using Trdo.Services;
+using Windows.System;
 
 namespace Trdo.ViewModels;
 
@@ -338,6 +340,16 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine("[PlayerViewModel] First station added, selecting automatically");
             SelectedStation = station;
         }
+    }
+
+    public async Task VisitWebsite(RadioStation station)
+    {
+        Debug.WriteLine($"[PlayerViewModel] Visiting station website: {station.Name} ({station.StreamUrl})");
+
+        if (string.IsNullOrWhiteSpace(station.Homepage) || !IsValidUrl(station.Homepage))
+            return;
+
+        await Launcher.LaunchUriAsync(new Uri(station.Homepage));
     }
 
     /// <summary>

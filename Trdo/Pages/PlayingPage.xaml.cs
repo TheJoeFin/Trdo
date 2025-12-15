@@ -341,6 +341,16 @@ public sealed partial class PlayingPage : Page
         _shellViewModel?.NavigateToFavoritesPage();
     }
 
+    private void VisitSite_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
+        {
+            Debug.WriteLine($"[PlayingPage] Visit Station Site clicked: {station.Name}");
+            // Navigate to AddStation page in edit mode with the station data
+            ViewModel.VisitWebsite(station);
+        }
+    }
+
     private void EditStation_Click(object sender, RoutedEventArgs e)
     {
         if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
