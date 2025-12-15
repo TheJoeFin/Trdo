@@ -203,45 +203,11 @@ public sealed partial class RadioPlayerService : IDisposable
                         _watchdog.NotifyUserIntentionToPlay();
                         Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play (hardware button)");
 
-                        // If this play follows an external pause, the stream may be behind
-                        // We need to dispose and recreate to seek to real-time
-                        // BUT: Only do this if we haven't done it very recently (prevents infinite loops)
-                        TimeSpan timeSinceLastRecovery = DateTime.UtcNow - _lastExternalPauseRecovery;
-                        bool canAttemptRecovery = timeSinceLastRecovery.TotalSeconds > 2; // Minimum 2 seconds between recoveries
-
-                        if (_wasExternalPause && canAttemptRecovery)
+                        // Mark that an external play was triggered
+                        // The Play() method will handle MediaSource recreation if needed
+                        if (_wasExternalPause)
                         {
-                            Debug.WriteLine("[RadioPlayerService] Detected play after external pause - disposing MediaSource to seek to real-time");
-                            _wasExternalPause = false;
-                            _lastExternalPauseRecovery = DateTime.UtcNow;
-
-                            // Pause first to stop the old stream
-                            _player.Pause();
-
-                            // Dispose the old media source
-                            if (_player.Source is MediaSource media)
-                            {
-                                Debug.WriteLine("[RadioPlayerService] Disposing old MediaSource");
-                                media.Reset();
-                                media.Dispose();
-                            }
-
-                            // Create a fresh media source
-                            if (!string.IsNullOrWhiteSpace(_streamUrl))
-                            {
-                                Debug.WriteLine("[RadioPlayerService] Creating fresh MediaSource");
-                                Uri uri = new(_streamUrl);
-                                _player.Source = MediaSource.CreateFromUri(uri);
-
-                                // Resume playback with the fresh stream
-                                _player.Play();
-                                Debug.WriteLine("[RadioPlayerService] Resumed playback with fresh MediaSource");
-                            }
-                        }
-                        else if (_wasExternalPause && !canAttemptRecovery)
-                        {
-                            Debug.WriteLine($"[RadioPlayerService] Skipping external pause recovery - too soon (last recovery {timeSinceLastRecovery.TotalSeconds:F1}s ago)");
-                            _wasExternalPause = false; // Clear the flag anyway
+                            Debug.WriteLine("[RadioPlayerService] External play detected after external pause - will be handled by Play() method");
                         }
                     }
                     else if (currentState == MediaPlaybackState.Paused)
@@ -473,6 +439,7 @@ public sealed partial class RadioPlayerService : IDisposable
         Debug.WriteLine($"[RadioPlayerService] Current IsPlaying: {_player.PlaybackSession.PlaybackState}");
         Debug.WriteLine($"[RadioPlayerService] Player.Source is null: {_player.Source == null}");
         Debug.WriteLine($"[RadioPlayerService] Has played once: {_hasPlayedOnce}");
+        Debug.WriteLine($"[RadioPlayerService] Was external pause: {_wasExternalPause}");
 
         if (string.IsNullOrWhiteSpace(_streamUrl))
         {
@@ -482,28 +449,40 @@ public sealed partial class RadioPlayerService : IDisposable
 
         try
         {
-            // On first play, the MediaSource is already prepared during initialization
-            // Don't recreate it - just play it to avoid cascading state changes
-            if (!_hasPlayedOnce && _player.Source != null)
+            // Only recreate MediaSource if:
+            // 1. First play and no source exists, OR
+            // 2. Following an external pause (to ensure live stream position)
+            bool needsRecreation = (!_hasPlayedOnce && _player.Source == null) || _wasExternalPause;
+
+            if (needsRecreation)
             {
-                Debug.WriteLine("[RadioPlayerService] First play - using pre-initialized MediaSource");
-                _hasPlayedOnce = true;
-            }
-            else
-            {
-                // Subsequent plays: dispose and recreate to ensure we seek to real-time
-                // This is especially important after a pause from hardware controls
+                if (_wasExternalPause)
+                {
+                    Debug.WriteLine("[RadioPlayerService] Recreating MediaSource after external pause to seek to live position");
+                }
+                else
+                {
+                    Debug.WriteLine("[RadioPlayerService] First play - creating MediaSource");
+                }
+
+                // Dispose old source if exists
                 if (_player.Source is MediaSource oldMedia)
                 {
-                    Debug.WriteLine("[RadioPlayerService] Disposing existing MediaSource to start fresh");
+                    Debug.WriteLine("[RadioPlayerService] Disposing existing MediaSource");
                     oldMedia.Reset();
                     oldMedia.Dispose();
                 }
 
-                Debug.WriteLine("[RadioPlayerService] Creating fresh MediaSource to seek to real-time");
+                // Create fresh MediaSource
                 Uri uri = new(_streamUrl);
                 _player.Source = MediaSource.CreateFromUri(uri);
                 Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
+
+                _hasPlayedOnce = true;
+            }
+            else
+            {
+                Debug.WriteLine("[RadioPlayerService] Reusing existing MediaSource - resuming playback");
             }
 
             Debug.WriteLine("[RadioPlayerService] Calling _player.Play()...");
@@ -511,7 +490,7 @@ public sealed partial class RadioPlayerService : IDisposable
             _player.Play();
             Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully");
 
-            // Clear the external pause flag since we're starting fresh
+            // Clear the external pause flag
             _wasExternalPause = false;
             Debug.WriteLine("[RadioPlayerService] Cleared external pause flag");
 
@@ -539,8 +518,8 @@ public sealed partial class RadioPlayerService : IDisposable
                 _player.Play();
                 Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully (retry)");
 
-                // Clear the external pause flag since we're starting fresh
                 _wasExternalPause = false;
+                _hasPlayedOnce = true;
                 Debug.WriteLine("[RadioPlayerService] Cleared external pause flag (retry)");
 
                 _watchdog.NotifyUserIntentionToPlay();
@@ -685,13 +664,14 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 if (isInternal)
                 {
-                    Debug.WriteLine("[RadioPlayerService] Internal state change flag SET (will auto-clear in 500ms)");
+                    Debug.WriteLine("[RadioPlayerService] Internal state change flag SET (will auto-clear in 1000ms)");
 
                     // Clear any existing timer
                     _internalStateChangeTimer?.Dispose();
 
-                    // Set a timer to clear the flag after 500ms
+                    // Set a timer to clear the flag after 1000ms
                     // This gives enough time for all async state changes from Play()/Pause() to complete
+                    // Increased from 500ms to 1000ms to better handle slower network connections
                     _internalStateChangeTimer = new System.Threading.Timer(
                         callback: _ =>
                         {
@@ -699,7 +679,7 @@ public sealed partial class RadioPlayerService : IDisposable
                             Debug.WriteLine("[RadioPlayerService] Internal state change flag AUTO-CLEARED");
                         },
                         state: null,
-                        dueTime: 500, // 500ms should cover all async state transitions
+                        dueTime: 1000, // 1000ms to cover all async state transitions including network delays
                         period: System.Threading.Timeout.Infinite
                     );
                 }

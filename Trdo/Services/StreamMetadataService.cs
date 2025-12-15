@@ -25,8 +25,9 @@ public sealed class StreamMetadataService : IDisposable
 
     /// <summary>
     /// Polling interval for metadata updates.
+    /// Using a longer interval (30s) to reduce network load and minimize potential interference with the main stream.
     /// </summary>
-    private readonly TimeSpan _pollingInterval = TimeSpan.FromSeconds(15);
+    private readonly TimeSpan _pollingInterval = TimeSpan.FromSeconds(30);
 
     /// <summary>
     /// Event raised when stream metadata changes.
@@ -44,18 +45,23 @@ public sealed class StreamMetadataService : IDisposable
         {
             UseProxy = false,
             AutomaticDecompression = System.Net.DecompressionMethods.None,
-            // Short timeout for metadata requests since we only need headers
-            ConnectTimeout = TimeSpan.FromSeconds(10)
+            // Enable connection pooling and reuse to reduce overhead
+            PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(1),
+            // Shorter timeout for metadata requests since we only read a small amount of data
+            ConnectTimeout = TimeSpan.FromSeconds(5)
         };
 
         _httpClient = new HttpClient(handler)
         {
-            Timeout = TimeSpan.FromSeconds(15)
+            // Reduced timeout since we abort after reading metadata
+            Timeout = TimeSpan.FromSeconds(10)
         };
 
         // Request ICY metadata by adding the required header
         _httpClient.DefaultRequestHeaders.Add("Icy-MetaData", "1");
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "Trdo/1.0");
+        _httpClient.DefaultRequestHeaders.Connection.Add("keep-alive");
     }
 
     /// <summary>
