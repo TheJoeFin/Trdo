@@ -4,8 +4,10 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Trdo.Models;
 using Trdo.Services;
+using Windows.System;
 
 namespace Trdo.ViewModels;
 
@@ -175,6 +177,16 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     _player.SetStreamUrl(_selectedStation.StreamUrl);
                     Debug.WriteLine("[PlayerViewModel] Stream URL set successfully");
 
+                    // Set the station name for system media controls
+                    Debug.WriteLine($"[PlayerViewModel] Setting station name: {_selectedStation.Name}");
+                    _player.SetStationName(_selectedStation.Name);
+                    Debug.WriteLine("[PlayerViewModel] Station name set successfully");
+
+                    // Set the station favicon for system media controls
+                    Debug.WriteLine($"[PlayerViewModel] Setting station favicon: {_selectedStation.FaviconUrl}");
+                    _player.SetStationFavicon(_selectedStation.FaviconUrl);
+                    Debug.WriteLine("[PlayerViewModel] Station favicon set successfully");
+
                     // Resume playback if we were playing before
                     if (wasPlaying)
                     {
@@ -330,6 +342,16 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         }
     }
 
+    public async Task VisitWebsite(RadioStation station)
+    {
+        Debug.WriteLine($"[PlayerViewModel] Visiting station website: {station.Name} ({station.StreamUrl})");
+
+        if (string.IsNullOrWhiteSpace(station.Homepage) || !IsValidUrl(station.Homepage))
+            return;
+
+        await Launcher.LaunchUriAsync(new Uri(station.Homepage));
+    }
+
     /// <summary>
     /// Remove a station and save to settings
     /// </summary>
@@ -434,6 +456,16 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             {
                 _player.Initialize(streamUrl);
                 Debug.WriteLine($"[PlayerViewModel] Player initialized with URL: {streamUrl}");
+
+                // Set the station name if we have one
+                if (_selectedStation != null)
+                {
+                    Debug.WriteLine($"[PlayerViewModel] Setting station name during initialization: {_selectedStation.Name}");
+                    _player.SetStationName(_selectedStation.Name);
+
+                    Debug.WriteLine($"[PlayerViewModel] Setting station favicon during initialization: {_selectedStation.FaviconUrl}");
+                    _player.SetStationFavicon(_selectedStation.FaviconUrl);
+                }
             }
             catch (Exception ex)
             {

@@ -11,9 +11,11 @@
 
     <Page.Resources>
         <converters:CountToHasItemsVisibilityConverter x:Key="HasItemsVisibilityConverter" />
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
     </Page.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="12">
 
         <!--  Title  -->
         <TextBlock
@@ -39,8 +41,17 @@
                 IsActive="{x:Bind ViewModel.IsSearching, Mode=OneWay}" />
         </Grid>
 
+        <!--  Error InfoBar  -->
+        <InfoBar
+            Grid.Row="2"
+            IsClosable="True"
+            IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+            Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+            Severity="Error"
+            Title="Search Error" />
+
         <!--  Search Results  -->
-        <ScrollViewer Grid.Row="2">
+        <ScrollViewer Grid.Row="3">
             <StackPanel Spacing="8">
                 <!--  Initial state  -->
                 <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.ShowInitialState, Mode=OneWay}">
@@ -66,13 +77,42 @@
                         <DataTemplate x:DataType="models:RadioBrowserStation">
                             <Grid
                                 Margin="0,6"
+                                ColumnDefinitions="Auto,*"
+                                ColumnSpacing="12"
                                 RowDefinitions="Auto,Auto,Auto"
                                 RowSpacing="4">
+
+                                <!--  Favicon  -->
+                                <Grid
+                                    Grid.Row="0"
+                                    Grid.RowSpan="2"
+                                    Grid.Column="0"
+                                    Width="40"
+                                    Height="40"
+                                    VerticalAlignment="Top"
+                                    Visibility="{x:Bind Favicon, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}">
+                                    <Border
+                                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                        CornerRadius="6">
+                                        <Image
+                                            Source="{x:Bind Favicon, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}"
+                                            Stretch="UniformToFill" />
+                                    </Border>
+                                </Grid>
+
+                                <!--  Station Name  -->
                                 <TextBlock
+                                    Grid.Row="0"
+                                    Grid.Column="1"
                                     FontWeight="SemiBold"
                                     Text="{x:Bind Name}"
                                     TextWrapping="WrapWholeWords" />
-                                <TextBlock Grid.Row="1" TextWrapping="WrapWholeWords">
+
+                                <!--  Station Info  -->
+                                <TextBlock
+                                    Grid.Row="1"
+                                    Grid.Column="1"
+                                    TextWrapping="WrapWholeWords">
                                     <Run
                                         FontSize="12"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -86,8 +126,12 @@
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                         Text="{x:Bind Tags}" />
                                 </TextBlock>
+
+                                <!--  Add Button  -->
                                 <Button
                                     Grid.Row="2"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="2"
                                     Margin="0,4,0,0"
                                     Click="AddStationButton_Click"
                                     Content="Add Station"
@@ -98,17 +142,17 @@
                     </ListView.ItemTemplate>
                 </ListView>
             </StackPanel>
-        </ScrollViewer>
+                </ScrollViewer>
 
-        <!--  Cancel Button  -->
-        <Button
-            Grid.Row="3"
-            HorizontalAlignment="Stretch"
-            Click="CancelButton_Click">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <FontIcon FontSize="16" Glyph="&#xE711;" />
-                <TextBlock Text="Cancel" />
-            </StackPanel>
-        </Button>
-    </Grid>
-</Page>
+                <!--  Cancel Button  -->
+                <Button
+                    Grid.Row="4"
+                    HorizontalAlignment="Stretch"
+                    Click="CancelButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="16" Glyph="&#xE711;" />
+                        <TextBlock Text="Cancel" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Page>

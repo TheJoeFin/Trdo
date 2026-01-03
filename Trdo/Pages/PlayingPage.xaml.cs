@@ -4,8 +4,11 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Diagnostics;
+using Trdo.Controls;
 using Trdo.Models;
+using Trdo.Services;
 using Trdo.ViewModels;
+using WinUIEx;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -17,6 +20,10 @@ namespace Trdo.Pages;
 public sealed partial class PlayingPage : Page
 {
     private const int MinIndexForScrolling = 3;
+    private const string FilledStar = "\uE735";
+    private const string OutlineStar = "\uE734";
+    
+    private readonly FavoritesService _favoritesService = FavoritesService.Instance;
     
     public PlayerViewModel ViewModel { get; }
     private ShellViewModel? _shellViewModel;
@@ -37,6 +44,9 @@ public sealed partial class PlayingPage : Page
         // Subscribe to playback errors
         ViewModel.PlaybackError += ViewModel_PlaybackError;
 
+        // Subscribe to favorites changes
+        _favoritesService.FavoritesChanged += (_, _) => UpdateFavoriteButtonState();
+
         // Wait for loaded to access named elements
         Loaded += PlayingPage_Loaded;
 
@@ -52,6 +62,7 @@ public sealed partial class PlayingPage : Page
 
         UpdatePlayButtonState();
         UpdateStationSelection();
+        UpdateFavoriteButtonState();
 
         // Find the ShellViewModel from the parent page
         _shellViewModel = FindShellViewModel();
@@ -108,6 +119,21 @@ public sealed partial class PlayingPage : Page
             Debug.WriteLine($"[PlayingPage] SelectedStation changed to: {ViewModel.SelectedStation?.Name ?? "null"}");
             UpdateStationSelection();
         }
+        else if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata) || 
+                 e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
+        {
+            UpdateFavoriteButtonState();
+        }
+    }
+
+    private void UpdateFavoriteButtonState()
+    {
+        if (FavoriteIcon == null)
+            return;
+
+        bool isFavorited = _favoritesService.IsFavorited(ViewModel.CurrentMetadata);
+        FavoriteIcon.Glyph = isFavorited ? FilledStar : OutlineStar;
+        Debug.WriteLine($"[PlayingPage] Favorite button updated. IsFavorited: {isFavorited}");
     }
 
     private async void ViewModel_PlaybackError(object? sender, string errorMessage)
@@ -290,6 +316,39 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine("[PlayingPage] Now Playing info clicked");
         // Navigate to Now Playing details page
         _shellViewModel?.NavigateToNowPlayingPage();
+    }
+
+    private void FavoriteButton_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[PlayingPage] Favorite button clicked");
+        
+        if (ViewModel.CurrentMetadata?.HasMetadata != true)
+        {
+            Debug.WriteLine("[PlayingPage] No metadata to favorite");
+            return;
+        }
+
+        string stationName = ViewModel.SelectedStation?.Name ?? "Unknown Station";
+        bool isFavorited = _favoritesService.ToggleFavorite(ViewModel.CurrentMetadata, stationName);
+        Debug.WriteLine($"[PlayingPage] Track favorite toggled. IsFavorited: {isFavorited}");
+        
+        // UpdateFavoriteButtonState will be called via the FavoritesChanged event
+    }
+
+    private void FavoritesButton_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[PlayingPage] Favorites button clicked");
+        _shellViewModel?.NavigateToFavoritesPage();
+    }
+
+    private void VisitSite_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
+        {
+            Debug.WriteLine($"[PlayingPage] Visit Station Site clicked: {station.Name}");
+            // Navigate to AddStation page in edit mode with the station data
+            ViewModel.VisitWebsite(station);
+        }
     }
 
     private void EditStation_Click(object sender, RoutedEventArgs e)

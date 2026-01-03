@@ -36,6 +36,26 @@
                     Text="{x:Bind ViewModel.StreamUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     TextWrapping="Wrap" />
             </StackPanel>
+
+            <!--  Homepage URL Input  -->
+            <StackPanel Spacing="4">
+                <TextBlock FontWeight="SemiBold" Text="Homepage (Optional)" />
+                <TextBox
+                    x:Name="HomepageTextBox"
+                    PlaceholderText="e.g., https://example.com"
+                    Text="{x:Bind ViewModel.Homepage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!--  Favicon URL Input  -->
+            <StackPanel Spacing="4">
+                <TextBlock FontWeight="SemiBold" Text="Station Logo/Icon URL (Optional)" />
+                <TextBox
+                    x:Name="FaviconUrlTextBox"
+                    PlaceholderText="e.g., https://example.com/logo.png"
+                    Text="{x:Bind ViewModel.FaviconUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    TextWrapping="Wrap" />
+            </StackPanel>
         </StackPanel>
 
         <!--  Buttons  -->

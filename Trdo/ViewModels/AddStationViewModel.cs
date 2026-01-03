@@ -9,6 +9,8 @@ public class AddStationViewModel : INotifyPropertyChanged
 {
     private string _stationName = string.Empty;
     private string _streamUrl = string.Empty;
+    private string? _homepage;
+    private string? _faviconUrl;
     private bool _hasValidationError;
     private string _validationMessage = string.Empty;
     private string _pageTitle = "Add Radio Station";
@@ -28,6 +30,8 @@ public class AddStationViewModel : INotifyPropertyChanged
         _editingStation = station;
         StationName = station.Name;
         StreamUrl = station.StreamUrl;
+        Homepage = station.Homepage;
+        FaviconUrl = station.FaviconUrl;
         PageTitle = "Edit Radio Station";
     }
 
@@ -35,6 +39,8 @@ public class AddStationViewModel : INotifyPropertyChanged
     {
         StationName = searchStation.Name;
         StreamUrl = searchStation.GetStreamUrl();
+        Homepage = !string.IsNullOrWhiteSpace(searchStation.Homepage) ? searchStation.Homepage : null;
+        FaviconUrl = !string.IsNullOrWhiteSpace(searchStation.Favicon) ? searchStation.Favicon : null;
         PageTitle = "Add Radio Station";
     }
 
@@ -70,6 +76,28 @@ public class AddStationViewModel : INotifyPropertyChanged
             _streamUrl = value;
             OnPropertyChanged();
             ValidateInput();
+        }
+    }
+
+    public string? Homepage
+    {
+        get => _homepage;
+        set
+        {
+            if (value == _homepage) return;
+            _homepage = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public string? FaviconUrl
+    {
+        get => _faviconUrl;
+        set
+        {
+            if (value == _faviconUrl) return;
+            _faviconUrl = value;
+            OnPropertyChanged();
         }
     }
 
@@ -151,6 +179,8 @@ public class AddStationViewModel : INotifyPropertyChanged
             // Edit mode - update existing station
             _editingStation.Name = StationName.Trim();
             _editingStation.StreamUrl = StreamUrl.Trim();
+            _editingStation.Homepage = !string.IsNullOrWhiteSpace(Homepage) ? Homepage.Trim() : null;
+            _editingStation.FaviconUrl = !string.IsNullOrWhiteSpace(FaviconUrl) ? FaviconUrl.Trim() : null;
 
             // Save the updated stations list - this will automatically reinitialize if it's the selected station
             _playerViewModel?.SaveStations();
@@ -161,7 +191,9 @@ public class AddStationViewModel : INotifyPropertyChanged
             RadioStation newStation = new()
             {
                 Name = StationName.Trim(),
-                StreamUrl = StreamUrl.Trim()
+                StreamUrl = StreamUrl.Trim(),
+                Homepage = !string.IsNullOrWhiteSpace(Homepage) ? Homepage.Trim() : null,
+                FaviconUrl = !string.IsNullOrWhiteSpace(FaviconUrl) ? FaviconUrl.Trim() : null
             };
 
             // Add to PlayerViewModel if available

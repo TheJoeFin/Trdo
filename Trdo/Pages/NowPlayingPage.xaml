@@ -6,22 +6,25 @@
     xmlns:converters="using:Trdo.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:Trdo.Models"
     mc:Ignorable="d">
 
     <Page.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <converters:CountToHasItemsVisibilityConverter x:Key="CountToHasItemsVisibilityConverter" />
+        <converters:BooleanToFavoriteGlyphConverter x:Key="BooleanToFavoriteGlyphConverter" />
     </Page.Resources>
 
-    <Grid RowDefinitions="Auto,*" RowSpacing="16">
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
         <!--  Page Title  -->
         <TextBlock
             Grid.Row="0"
-            FontSize="24"
+            FontSize="16"
             FontWeight="SemiBold"
             Text="Now Playing" />
 
-        <!--  Content  -->
-        <Grid Grid.Row="1" Padding="0,0,12,0">
+        <!--  Current Track Card  -->
+        <Grid Grid.Row="1" Padding="0,0,0,0">
 
             <!--  No Metadata Message  -->
             <StackPanel
@@ -50,86 +53,200 @@
             </StackPanel>
 
             <!--  Track Info Display  -->
-            <Grid VerticalAlignment="Center" Visibility="{x:Bind ViewModel.HasMetadata, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid VerticalAlignment="Top" Visibility="{x:Bind ViewModel.HasMetadata, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid
-                    Padding="20"
+                    Padding="16"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     CornerRadius="12">
-                    <StackPanel Spacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
 
-                        <!--  Music Icon  -->
-                        <Viewbox
-                            Width="56"
-                            Height="56"
-                            HorizontalAlignment="Center">
+                    <StackPanel Grid.Column="0" Spacing="8">
+                        <!--  Music Icon and Track Info  -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
                             <FontIcon
-                                FontSize="56"
+                                Grid.Column="0"
+                                Margin="0,0,12,0"
+                                VerticalAlignment="Center"
+                                FontSize="24"
                                 Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                                 Glyph="&#xE8D6;" />
-                        </Viewbox>
 
-                        <!--  Title (if available)  -->
-                        <TextBlock
-                            HorizontalAlignment="Center"
-                            FontSize="18"
-                            FontWeight="SemiBold"
-                            Text="{x:Bind ViewModel.Title, Mode=OneWay}"
-                            TextAlignment="Center"
-                            TextWrapping="Wrap"
-                            Visibility="{x:Bind ViewModel.HasTitle, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <StackPanel
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Spacing="2">
+                                <!--  Title (if available)  -->
+                                <TextBlock
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="NoWrap"
+                                    Visibility="{x:Bind ViewModel.HasTitle, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-                        <!--  Artist (if available)  -->
-                        <TextBlock
-                            HorizontalAlignment="Center"
-                            FontSize="14"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Text="{x:Bind ViewModel.Artist, Mode=OneWay}"
-                            TextAlignment="Center"
-                            TextWrapping="Wrap"
-                            Visibility="{x:Bind ViewModel.HasArtist, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <!--  Artist (if available)  -->
+                                <TextBlock
+                                    FontSize="12"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Text="{x:Bind ViewModel.Artist, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="NoWrap"
+                                    Visibility="{x:Bind ViewModel.HasArtist, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-                        <!--  Stream Title Only (shown when we don't have parsed artist/title)  -->
-                        <TextBlock
-                            HorizontalAlignment="Center"
-                            FontSize="16"
-                            FontWeight="SemiBold"
-                            Text="{x:Bind ViewModel.StreamTitle, Mode=OneWay}"
-                            TextAlignment="Center"
-                            TextWrapping="Wrap"
-                            Visibility="{x:Bind ViewModel.ShowStreamTitleOnly, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                <!--  Stream Title Only (shown when we don't have parsed artist/title)  -->
+                                <TextBlock
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Text="{x:Bind ViewModel.StreamTitle, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="NoWrap"
+                                    Visibility="{x:Bind ViewModel.ShowStreamTitleOnly, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            </StackPanel>
+
+                            <!--  Favorite Button - aligned with music icon  -->
+                            <Button
+                                Grid.Column="2"
+                                Margin="8,0,0,0"
+                                Padding="8"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Click="FavoriteCurrentTrack_Click"
+                                ToolTipService.ToolTip="Toggle favorite">
+                                <FontIcon
+                                    FontSize="20"
+                                    Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                    Glyph="{x:Bind ViewModel.IsCurrentTrackFavorited, Mode=OneWay, Converter={StaticResource BooleanToFavoriteGlyphConverter}}" />
+                            </Button>
+                        </Grid>
 
                         <!--  Search Links  -->
                         <StackPanel
-                            Margin="0,4,0,0"
-                            HorizontalAlignment="Center"
+                            Margin="36,4,0,0"
                             Orientation="Horizontal"
                             Spacing="16">
 
                             <!--  Search on Spotify  -->
-                            <HyperlinkButton Click="SpotifyLink_Click">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Image Width="20" Height="20">
+                            <HyperlinkButton Padding="4" Click="SpotifyLink_Click">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <Image Width="16" Height="16">
                                         <Image.Source>
                                             <SvgImageSource UriSource="ms-appx:///Assets/spotify.svg" />
                                         </Image.Source>
                                     </Image>
-                                    <TextBlock Text="Spotify" />
+                                    <TextBlock FontSize="11" Text="Spotify" />
                                 </StackPanel>
                             </HyperlinkButton>
 
                             <!--  Search on Discogs  -->
-                            <HyperlinkButton Click="DiscogsLink_Click">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon FontSize="14" Glyph="&#xE721;" />
-                                    <TextBlock Text="Discogs" />
+                            <HyperlinkButton Padding="4" Click="DiscogsLink_Click">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon FontSize="12" Glyph="&#xE721;" />
+                                    <TextBlock FontSize="11" Text="Discogs" />
                                 </StackPanel>
                             </HyperlinkButton>
 
                         </StackPanel>
-
                     </StackPanel>
                 </Grid>
             </Grid>
+        </Grid>
+
+        <!--  Playlist History Section  -->
+        <Grid Grid.Row="2" Padding="0,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!--  History Header  -->
+            <TextBlock
+                Grid.Row="0"
+                Margin="0,0,0,8"
+                FontSize="14"
+                FontWeight="SemiBold"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="Recent Tracks"
+                Visibility="{x:Bind ViewModel.PlaylistHistory.Count, Mode=OneWay, Converter={StaticResource CountToHasItemsVisibilityConverter}}" />
+
+            <!--  History List  -->
+            <ListView
+                Grid.Row="1"
+                Padding="0,0,12,0"
+                ItemsSource="{x:Bind ViewModel.PlaylistHistory, Mode=OneWay}"
+                SelectionMode="None"
+                Visibility="{x:Bind ViewModel.PlaylistHistory.Count, Mode=OneWay, Converter={StaticResource CountToHasItemsVisibilityConverter}}">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="0,4" />
+                        <Setter Property="MinHeight" Value="0" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="models:PlaylistHistoryItem">
+                        <Grid
+                            Padding="10"
+                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                            CornerRadius="6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!--  Track Info  -->
+                            <StackPanel Grid.Column="0" Spacing="2">
+                                <TextBlock
+                                    FontSize="12"
+                                    Text="{x:Bind DisplayText}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="NoWrap" />
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock
+                                        FontSize="10"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Text="{x:Bind StationName}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <TextBlock
+                                        FontSize="10"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Text="•" />
+                                    <TextBlock
+                                        FontSize="10"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Text="{x:Bind FormattedTime}" />
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!--  Favorite Toggle Button  -->
+                            <Button
+                                Grid.Column="2"
+                                Padding="6"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Click="FavoriteHistoryItem_Click"
+                                Tag="{x:Bind}"
+                                ToolTipService.ToolTip="Toggle favorite">
+                                <FontIcon
+                                    FontSize="14"
+                                    Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                    Glyph="{x:Bind IsFavorited, Mode=OneWay, Converter={StaticResource BooleanToFavoriteGlyphConverter}}" />
+                            </Button>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
         </Grid>
     </Grid>
 </Page>

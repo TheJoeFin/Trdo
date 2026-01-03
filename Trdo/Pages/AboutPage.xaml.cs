@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Trdo.Controls;
 using Trdo.ViewModels;
 
 namespace Trdo.Pages;
@@ -29,4 +30,25 @@ public sealed partial class AboutPage : Page
     {
         ViewModel.OpenRatingWindow();
     }
-}
+
+        private void TutorialButton_Click(object sender, RoutedEventArgs e)
+        {
+            TutorialWindow tutorialWindow = new();
+            tutorialWindow.Activate();
+        }
+
+        private void RadioBrowserButton_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.OpenRadioBrowser();
+        }
+
+        private void WinUIExButton_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.OpenWinUIEx();
+        }
+
+        private void CommunityToolkitButton_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.OpenCommunityToolkit();
+        }
+    }

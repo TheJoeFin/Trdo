@@ -3,10 +3,12 @@ using System.Runtime.CompilerServices;
 
 namespace Trdo.Models;
 
-public class RadioStation : INotifyPropertyChanged
+public partial class RadioStation : INotifyPropertyChanged
 {
     private string _name = string.Empty;
     private string _streamUrl = string.Empty;
+    private string? _homepage;
+    private string? _faviconUrl;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -28,6 +30,34 @@ public class RadioStation : INotifyPropertyChanged
         {
             if (value == _streamUrl) return;
             _streamUrl = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// The homepage URL of the radio station, if available.
+    /// </summary>
+    public string? Homepage
+    {
+        get => _homepage;
+        set
+        {
+            if (value == _homepage) return;
+            _homepage = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// The URL to the station's favicon/logo image, if available.
+    /// </summary>
+    public string? FaviconUrl
+    {
+        get => _faviconUrl;
+        set
+        {
+            if (value == _faviconUrl) return;
+            _faviconUrl = value;
             OnPropertyChanged();
         }
     }

@@ -68,7 +68,9 @@ public class RadioBrowserStation
         return new RadioStation
         {
             Name = Name,
-            StreamUrl = GetStreamUrl()
+            StreamUrl = GetStreamUrl(),
+            Homepage = !string.IsNullOrWhiteSpace(Homepage) ? Homepage : null,
+            FaviconUrl = !string.IsNullOrWhiteSpace(Favicon) ? Favicon : null
         };
     }
 }

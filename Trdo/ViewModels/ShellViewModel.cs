@@ -75,6 +75,12 @@ public partial class ShellViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public void NavigateToFavoritesPage()
+    {
+        _navigationService.Navigate(typeof(FavoritesPage));
+    }
+
+    [RelayCommand]
     public void GoBack()
     {
         _navigationService.GoBack();

@@ -5,7 +5,9 @@ using System;
 using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
+using Trdo.Controls;
 using Trdo.Pages;
+using Trdo.Services;
 using Trdo.ViewModels;
 using Windows.UI;
 using Windows.UI.ViewManagement;
@@ -36,8 +38,19 @@ public partial class App : Application
         InitializeComponent();
         _playerVm.PropertyChanged += PlayerVmOnPropertyChanged;
 
+        // Initialize PlaylistHistoryService early so it captures metadata from the start
+        PlaylistHistoryService.EnsureInitialized();
+
         // Subscribe to theme change events
         _uiSettings.ColorValuesChanged += OnColorValuesChanged;
+    }
+
+    public void TryShowFlyout()
+    {
+        if (_trayIcon is null)
+            return;
+
+        // TODO: find a way to programmatically show the flyout on the Icon
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
@@ -131,6 +144,13 @@ public partial class App : Application
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
         _trayIcon.IsVisible = true;
+
+        // Only show tutorial window on first run
+        if (SettingsService.IsFirstRun)
+        {
+            TutorialWindow tutorialWindow = new();
+            tutorialWindow.Show();
+        }
     }
 
     private void TrayIcon_ContextMenu(TrayIcon sender, TrayIconEventArgs args)

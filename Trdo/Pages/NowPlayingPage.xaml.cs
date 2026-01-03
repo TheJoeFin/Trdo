@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System.Diagnostics;
+using Trdo.Models;
 using Trdo.ViewModels;
 
 namespace Trdo.Pages;
@@ -35,5 +36,20 @@ public sealed partial class NowPlayingPage : Page
     {
         Debug.WriteLine("[NowPlayingPage] Spotify link clicked");
         await ViewModel.SearchOnSpotify();
+    }
+
+    private void FavoriteCurrentTrack_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[NowPlayingPage] Favorite current track clicked");
+        ViewModel.ToggleCurrentTrackFavorite();
+    }
+
+    private void FavoriteHistoryItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is PlaylistHistoryItem item)
+        {
+            Debug.WriteLine($"[NowPlayingPage] Favorite history item clicked: {item.DisplayText}");
+            ViewModel.ToggleHistoryItemFavorite(item);
+        }
     }
 }

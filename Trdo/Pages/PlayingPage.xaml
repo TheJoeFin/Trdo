@@ -12,6 +12,8 @@
     <Page.Resources>
         <converters:CountToEmptyStateVisibilityConverter x:Key="CountToEmptyStateVisibilityConverter" />
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
     </Page.Resources>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowSpacing="12">
@@ -20,6 +22,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
@@ -35,9 +38,21 @@
                 </StackPanel>
             </Button>
 
-            <!--  Info Icon Button (Subtle)  -->
+            <!--  Favorites Icon Button (Subtle)  -->
             <Button
                 Grid.Column="2"
+                Padding="8"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                Click="FavoritesButton_Click"
+                ToolTipService.ToolTip="Favorites">
+                <FontIcon FontSize="16" Glyph="&#xE728;" />
+            </Button>
+
+            <!--  Info Icon Button (Subtle)  -->
+            <Button
+                Grid.Column="3"
                 Padding="8"
                 VerticalAlignment="Center"
                 Background="Transparent"
@@ -49,7 +64,7 @@
 
             <!--  Settings Icon Button (Subtle)  -->
             <Button
-                Grid.Column="3"
+                Grid.Column="4"
                 Padding="8"
                 VerticalAlignment="Center"
                 Background="Transparent"
@@ -82,14 +97,22 @@
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         <Setter Property="Padding" Value="16,12" />
-                        <Setter Property="Margin" Value="0,0,0,8" />
+                        <Setter Property="Margin" Value="0,0,0,1" />
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="models:RadioStation">
-                        <Grid ColumnDefinitions="Auto,*">
+                        <Grid ColumnDefinitions="Auto,Auto,*">
                             <Grid.ContextFlyout>
                                 <MenuFlyout>
+                                    <MenuFlyoutItem
+                                        Click="VisitSite_Click"
+                                        Tag="{x:Bind}"
+                                        Text="Visit Website">
+                                        <MenuFlyoutItem.Icon>
+                                            <FontIcon Glyph="&#xEB41;" />
+                                        </MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
                                     <MenuFlyoutItem
                                         Click="EditStation_Click"
                                         Tag="{x:Bind}"
@@ -119,10 +142,26 @@
                                 CornerRadius="2,0,0,2"
                                 Visibility="Collapsed" />
 
-                            <TextBlock
+                            <!--  Favicon  -->
+                            <Grid
                                 Grid.Column="1"
+                                Width="24"
+                                Height="24"
+                                Margin="0,0,12,0"
+                                VerticalAlignment="Center"
+                                Visibility="{x:Bind FaviconUrl, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}">
+                                <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="4">
+                                    <Image Source="{x:Bind FaviconUrl, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}" Stretch="UniformToFill" />
+                                </Border>
+                            </Grid>
+
+                            <!--  Station Name  -->
+                            <TextBlock
+                                Grid.Column="2"
+                                VerticalAlignment="Center"
                                 FontSize="12"
                                 Text="{x:Bind Name}"
+                                TextTrimming="CharacterEllipsis"
                                 TextWrapping="NoWrap" />
                         </Grid>
                     </DataTemplate>
@@ -208,35 +247,52 @@
             Grid.Row="4"
             Padding="8,4"
             HorizontalAlignment="Stretch"
-            HorizontalContentAlignment="Left"
+            HorizontalContentAlignment="Stretch"
             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
             BorderThickness="0"
             Click="NowPlayingInfo_Click"
             CornerRadius="4"
             ToolTipService.ToolTip="Click for details"
             Visibility="{x:Bind ViewModel.HasNowPlaying, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <Grid>
+            <Grid VerticalAlignment="Center" ColumnSpacing="6">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                <FontIcon
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    FontSize="14"
+                    Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                    Glyph="&#xE8D6;" />
+                <TextBlock
+                    x:Name="NowPlayingText"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    FontSize="12"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="{x:Bind ViewModel.NowPlaying, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap" />
+                <!--  Favorite Button  -->
+                <Button
+                    x:Name="FavoriteButton"
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="FavoriteButton_Click"
+                    ToolTipService.ToolTip="Toggle favorite">
                     <FontIcon
-                        VerticalAlignment="Center"
+                        x:Name="FavoriteIcon"
                         FontSize="14"
                         Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                        Glyph="&#xE8D6;" />
-                    <TextBlock
-                        x:Name="NowPlayingText"
-                        VerticalAlignment="Center"
-                        FontSize="12"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="{x:Bind ViewModel.NowPlaying, Mode=OneWay}"
-                        TextTrimming="CharacterEllipsis"
-                        TextWrapping="NoWrap" />
-                </StackPanel>
+                        Glyph="&#xE734;" />
+                </Button>
                 <FontIcon
-                    Grid.Column="1"
+                    Grid.Column="3"
                     VerticalAlignment="Center"
                     FontSize="12"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
