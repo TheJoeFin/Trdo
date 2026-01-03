@@ -15,7 +15,7 @@
         <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
     </Page.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="12">
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="12">
 
         <!--  Title  -->
         <TextBlock
@@ -41,8 +41,17 @@
                 IsActive="{x:Bind ViewModel.IsSearching, Mode=OneWay}" />
         </Grid>
 
+        <!--  Error InfoBar  -->
+        <InfoBar
+            Grid.Row="2"
+            IsClosable="True"
+            IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
+            Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+            Severity="Error"
+            Title="Search Error" />
+
         <!--  Search Results  -->
-        <ScrollViewer Grid.Row="2">
+        <ScrollViewer Grid.Row="3">
             <StackPanel Spacing="8">
                 <!--  Initial state  -->
                 <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.ShowInitialState, Mode=OneWay}">
@@ -133,17 +142,17 @@
                     </ListView.ItemTemplate>
                 </ListView>
             </StackPanel>
-        </ScrollViewer>
+                </ScrollViewer>
 
-        <!--  Cancel Button  -->
-        <Button
-            Grid.Row="3"
-            HorizontalAlignment="Stretch"
-            Click="CancelButton_Click">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-                <FontIcon FontSize="16" Glyph="&#xE711;" />
-                <TextBlock Text="Cancel" />
-            </StackPanel>
-        </Button>
-    </Grid>
-</Page>
+                <!--  Cancel Button  -->
+                <Button
+                    Grid.Row="4"
+                    HorizontalAlignment="Stretch"
+                    Click="CancelButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="16" Glyph="&#xE711;" />
+                        <TextBlock Text="Cancel" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Page>

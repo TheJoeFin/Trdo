@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,8 @@ public class SearchStationViewModel : INotifyPropertyChanged
 {
     private string _searchTerm = string.Empty;
     private bool _isSearching;
+    private bool _hasError;
+    private string _errorMessage = string.Empty;
     private readonly RadioBrowserService _radioBrowserService = new();
     private CancellationTokenSource? _searchCancellationTokenSource;
 
@@ -24,7 +27,31 @@ public class SearchStationViewModel : INotifyPropertyChanged
 
     public bool ShowInitialState => string.IsNullOrWhiteSpace(SearchTerm) &&
                 SearchResults.Count == 0 &&
-                !IsSearching;
+                !IsSearching &&
+                !HasError;
+
+    public bool HasError
+    {
+        get => _hasError;
+        private set
+        {
+            if (value == _hasError) return;
+            _hasError = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowInitialState));
+        }
+    }
+
+    public string ErrorMessage
+    {
+        get => _errorMessage;
+        private set
+        {
+            if (value == _errorMessage) return;
+            _errorMessage = value;
+            OnPropertyChanged();
+        }
+    }
 
     public string SearchTerm
     {
@@ -72,10 +99,14 @@ public class SearchStationViewModel : INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(SearchTerm))
         {
             SearchResults.Clear();
+            HasError = false;
+            ErrorMessage = string.Empty;
             return;
         }
 
         IsSearching = true;
+        HasError = false;
+        ErrorMessage = string.Empty;
 
         try
         {
@@ -98,10 +129,19 @@ public class SearchStationViewModel : INotifyPropertyChanged
             // Search was cancelled, ignore
             Debug.WriteLine("[SearchStationViewModel] Search cancelled");
         }
+        catch (HttpRequestException ex)
+        {
+            Debug.WriteLine($"[SearchStationViewModel] Network error: {ex.Message}");
+            HasError = true;
+            ErrorMessage = ex.StatusCode.HasValue
+                ? $"Server error ({(int)ex.StatusCode}): The radio station service is temporarily unavailable. Please try again later."
+                : "Network error: Unable to reach the radio station service. Please check your internet connection.";
+        }
         catch (Exception ex)
         {
             Debug.WriteLine($"[SearchStationViewModel] Search error: {ex.Message}");
-            // Could add error handling here
+            HasError = true;
+            ErrorMessage = $"An error occurred while searching: {ex.Message}";
         }
         finally
         {
