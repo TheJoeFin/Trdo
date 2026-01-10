@@ -132,15 +132,29 @@
                                 </MenuFlyout>
                             </Grid.ContextFlyout>
 
+                            <!--  Selection background  -->
+                            <Border
+                                x:Name="SelectionBackground"
+                                Grid.Column="0"
+                                Grid.ColumnSpan="3"
+                                Margin="-16,-12"
+                                Background="{ThemeResource AccentFillColorTertiaryBrush}"
+                                Opacity="0.3"
+                                Visibility="Collapsed" />
+
                             <!--  Selection indicator  -->
                             <Border
                                 x:Name="SelectionIndicator"
                                 Grid.Column="0"
-                                Width="4"
-                                Margin="-16,-12,12,-12"
+                                Width="6"
+                                Margin="-16,-12,10,-12"
                                 Background="{ThemeResource AccentFillColorDefaultBrush}"
-                                CornerRadius="2,0,0,2"
-                                Visibility="Collapsed" />
+                                CornerRadius="3,0,0,3"
+                                Visibility="Collapsed">
+                                <Border.RenderTransform>
+                                    <ScaleTransform x:Name="IndicatorScaleTransform" ScaleY="1" />
+                                </Border.RenderTransform>
+                            </Border>
 
                             <!--  Favicon  -->
                             <Grid

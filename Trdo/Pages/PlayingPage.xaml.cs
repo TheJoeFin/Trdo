@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Diagnostics;
 using Trdo.Controls;
@@ -113,6 +114,7 @@ public sealed partial class PlayingPage : Page
         {
             Debug.WriteLine($"[PlayingPage] IsPlaying changed to: {ViewModel.IsPlaying}");
             UpdatePlayButtonState();
+            UpdateStationSelection(); // Update animation based on play state
         }
         else if (e.PropertyName == nameof(PlayerViewModel.SelectedStation))
         {
@@ -186,6 +188,58 @@ public sealed partial class PlayingPage : Page
         }
     }
 
+    private void StartPulsingAnimation(Border indicator)
+    {
+        // Check if animation already exists
+        var existingStoryboard = indicator.Resources["PulsingStoryboard"] as Storyboard;
+        if (existingStoryboard != null)
+        {
+            // Animation already running
+            return;
+        }
+
+        // Create a subtle pulsing animation for the selection indicator
+        var storyboard = new Storyboard { RepeatBehavior = RepeatBehavior.Forever };
+
+        // Animate ScaleY for a vertical pulsing effect
+        var scaleAnimation = new DoubleAnimation
+        {
+            From = 1.0,
+            To = 0.85,
+            Duration = TimeSpan.FromMilliseconds(800),
+            AutoReverse = true,
+            EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+        };
+
+        Storyboard.SetTarget(scaleAnimation, indicator);
+        Storyboard.SetTargetProperty(scaleAnimation, "(Border.RenderTransform).(ScaleTransform.ScaleY)");
+        storyboard.Children.Add(scaleAnimation);
+
+        // Store the storyboard in resources so we can stop it later
+        indicator.Resources["PulsingStoryboard"] = storyboard;
+
+        storyboard.Begin();
+        Debug.WriteLine("[PlayingPage] Started pulsing animation on selection indicator");
+    }
+
+    private void StopPulsingAnimation(Border indicator)
+    {
+        var storyboard = indicator.Resources["PulsingStoryboard"] as Storyboard;
+        if (storyboard != null)
+        {
+            storyboard.Stop();
+            indicator.Resources.Remove("PulsingStoryboard");
+
+            // Reset the scale transform
+            if (indicator.RenderTransform is ScaleTransform scaleTransform)
+            {
+                scaleTransform.ScaleY = 1.0;
+            }
+
+            Debug.WriteLine("[PlayingPage] Stopped pulsing animation on selection indicator");
+        }
+    }
+
     private void UpdateStationSelection()
     {
         Debug.WriteLine("[PlayingPage] UpdateStationSelection called");
@@ -207,12 +261,33 @@ public sealed partial class PlayingPage : Page
             }
 
             RadioStation station = ViewModel.Stations[i];
+            bool isSelected = station == ViewModel.SelectedStation;
+            
+            // Update selection indicator
             Border? indicator = FindDescendant<Border>(container, "SelectionIndicator");
             if (indicator != null)
             {
-                bool isSelected = station == ViewModel.SelectedStation;
                 indicator.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
+                
+                // Add or remove pulsing animation when playing
+                if (isSelected && ViewModel.IsPlaying)
+                {
+                    StartPulsingAnimation(indicator);
+                }
+                else
+                {
+                    StopPulsingAnimation(indicator);
+                }
+                
                 Debug.WriteLine($"[PlayingPage] Station '{station.Name}' selection indicator: {(isSelected ? "Visible" : "Collapsed")}");
+            }
+
+            // Update selection background
+            Border? background = FindDescendant<Border>(container, "SelectionBackground");
+            if (background != null)
+            {
+                background.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
+                Debug.WriteLine($"[PlayingPage] Station '{station.Name}' selection background: {(isSelected ? "Visible" : "Collapsed")}");
             }
         }
     }
