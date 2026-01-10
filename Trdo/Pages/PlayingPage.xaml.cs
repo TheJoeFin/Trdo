@@ -23,6 +23,7 @@ public sealed partial class PlayingPage : Page
     private const int MinIndexForScrolling = 3;
     private const string FilledStar = "\uE735";
     private const string OutlineStar = "\uE734";
+    private const string PulsingStoryboardKey = "PulsingStoryboard";
     
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;
     
@@ -190,8 +191,15 @@ public sealed partial class PlayingPage : Page
 
     private void StartPulsingAnimation(Border indicator)
     {
+        // Validate that the indicator has the correct RenderTransform
+        if (indicator.RenderTransform is not ScaleTransform)
+        {
+            Debug.WriteLine("[PlayingPage] WARNING: Selection indicator does not have ScaleTransform, animation skipped");
+            return;
+        }
+
         // Check if animation already exists
-        var existingStoryboard = indicator.Resources["PulsingStoryboard"] as Storyboard;
+        var existingStoryboard = indicator.Resources[PulsingStoryboardKey] as Storyboard;
         if (existingStoryboard != null)
         {
             // Animation already running
@@ -216,7 +224,7 @@ public sealed partial class PlayingPage : Page
         storyboard.Children.Add(scaleAnimation);
 
         // Store the storyboard in resources so we can stop it later
-        indicator.Resources["PulsingStoryboard"] = storyboard;
+        indicator.Resources[PulsingStoryboardKey] = storyboard;
 
         storyboard.Begin();
         Debug.WriteLine("[PlayingPage] Started pulsing animation on selection indicator");
@@ -224,11 +232,11 @@ public sealed partial class PlayingPage : Page
 
     private void StopPulsingAnimation(Border indicator)
     {
-        var storyboard = indicator.Resources["PulsingStoryboard"] as Storyboard;
+        var storyboard = indicator.Resources[PulsingStoryboardKey] as Storyboard;
         if (storyboard != null)
         {
             storyboard.Stop();
-            indicator.Resources.Remove("PulsingStoryboard");
+            indicator.Resources.Remove(PulsingStoryboardKey);
 
             // Reset the scale transform
             if (indicator.RenderTransform is ScaleTransform scaleTransform)

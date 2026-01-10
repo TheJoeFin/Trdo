@@ -133,6 +133,7 @@
                             </Grid.ContextFlyout>
 
                             <!--  Selection background  -->
+                            <!--  Negative margins match ListViewItem padding (16,12) to extend to full edge  -->
                             <Border
                                 x:Name="SelectionBackground"
                                 Grid.Column="0"
@@ -143,6 +144,7 @@
                                 Visibility="Collapsed" />
 
                             <!--  Selection indicator  -->
+                            <!--  Negative margins match ListViewItem padding (16,12) with 10px right spacing  -->
                             <Border
                                 x:Name="SelectionIndicator"
                                 Grid.Column="0"
