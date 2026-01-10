@@ -277,13 +277,14 @@ public sealed partial class PlayingPage : Page
             {
                 indicator.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
                 
-                // Add or remove pulsing animation when playing
+                // Manage pulsing animation based on selection and playback state
                 if (isSelected && ViewModel.IsPlaying)
                 {
                     StartPulsingAnimation(indicator);
                 }
-                else
+                else if (indicator.Resources.ContainsKey(PulsingStoryboardKey))
                 {
+                    // Only stop animation if one exists on this indicator
                     StopPulsingAnimation(indicator);
                 }
                 
