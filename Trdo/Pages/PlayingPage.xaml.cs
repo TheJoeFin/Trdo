@@ -108,18 +108,10 @@ public sealed partial class PlayingPage : Page
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         Debug.WriteLine($"[PlayingPage] ViewModel PropertyChanged: {e.PropertyName}");
+        UpdatePlayButtonState();
+        UpdateStationSelection();
 
-        if (e.PropertyName == nameof(PlayerViewModel.IsPlaying))
-        {
-            Debug.WriteLine($"[PlayingPage] IsPlaying changed to: {ViewModel.IsPlaying}");
-            UpdatePlayButtonState();
-        }
-        else if (e.PropertyName == nameof(PlayerViewModel.SelectedStation))
-        {
-            Debug.WriteLine($"[PlayingPage] SelectedStation changed to: {ViewModel.SelectedStation?.Name ?? "null"}");
-            UpdateStationSelection();
-        }
-        else if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata) || 
+        if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata) || 
                  e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
         {
             UpdateFavoriteButtonState();
@@ -162,27 +154,25 @@ public sealed partial class PlayingPage : Page
 
     private void UpdatePlayButtonState()
     {
-        FontIcon? playIcon = this.FindName("PlayIcon") as FontIcon;
-        TextBlock? playText = this.FindName("PlayText") as TextBlock;
-
-        if (playIcon != null && playText != null)
+        if (ViewModel.IsBuffering)
         {
-            if (ViewModel.IsPlaying)
-            {
-                playIcon.Glyph = "\uE769"; // Pause icon
-                playText.Text = "Pause";
-                Debug.WriteLine("[PlayingPage] Play button updated to 'Pause'");
-            }
-            else
-            {
-                playIcon.Glyph = "\uE768"; // Play icon
-                playText.Text = "Play";
-                Debug.WriteLine("[PlayingPage] Play button updated to 'Play'");
-            }
+            PlayIcon.Glyph = "\uF16A"; // Progress ring
+            PlayText.Text = "Buffering";
+            Debug.WriteLine("[PlayingPage] Play button updated to 'Buffering'");
+            return;
+        }
+
+        if (ViewModel.IsPlaying)
+        {
+            PlayIcon.Glyph = "\uE769"; // Pause icon
+            PlayText.Text = "Pause";
+            Debug.WriteLine("[PlayingPage] Play button updated to 'Pause'");
         }
         else
         {
-            Debug.WriteLine($"[PlayingPage] WARNING: Play button elements not found (PlayIcon={playIcon != null}, PlayText={playText != null})");
+            PlayIcon.Glyph = "\uE768"; // Play icon
+            PlayText.Text = "Play";
+            Debug.WriteLine("[PlayingPage] Play button updated to 'Play'");
         }
     }
 
@@ -200,11 +190,8 @@ public sealed partial class PlayingPage : Page
 
         for (int i = 0; i < ViewModel.Stations.Count; i++)
         {
-            ListViewItem? container = StationsListView.ContainerFromIndex(i) as ListViewItem;
-            if (container == null)
-            {
+            if (StationsListView.ContainerFromIndex(i) is not ListViewItem container)
                 continue;
-            }
 
             RadioStation station = ViewModel.Stations[i];
             Border? indicator = FindDescendant<Border>(container, "SelectionIndicator");

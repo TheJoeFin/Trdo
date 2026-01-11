@@ -96,7 +96,7 @@
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="Padding" Value="16,12" />
+                        <Setter Property="Padding" Value="8,6" />
                         <Setter Property="Margin" Value="0,0,0,1" />
                     </Style>
                 </ListView.ItemContainerStyle>
@@ -135,11 +135,10 @@
                             <!--  Selection indicator  -->
                             <Border
                                 x:Name="SelectionIndicator"
-                                Grid.Column="0"
-                                Width="4"
-                                Margin="-16,-12,12,-12"
-                                Background="{ThemeResource AccentFillColorDefaultBrush}"
-                                CornerRadius="2,0,0,2"
+                                Grid.ColumnSpan="3"
+                                Margin="-8,-6"
+                                Background="{ThemeResource AccentAcrylicBackgroundFillColorDefaultBrush}"
+                                CornerRadius="2"
                                 Visibility="Collapsed" />
 
                             <!--  Favicon  -->
