@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Trdo.Controls;
@@ -258,12 +259,16 @@ public partial class App : Application
         if (_trayIcon is null)
             return;
 
+        string station = _playerVm.SelectedStation?.Name ?? string.Empty;
+        station = station.Split(" ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+
         if (!_playerVm.CanPlay)
         {
             _trayIcon.Tooltip = "Trdo - Add a station to start listening";
         }
         else if (_playerVm.IsPlaying)
         {
+                
             // Include now playing info if available
             if (_playerVm.HasNowPlaying)
             {
@@ -273,16 +278,16 @@ public partial class App : Application
                 {
                     nowPlaying = string.Concat(nowPlaying.AsSpan(0, MaxTooltipNowPlayingLength - 3), "...");
                 }
-                _trayIcon.Tooltip = $"Trdo (Playing)\n{nowPlaying}";
+                _trayIcon.Tooltip = $"Trdo {station} (Playing)\n{nowPlaying}";
             }
             else
             {
-                _trayIcon.Tooltip = "Trdo (Playing)";
+                _trayIcon.Tooltip = $"Trdo {station} (Playing)";
             }
         }
         else
         {
-            _trayIcon.Tooltip = "Trdo (Paused)";
+            _trayIcon.Tooltip = $"Trdo {station} (Paused)";
         }
     }
 
