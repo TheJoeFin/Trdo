@@ -524,6 +524,7 @@ public sealed partial class RadioPlayerService : IDisposable
     /// <summary>
     /// Internal method that handles buffered playback asynchronously.
     /// This is called by Play() to apply buffer settings every time playback starts.
+    /// The stream is muted during buffering, then unmuted once sufficient buffer is achieved.
     /// </summary>
     private async Task PlayWithBufferInternalAsync()
     {
@@ -565,11 +566,22 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine("[RadioPlayerService] Reusing existing MediaSource - resuming playback");
             }
 
+            // Check if we need to buffer before playing audibly
+            bool needsBuffering = RequiredBufferDuration > TimeSpan.Zero;
+            double savedVolume = _volume;
+
+            if (needsBuffering)
+            {
+                // Mute the player while buffering so audio doesn't play yet
+                Debug.WriteLine($"[RadioPlayerService] Muting player for buffering (saved volume: {savedVolume})");
+                _player.Volume = 0;
+            }
+
             // Start playback to begin buffering
-            Debug.WriteLine("[RadioPlayerService] Calling _player.Play()...");
+            Debug.WriteLine("[RadioPlayerService] Calling _player.Play() to start buffering...");
             SetInternalStateChange(true);
             _player.Play();
-            Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully");
+            Debug.WriteLine("[RadioPlayerService] _player.Play() called - stream is buffering");
 
             // Clear the external pause flag
             _wasExternalPause = false;
@@ -582,12 +594,16 @@ public sealed partial class RadioPlayerService : IDisposable
             _metadataService.StartPolling(_streamUrl!);
             Debug.WriteLine("[RadioPlayerService] Started metadata polling");
 
-            // Now wait for sufficient buffer if buffer level > 0
-            // This uses GetBufferedRanges to monitor buffering progress
-            if (RequiredBufferDuration > TimeSpan.Zero)
+            // Wait for sufficient buffer if buffer level > 0
+            // During this time, the stream is buffering but audio is muted
+            if (needsBuffering)
             {
                 Debug.WriteLine($"[RadioPlayerService] Waiting for buffer: {RequiredBufferDuration.TotalMilliseconds}ms...");
                 await WaitForSufficientBufferAsync();
+                
+                // Restore volume - audio will now be audible
+                Debug.WriteLine($"[RadioPlayerService] Buffer complete. Restoring volume to {savedVolume}");
+                _player.Volume = savedVolume;
             }
             else
             {
@@ -602,6 +618,9 @@ public sealed partial class RadioPlayerService : IDisposable
             Debug.WriteLine($"[RadioPlayerService] EXCEPTION in PlayWithBufferInternalAsync: {ex.Message}");
             Debug.WriteLine($"[RadioPlayerService] Exception details: {ex}");
             Debug.WriteLine("[RadioPlayerService] Re-creating media source and trying again...");
+
+            // Restore volume in case we were muted
+            _player.Volume = _volume;
 
             // Re-create the media source and try again
             try
@@ -691,6 +710,7 @@ public sealed partial class RadioPlayerService : IDisposable
     /// <summary>
     /// Starts playback and waits for sufficient buffer based on current buffer level setting.
     /// Uses MediaPlaybackSession.GetBufferedRanges to monitor buffering progress.
+    /// The stream is muted during buffering, then unmuted once sufficient buffer is achieved.
     /// This method is primarily used by the watchdog for recovery scenarios that need cancellation support.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token to cancel waiting</param>
@@ -705,6 +725,10 @@ public sealed partial class RadioPlayerService : IDisposable
             Debug.WriteLine("[RadioPlayerService] ERROR: No stream URL set");
             throw new InvalidOperationException("No stream URL set. Call SetStreamUrl first.");
         }
+
+        // Check if we need to buffer before playing audibly
+        bool needsBuffering = RequiredBufferDuration > TimeSpan.Zero;
+        double savedVolume = _volume;
 
         try
         {
@@ -725,6 +749,13 @@ public sealed partial class RadioPlayerService : IDisposable
                 _hasPlayedOnce = true;
             }
 
+            if (needsBuffering)
+            {
+                // Mute the player while buffering so audio doesn't play yet
+                Debug.WriteLine($"[RadioPlayerService] Muting player for buffering (saved volume: {savedVolume})");
+                _player.Volume = 0;
+            }
+
             SetInternalStateChange(true);
             _player.Play();
             _wasExternalPause = false;
@@ -732,7 +763,7 @@ public sealed partial class RadioPlayerService : IDisposable
             _metadataService.StartPolling(_streamUrl!);
 
             // If no additional buffer is required, we're done
-            if (RequiredBufferDuration == TimeSpan.Zero)
+            if (!needsBuffering)
             {
                 Debug.WriteLine("[RadioPlayerService] No additional buffer required (default level)");
                 return true;
@@ -750,6 +781,7 @@ public sealed partial class RadioPlayerService : IDisposable
                 if (cancellationToken.IsCancellationRequested)
                 {
                     Debug.WriteLine("[RadioPlayerService] Buffer wait cancelled");
+                    _player.Volume = savedVolume; // Restore volume even if cancelled
                     return false;
                 }
 
@@ -787,6 +819,12 @@ public sealed partial class RadioPlayerService : IDisposable
         }
         finally
         {
+            // Always restore volume when exiting, in case we were muted for buffering
+            if (needsBuffering)
+            {
+                Debug.WriteLine($"[RadioPlayerService] Ensuring volume is restored to {savedVolume}");
+                _player.Volume = savedVolume;
+            }
             Debug.WriteLine($"=== PlayWithBufferAsync END ===");
         }
     }
