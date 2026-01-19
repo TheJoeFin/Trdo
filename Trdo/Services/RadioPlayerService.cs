@@ -1,7 +1,9 @@
 using Microsoft.UI.Dispatching;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Trdo.Models;
 using Windows.Media;
@@ -115,6 +117,69 @@ public sealed partial class RadioPlayerService : IDisposable
             {
                 return TimeSpan.Zero;
             }
+        }
+    }
+
+    /// <summary>
+    /// Gets the total buffered duration using MediaPlaybackSession.GetBufferedRanges.
+    /// Returns the sum of all buffered time ranges.
+    /// </summary>
+    public TimeSpan TotalBufferedDuration
+    {
+        get
+        {
+            try
+            {
+                var bufferedRanges = _player.PlaybackSession.GetBufferedRanges();
+                TimeSpan totalBuffered = TimeSpan.Zero;
+                foreach (var range in bufferedRanges)
+                {
+                    totalBuffered += range.End - range.Start;
+                }
+                return totalBuffered;
+            }
+            catch
+            {
+                return TimeSpan.Zero;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the buffered ranges from the playback session.
+    /// Each MediaTimeRange contains Start and End times representing buffered content.
+    /// </summary>
+    public IReadOnlyList<Windows.Media.MediaTimeRange> GetBufferedRanges()
+    {
+        try
+        {
+            return _player.PlaybackSession.GetBufferedRanges();
+        }
+        catch
+        {
+            return Array.Empty<Windows.Media.MediaTimeRange>();
+        }
+    }
+
+    /// <summary>
+    /// Gets the minimum buffer duration required based on current buffer level setting.
+    /// </summary>
+    public TimeSpan RequiredBufferDuration => TimeSpan.FromMilliseconds(_watchdog.BufferDelayMs);
+
+    /// <summary>
+    /// Checks if sufficient buffer is available for smooth playback based on current buffer level.
+    /// </summary>
+    public bool HasSufficientBuffer
+    {
+        get
+        {
+            TimeSpan required = RequiredBufferDuration;
+            if (required == TimeSpan.Zero)
+            {
+                // Default level - no minimum buffer required
+                return true;
+            }
+            return TotalBufferedDuration >= required;
         }
     }
 
@@ -440,6 +505,7 @@ public sealed partial class RadioPlayerService : IDisposable
         Debug.WriteLine($"[RadioPlayerService] Player.Source is null: {_player.Source == null}");
         Debug.WriteLine($"[RadioPlayerService] Has played once: {_hasPlayedOnce}");
         Debug.WriteLine($"[RadioPlayerService] Was external pause: {_wasExternalPause}");
+        Debug.WriteLine($"[RadioPlayerService] Required buffer: {RequiredBufferDuration.TotalMilliseconds}ms");
 
         if (string.IsNullOrWhiteSpace(_streamUrl))
         {
@@ -485,10 +551,15 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine("[RadioPlayerService] Reusing existing MediaSource - resuming playback");
             }
 
+            // Start playback - the buffering will happen automatically
+            // Use PlayWithBufferAsync for buffer-aware playback
             Debug.WriteLine("[RadioPlayerService] Calling _player.Play()...");
             SetInternalStateChange(true);
             _player.Play();
             Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully");
+
+            // Log buffered ranges for debugging
+            LogBufferedRanges();
 
             // Clear the external pause flag
             _wasExternalPause = false;
@@ -538,6 +609,127 @@ public sealed partial class RadioPlayerService : IDisposable
         }
 
         Debug.WriteLine($"=== Play END ===");
+    }
+
+    /// <summary>
+    /// Starts playback and waits for sufficient buffer based on current buffer level setting.
+    /// Uses MediaPlaybackSession.GetBufferedRanges to monitor buffering progress.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token to cancel waiting</param>
+    /// <returns>True if playback started with sufficient buffer, false if cancelled or timeout</returns>
+    public async Task<bool> PlayWithBufferAsync(CancellationToken cancellationToken = default)
+    {
+        Debug.WriteLine($"=== PlayWithBufferAsync START ===");
+        Debug.WriteLine($"[RadioPlayerService] Required buffer duration: {RequiredBufferDuration.TotalMilliseconds}ms");
+
+        if (string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            Debug.WriteLine("[RadioPlayerService] ERROR: No stream URL set");
+            throw new InvalidOperationException("No stream URL set. Call SetStreamUrl first.");
+        }
+
+        try
+        {
+            // First, start playback to begin buffering
+            Play();
+
+            // If no additional buffer is required, we're done
+            if (RequiredBufferDuration == TimeSpan.Zero)
+            {
+                Debug.WriteLine("[RadioPlayerService] No additional buffer required (default level)");
+                return true;
+            }
+
+            // Calculate timeout based on required buffer (minimum 10s, max 30s)
+            // Give extra time beyond the required buffer duration
+            int timeoutMs = Math.Clamp((int)RequiredBufferDuration.TotalMilliseconds * 3, 10000, 30000);
+            const int checkIntervalMs = 250; // Check every 250ms
+            int elapsed = 0;
+
+            Debug.WriteLine($"[RadioPlayerService] Waiting for {RequiredBufferDuration.TotalMilliseconds}ms of buffer (timeout: {timeoutMs}ms)...");
+
+            while (elapsed < timeoutMs)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Debug.WriteLine("[RadioPlayerService] Buffer wait cancelled");
+                    return false;
+                }
+
+                // Check if stream is fully buffered (BufferingProgress >= 1.0)
+                // This indicates the platform has finished buffering what it needs
+                if (BufferingProgress >= 1.0)
+                {
+                    Debug.WriteLine($"[RadioPlayerService] Stream fully buffered (BufferingProgress: {BufferingProgress:P0})");
+                    return true;
+                }
+
+                // Check buffered ranges using GetBufferedRanges
+                TimeSpan bufferedDuration = TotalBufferedDuration;
+
+                Debug.WriteLine($"[RadioPlayerService] Current buffered: {bufferedDuration.TotalMilliseconds}ms, Required: {RequiredBufferDuration.TotalMilliseconds}ms, Progress: {BufferingProgress:P0}");
+
+                if (bufferedDuration >= RequiredBufferDuration)
+                {
+                    Debug.WriteLine($"[RadioPlayerService] Sufficient buffer achieved: {bufferedDuration.TotalMilliseconds}ms >= {RequiredBufferDuration.TotalMilliseconds}ms");
+                    return true;
+                }
+
+                await Task.Delay(checkIntervalMs, cancellationToken);
+                elapsed += checkIntervalMs;
+            }
+
+            // Timeout reached - log final buffer state
+            LogBufferedRanges();
+            Debug.WriteLine($"[RadioPlayerService] Buffer wait timeout after {timeoutMs}ms. Current buffer: {TotalBufferedDuration.TotalMilliseconds}ms, Progress: {BufferingProgress:P0}");
+            
+            // Return false to indicate timeout - playback started but didn't reach desired buffer level
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("[RadioPlayerService] PlayWithBufferAsync cancelled");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RadioPlayerService] EXCEPTION in PlayWithBufferAsync: {ex.Message}");
+            throw;
+        }
+        finally
+        {
+            Debug.WriteLine($"=== PlayWithBufferAsync END ===");
+        }
+    }
+
+    /// <summary>
+    /// Logs the current buffered ranges for debugging purposes.
+    /// </summary>
+    private void LogBufferedRanges()
+    {
+        try
+        {
+            var bufferedRanges = _player.PlaybackSession.GetBufferedRanges();
+            if (bufferedRanges.Count == 0)
+            {
+                Debug.WriteLine("[RadioPlayerService] No buffered ranges available");
+                return;
+            }
+
+            Debug.WriteLine($"[RadioPlayerService] Buffered ranges ({bufferedRanges.Count}):");
+            TimeSpan totalBuffered = TimeSpan.Zero;
+            foreach (var range in bufferedRanges)
+            {
+                var duration = range.End - range.Start;
+                totalBuffered += duration;
+                Debug.WriteLine($"  - {range.Start.TotalSeconds:F2}s to {range.End.TotalSeconds:F2}s (duration: {duration.TotalMilliseconds:F0}ms)");
+            }
+            Debug.WriteLine($"[RadioPlayerService] Total buffered: {totalBuffered.TotalMilliseconds:F0}ms");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RadioPlayerService] Error logging buffered ranges: {ex.Message}");
+        }
     }
 
     /// <summary>

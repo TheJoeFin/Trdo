@@ -413,15 +413,18 @@ public sealed class StreamWatchdogService : IDisposable
             // Track this recovery attempt for stutter detection
             TrackRecoveryAttempt();
 
-            // Wait a bit before attempting recovery, adding buffer delay
-            int totalDelay = (int)_recoveryDelay.TotalMilliseconds + BufferDelayMs;
-            Debug.WriteLine($"[Watchdog] Waiting {totalDelay}ms before recovery (base: {_recoveryDelay.TotalMilliseconds}ms, buffer: {BufferDelayMs}ms)");
-            await Task.Delay(totalDelay, cancellationToken);
+            // Wait a bit before attempting recovery
+            Debug.WriteLine($"[Watchdog] Waiting {_recoveryDelay.TotalMilliseconds}ms before recovery");
+            await Task.Delay(_recoveryDelay, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested)
                 return;
 
             // Attempt to restart playback on UI thread
+            // Use PlayWithBufferAsync to ensure sufficient buffer is accumulated using GetBufferedRanges
+            bool playbackStarted = false;
+            Exception? playbackException = null;
+
             await RunOnUiThreadAsync(() =>
             {
                 try
@@ -431,20 +434,37 @@ public sealed class StreamWatchdogService : IDisposable
                     {
                         // Reinitialize the stream
                         _playerService.SetStreamUrl(streamUrl);
-
-                        // Resume playback
-                        _playerService.Play();
-
-                        Debug.WriteLine("[Watchdog] Stream recovery initiated");
-                        RaiseStatusChanged("Stream resumed", StreamWatchdogStatus.Recovering);
+                        Debug.WriteLine("[Watchdog] Stream URL set, starting buffered playback");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[Watchdog] Failed to resume stream: {ex.Message}");
-                    RaiseStatusChanged($"Recovery failed: {ex.Message}", StreamWatchdogStatus.Error);
+                    playbackException = ex;
+                    Debug.WriteLine($"[Watchdog] Failed to set stream URL: {ex.Message}");
                 }
             });
+
+            if (playbackException != null)
+            {
+                RaiseStatusChanged($"Recovery failed: {playbackException.Message}", StreamWatchdogStatus.Error);
+                return;
+            }
+
+            // Use PlayWithBufferAsync to wait for sufficient buffer based on GetBufferedRanges
+            // This ensures smooth playback by checking buffered content before audio starts
+            Debug.WriteLine($"[Watchdog] Starting playback with buffer monitoring (required: {_playerService.RequiredBufferDuration.TotalMilliseconds}ms)");
+            playbackStarted = await _playerService.PlayWithBufferAsync(cancellationToken);
+
+            if (playbackStarted)
+            {
+                Debug.WriteLine($"[Watchdog] Stream recovery successful with buffer: {_playerService.TotalBufferedDuration.TotalMilliseconds}ms");
+                RaiseStatusChanged("Stream resumed with buffer", StreamWatchdogStatus.Recovering);
+            }
+            else
+            {
+                Debug.WriteLine("[Watchdog] Playback start was cancelled");
+                RaiseStatusChanged("Recovery cancelled", StreamWatchdogStatus.Error);
+            }
         }
         catch (OperationCanceledException)
         {
