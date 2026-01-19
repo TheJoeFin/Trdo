@@ -56,6 +56,55 @@
                             Text="{x:Bind ViewModel.WatchdogToggleText, Mode=OneWay}" />
                     </Grid>
                 </StackPanel>
+
+                <!--  Auto-increase buffer on stutter setting  -->
+                <StackPanel Spacing="8">
+                    <TextBlock FontSize="16" Text="Auto-increase buffer on stutter" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Automatically increases buffer when stream stutters or has connection issues"
+                        TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            x:Name="AutoBufferToggle"
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsAutoBufferIncreaseEnabled, Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Text="{x:Bind ViewModel.AutoBufferToggleText, Mode=OneWay}" />
+                    </Grid>
+                </StackPanel>
+
+                <!--  Buffer level setting  -->
+                <StackPanel Spacing="8">
+                    <TextBlock FontSize="16" Text="Buffer level" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Higher buffer levels help with unstable connections but increase delay"
+                        TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <Slider
+                            x:Name="BufferLevelSlider"
+                            Grid.Column="0"
+                            Maximum="3"
+                            Minimum="0"
+                            SnapsTo="StepValues"
+                            StepFrequency="1"
+                            Value="{x:Bind ViewModel.BufferLevel, Mode=TwoWay}" />
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Text="{x:Bind ViewModel.BufferLevelDescription, Mode=OneWay}" />
+                    </Grid>
+                </StackPanel>
             </StackPanel>
         </ScrollViewer>
     </Grid>
