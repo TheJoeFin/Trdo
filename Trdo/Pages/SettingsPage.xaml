@@ -96,13 +96,14 @@
                             Maximum="3"
                             Minimum="0"
                             SnapsTo="StepValues"
-                            StepFrequency="1"
+                            StepFrequency="0.5"
                             Value="{x:Bind ViewModel.BufferLevel, Mode=TwoWay}" />
                         <TextBlock
                             Grid.Column="1"
                             VerticalAlignment="Center"
                             FontSize="16"
-                            Text="{x:Bind ViewModel.BufferLevelDescription, Mode=OneWay}" />
+                            Text="{x:Bind ViewModel.BufferLevelDescription, Mode=OneWay}"
+                            Visibility="Collapsed" />
                     </Grid>
                 </StackPanel>
             </StackPanel>
