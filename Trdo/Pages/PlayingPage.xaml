@@ -91,6 +91,7 @@
                 CanReorderItems="True"
                 DragItemsCompleted="StationsListView_DragItemsCompleted"
                 ItemsSource="{x:Bind ViewModel.Stations, Mode=OneWay}"
+                SelectedItem="{x:Bind ViewModel.SelectedStation, Mode=TwoWay}"
                 SelectionChanged="StationsListView_SelectionChanged"
                 SelectionMode="Single">
                 <ListView.ItemContainerStyle>
