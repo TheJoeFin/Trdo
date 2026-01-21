@@ -37,6 +37,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private System.Threading.Timer? _internalStateChangeTimer;
     private DateTime _lastExternalPauseRecovery = DateTime.MinValue;
     private bool _hasPlayedOnce;
+    private bool _isManuallyBuffering;
 
     public static RadioPlayerService Instance { get; } = new();
 
@@ -62,13 +63,14 @@ public sealed partial class RadioPlayerService : IDisposable
             try
             {
                 MediaPlaybackState state = _player.PlaybackSession.PlaybackState;
-                bool isBuffering = state is MediaPlaybackState.Opening or MediaPlaybackState.Buffering;
-                Debug.WriteLine($"[RadioPlayerService] IsBuffering getter: {isBuffering}, PlaybackState: {state}");
+                bool isPlayerBuffering = state is MediaPlaybackState.Opening or MediaPlaybackState.Buffering;
+                bool isBuffering = isPlayerBuffering || _isManuallyBuffering;
+                Debug.WriteLine($"[RadioPlayerService] IsBuffering getter: {isBuffering} (Player: {isPlayerBuffering}, Manual: {_isManuallyBuffering}), PlaybackState: {state}");
                 return isBuffering;
             }
             catch
             {
-                return false;
+                return _isManuallyBuffering;
             }
         }
     }
@@ -575,32 +577,40 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine("[RadioPlayerService] Starting playback to initiate buffering...");
                 SetInternalStateChange(true);
                 _player.Play();
-                
+
                 // Small delay to ensure play command is processed before pausing
                 await Task.Delay(100);
-                
+
                 // Pause to prevent audio from playing while we buffer
                 Debug.WriteLine("[RadioPlayerService] Pausing for buffering...");
                 _player.Pause();
-                
+
+                // Set manual buffering state so UI shows buffering during user-configured delay
+                SetManualBuffering(true);
+                Debug.WriteLine("[RadioPlayerService] Manual buffering state set to true");
+
                 // Wait for the user-set buffer amount of time
                 Debug.WriteLine($"[RadioPlayerService] Waiting for buffer time: {RequiredBufferDuration.TotalMilliseconds}ms...");
                 await Task.Delay(RequiredBufferDuration);
-                
+
                 // Check if buffer is complete using GetBufferedRanges
                 TimeSpan bufferedDuration = TotalBufferedDuration;
                 Debug.WriteLine($"[RadioPlayerService] After wait - Buffered: {bufferedDuration.TotalMilliseconds}ms, Required: {RequiredBufferDuration.TotalMilliseconds}ms");
-                
+
                 // If buffer is not yet sufficient, wait a bit more
                 if (bufferedDuration < RequiredBufferDuration)
                 {
                     Debug.WriteLine("[RadioPlayerService] Buffer not yet complete, waiting more...");
                     await WaitForSufficientBufferAsync();
                 }
-                
+
                 // Now resume playback
                 Debug.WriteLine("[RadioPlayerService] Buffer complete. Calling _player.Play()...");
                 _player.Play();
+
+                // Clear manual buffering state as playback is resuming
+                SetManualBuffering(false);
+                Debug.WriteLine("[RadioPlayerService] Manual buffering state cleared");
                 Debug.WriteLine("[RadioPlayerService] Playback resumed after buffering");
             }
             else
@@ -630,6 +640,11 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             Debug.WriteLine($"[RadioPlayerService] EXCEPTION in PlayWithBufferInternalAsync: {ex.Message}");
             Debug.WriteLine($"[RadioPlayerService] Exception details: {ex}");
+
+            // Clear manual buffering state on error
+            SetManualBuffering(false);
+            Debug.WriteLine("[RadioPlayerService] Cleared manual buffering state due to exception");
+
             Debug.WriteLine("[RadioPlayerService] Re-creating media source and trying again...");
 
             // Re-create the media source and try again with same buffering approach
@@ -641,18 +656,24 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 // Apply same buffering logic on retry
                 bool needsBuffering = RequiredBufferDuration > TimeSpan.Zero;
-                
+
                 if (needsBuffering)
                 {
                     SetInternalStateChange(true);
                     _player.Play();
                     _player.Pause();
-                    Debug.WriteLine("[RadioPlayerService] Started and paused for buffering (retry)");
-                    
+
+                    // Set manual buffering state for retry
+                    SetManualBuffering(true);
+                    Debug.WriteLine("[RadioPlayerService] Started and paused for buffering (retry), manual buffering set");
+
                     await Task.Delay(RequiredBufferDuration);
-                    
+
                     _player.Play();
-                    Debug.WriteLine("[RadioPlayerService] Playback resumed after buffering (retry)");
+
+                    // Clear manual buffering state after retry
+                    SetManualBuffering(false);
+                    Debug.WriteLine("[RadioPlayerService] Playback resumed after buffering (retry), manual buffering cleared");
                 }
                 else
                 {
@@ -675,6 +696,11 @@ public sealed partial class RadioPlayerService : IDisposable
             catch (Exception retryEx)
             {
                 SetInternalStateChange(false);
+
+                // Clear manual buffering state on retry failure
+                SetManualBuffering(false);
+                Debug.WriteLine("[RadioPlayerService] Cleared manual buffering state due to retry exception");
+
                 Debug.WriteLine($"[RadioPlayerService] EXCEPTION on retry: {retryEx.Message}");
                 // Log the error but don't throw - this is a fire-and-forget async method
                 // The user will see the playback failed in the UI
@@ -778,18 +804,27 @@ public sealed partial class RadioPlayerService : IDisposable
 
             if (needsBuffering)
             {
+                // mute initially so there isn't a blip during the initiate step
+                double lastVol = _player.Volume;
+                _player.Volume = 0;
+
                 // Start playback briefly to initiate buffering
                 Debug.WriteLine("[RadioPlayerService] Starting playback to initiate buffering...");
                 SetInternalStateChange(true);
                 _player.Play();
-                
+
                 // Small delay to ensure play command is processed before pausing
                 await Task.Delay(100, cancellationToken);
-                
+
                 // Pause to prevent audio from playing while we buffer
                 Debug.WriteLine("[RadioPlayerService] Pausing for buffering...");
                 _player.Pause();
-                
+                _player.Volume = lastVol;
+
+                // Set manual buffering state so UI shows buffering during user-configured delay
+                SetManualBuffering(true);
+                Debug.WriteLine("[RadioPlayerService] Manual buffering state set to true");
+
                 // Wait for the user-set buffer amount of time
                 Debug.WriteLine($"[RadioPlayerService] Waiting for buffer time: {RequiredBufferDuration.TotalMilliseconds}ms...");
                 try
@@ -799,13 +834,14 @@ public sealed partial class RadioPlayerService : IDisposable
                 catch (OperationCanceledException)
                 {
                     Debug.WriteLine("[RadioPlayerService] Buffer wait cancelled during initial delay");
+                    SetManualBuffering(false);
                     return false;
                 }
-                
+
                 // Check if buffer is complete using GetBufferedRanges
                 TimeSpan bufferedDuration = TotalBufferedDuration;
                 Debug.WriteLine($"[RadioPlayerService] After wait - Buffered: {bufferedDuration.TotalMilliseconds}ms, Required: {RequiredBufferDuration.TotalMilliseconds}ms");
-                
+
                 // If buffer is not yet sufficient, wait more with timeout
                 if (bufferedDuration < RequiredBufferDuration)
                 {
@@ -813,12 +849,13 @@ public sealed partial class RadioPlayerService : IDisposable
                     int additionalTimeoutMs = Math.Clamp((int)RequiredBufferDuration.TotalMilliseconds * 2, 5000, 20000);
                     const int checkIntervalMs = 250;
                     int elapsed = 0;
-                    
+
                     while (elapsed < additionalTimeoutMs)
                     {
                         if (cancellationToken.IsCancellationRequested)
                         {
                             Debug.WriteLine("[RadioPlayerService] Buffer wait cancelled");
+                            SetManualBuffering(false);
                             return false;
                         }
 
@@ -839,10 +876,14 @@ public sealed partial class RadioPlayerService : IDisposable
                         elapsed += checkIntervalMs;
                     }
                 }
-                
+
                 // Now resume playback
                 Debug.WriteLine("[RadioPlayerService] Buffer complete. Calling _player.Play()...");
                 _player.Play();
+
+                // Clear manual buffering state as playback is resuming
+                SetManualBuffering(false);
+                Debug.WriteLine("[RadioPlayerService] Manual buffering state cleared");
                 Debug.WriteLine("[RadioPlayerService] Playback resumed after buffering");
             }
             else
@@ -863,11 +904,13 @@ public sealed partial class RadioPlayerService : IDisposable
         catch (OperationCanceledException)
         {
             Debug.WriteLine("[RadioPlayerService] PlayWithBufferAsync cancelled");
+            SetManualBuffering(false);
             return false;
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioPlayerService] EXCEPTION in PlayWithBufferAsync: {ex.Message}");
+            SetManualBuffering(false);
             throw;
         }
         finally
@@ -903,13 +946,30 @@ public sealed partial class RadioPlayerService : IDisposable
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioPlayerService] Error logging buffered ranges: {ex.Message}");
+            }
         }
-    }
 
-    /// <summary>
-    /// Stop playback and clean up resources
-    /// </summary>
-    public void Pause()
+        /// <summary>
+        /// Sets the manual buffering state and notifies listeners.
+        /// </summary>
+        private void SetManualBuffering(bool isBuffering)
+        {
+            if (_isManuallyBuffering == isBuffering) return;
+
+            Debug.WriteLine($"[RadioPlayerService] Manual buffering state changing from {_isManuallyBuffering} to {isBuffering}");
+            _isManuallyBuffering = isBuffering;
+
+            // Notify on UI thread
+            TryEnqueueOnUi(() =>
+            {
+                BufferingStateChanged?.Invoke(this, IsBuffering);
+            });
+        }
+
+        /// <summary>
+        /// Stop playback and clean up resources
+        /// </summary>
+        public void Pause()
     {
         Debug.WriteLine($"=== Pause START ===");
         Debug.WriteLine($"[RadioPlayerService] Pause called");
@@ -929,6 +989,10 @@ public sealed partial class RadioPlayerService : IDisposable
             SetInternalStateChange(true);
             _player.Pause();
             Debug.WriteLine("[RadioPlayerService] _player.Pause() called successfully");
+
+            // Clear manual buffering state when pausing
+            SetManualBuffering(false);
+            Debug.WriteLine("[RadioPlayerService] Cleared manual buffering state");
 
             // Mark that pause occurred - next play should recreate MediaSource to ensure live position
             _wasExternalPause = true;

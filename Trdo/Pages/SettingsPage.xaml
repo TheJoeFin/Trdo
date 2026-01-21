@@ -96,7 +96,7 @@
                             Maximum="3"
                             Minimum="0"
                             SnapsTo="StepValues"
-                            StepFrequency="0.5"
+                            StepFrequency="0.1"
                             Value="{x:Bind ViewModel.BufferLevel, Mode=TwoWay}" />
                         <TextBlock
                             Grid.Column="1"
