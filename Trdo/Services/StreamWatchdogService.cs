@@ -30,7 +30,7 @@ public sealed class StreamWatchdogService : IDisposable
     // Stutter detection tracking
     private readonly Queue<DateTime> _recoveryAttempts = new();
     private bool _autoBufferIncreaseEnabled;
-    private int _currentBufferLevel;
+    private double _currentBufferLevel;
     private const string AutoBufferIncreaseKey = "AutoBufferIncreaseEnabled";
     private const string BufferLevelKey = "BufferLevel";
 
@@ -45,13 +45,13 @@ public sealed class StreamWatchdogService : IDisposable
     // Stutter detection configuration
     private const int StutterThreshold = 3;  // Number of recovery attempts to trigger stutter detection
     private readonly TimeSpan _stutterWindow = TimeSpan.FromMinutes(2);  // Time window to count recovery attempts
-    private const int MaxBufferLevel = 3;  // Maximum buffer level (0=default, 1=medium, 2=large, 3=extra large)
+    private const double MaxBufferLevel = 3.0;  // Maximum buffer level (0=default, 1=medium, 2=large, 3=extra large)
     private const bool DefaultAutoBufferIncreaseEnabled = true;  // Auto-buffer increase is enabled by default for better user experience
-    private const int DefaultBufferLevel = 0;  // Start with default (no extra delay) buffer level
+    private const double DefaultBufferLevel = 0.0;  // Start with default (no extra delay) buffer level
 
     public event EventHandler<StreamWatchdogEventArgs>? StreamStatusChanged;
     public event EventHandler<StutterDetectedEventArgs>? StutterDetected;
-    public event EventHandler<int>? BufferLevelChanged;
+    public event EventHandler<double>? BufferLevelChanged;
 
     public bool IsEnabled
     {
@@ -88,14 +88,14 @@ public sealed class StreamWatchdogService : IDisposable
     /// Gets or sets the current buffer level (0-3).
     /// 0 = Default, 1 = Medium, 2 = Large, 3 = Extra Large
     /// </summary>
-    public int BufferLevel
+    public double BufferLevel
     {
         get => _currentBufferLevel;
         set
         {
-            int clampedValue = Math.Clamp(value, 0, MaxBufferLevel);
-            if (_currentBufferLevel == clampedValue) return;
-            int oldValue = _currentBufferLevel;
+            double clampedValue = Math.Clamp(value, 0, MaxBufferLevel);
+            if (Math.Abs(_currentBufferLevel - clampedValue) < 0.0001) return;
+            double oldValue = _currentBufferLevel;
             _currentBufferLevel = clampedValue;
             SaveAutoBufferSettings();
             Debug.WriteLine($"[Watchdog] Buffer level changed from {oldValue} to {_currentBufferLevel}");
@@ -106,26 +106,40 @@ public sealed class StreamWatchdogService : IDisposable
     /// <summary>
     /// Gets the buffer delay in milliseconds based on current buffer level.
     /// </summary>
-    public int BufferDelayMs => _currentBufferLevel switch
+    public int BufferDelayMs
     {
-        0 => 0,      // Default - no additional delay
-        1 => 2000,   // Medium - 2 second buffer
-        2 => 4000,   // Large - 4 second buffer
-        3 => 8000,   // Extra Large - 8 second buffer
-        _ => 0
-    };
+        get
+        {
+            // Linear interpolation between buffer levels
+            // Level 0 = 0ms, Level 1 = 2000ms, Level 2 = 4000ms, Level 3 = 8000ms
+            if (_currentBufferLevel <= 0) return 0;
+            if (_currentBufferLevel >= 3) return 8000;
+            if (_currentBufferLevel <= 1) return (int)(_currentBufferLevel * 2000);
+            if (_currentBufferLevel <= 2) return (int)(2000 + (_currentBufferLevel - 1) * 2000);
+            return (int)(4000 + (_currentBufferLevel - 2) * 4000);
+        }
+    }
 
     /// <summary>
     /// Gets a human-readable description of the current buffer level.
     /// </summary>
-    public string BufferLevelDescription => _currentBufferLevel switch
+    public string BufferLevelDescription
     {
-        0 => "Default",
-        1 => "Medium",
-        2 => "Large",
-        3 => "Extra Large",
-        _ => "Default"
-    };
+        get
+        {
+            return _currentBufferLevel switch
+            {
+                0 => "Default",
+                1 => "Medium",
+                2 => "Large",
+                3 => "Extra Large",
+                _ when _currentBufferLevel < 0.5 => "Default",
+                _ when _currentBufferLevel < 1.5 => "Medium",
+                _ when _currentBufferLevel < 2.5 => "Large",
+                _ => "Extra Large"
+            };
+        }
+    }
 
     public StreamWatchdogService(RadioPlayerService playerService)
     {
@@ -164,8 +178,9 @@ public sealed class StreamWatchdogService : IDisposable
             {
                 _currentBufferLevel = bufferLevelValue switch
                 {
-                    int i => Math.Clamp(i, 0, MaxBufferLevel),
-                    string s when int.TryParse(s, out int i2) => Math.Clamp(i2, 0, MaxBufferLevel),
+                    double d => Math.Clamp(d, 0, MaxBufferLevel),
+                    int i => Math.Clamp((double)i, 0, MaxBufferLevel),
+                    string s when double.TryParse(s, out double d2) => Math.Clamp(d2, 0, MaxBufferLevel),
                     _ => DefaultBufferLevel
                 };
             }
@@ -501,7 +516,7 @@ public sealed class StreamWatchdogService : IDisposable
             int recoveryCount = _recoveryAttempts.Count;
             Debug.WriteLine($"[Watchdog] STUTTER DETECTED - {recoveryCount} recoveries in {_stutterWindow.TotalMinutes}min window");
 
-            int previousLevel = _currentBufferLevel;
+            double previousLevel = _currentBufferLevel;
 
             // Auto-increase buffer if enabled and not at max
             if (_autoBufferIncreaseEnabled && _currentBufferLevel < MaxBufferLevel)
@@ -520,7 +535,7 @@ public sealed class StreamWatchdogService : IDisposable
                 TimeWindow = _stutterWindow,
                 PreviousBufferLevel = previousLevel,
                 NewBufferLevel = _currentBufferLevel,
-                BufferWasIncreased = previousLevel != _currentBufferLevel
+                BufferWasIncreased = Math.Abs(previousLevel - _currentBufferLevel) > 0.0001
             });
         }
     }
@@ -604,7 +619,7 @@ public sealed class StreamWatchdogService : IDisposable
         }
     }
 
-    private void RaiseBufferLevelChanged(int newLevel)
+    private void RaiseBufferLevelChanged(double newLevel)
     {
         Debug.WriteLine($"[Watchdog] Raising BufferLevelChanged event - NewLevel: {newLevel}");
 
@@ -675,12 +690,12 @@ public class StutterDetectedEventArgs : EventArgs
     /// <summary>
     /// The buffer level before auto-increase was applied.
     /// </summary>
-    public int PreviousBufferLevel { get; init; }
+    public double PreviousBufferLevel { get; init; }
 
     /// <summary>
     /// The buffer level after auto-increase was applied (may be same as previous if at max or disabled).
     /// </summary>
-    public int NewBufferLevel { get; init; }
+    public double NewBufferLevel { get; init; }
 
     /// <summary>
     /// Whether the buffer level was actually increased.

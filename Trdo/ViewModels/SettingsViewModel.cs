@@ -144,12 +144,12 @@ public class SettingsViewModel : INotifyPropertyChanged
     /// Gets or sets the current buffer level (0-3).
     /// 0 = Default, 1 = Medium, 2 = Large, 3 = Extra Large
     /// </summary>
-    public int BufferLevel
+    public double BufferLevel
     {
         get => _playerViewModel.BufferLevel;
         set
         {
-            if (value == _playerViewModel.BufferLevel) return;
+            if (Math.Abs(value - _playerViewModel.BufferLevel) < 0.0001) return;
             _playerViewModel.BufferLevel = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(BufferLevelDescription));

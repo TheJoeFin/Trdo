@@ -284,12 +284,12 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     /// Gets or sets the current buffer level (0-3).
     /// 0 = Default, 1 = Medium, 2 = Large, 3 = Extra Large
     /// </summary>
-    public int BufferLevel
+    public double BufferLevel
     {
         get => _player.Watchdog.BufferLevel;
         set
         {
-            if (value == _player.Watchdog.BufferLevel) return;
+            if (Math.Abs(value - _player.Watchdog.BufferLevel) < 0.0001) return;
             Debug.WriteLine($"[PlayerViewModel] Setting BufferLevel to {value}");
             _player.Watchdog.BufferLevel = value;
             OnPropertyChanged();
