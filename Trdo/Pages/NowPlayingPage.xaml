@@ -121,7 +121,7 @@
                                 Background="Transparent"
                                 BorderThickness="0"
                                 Click="FavoriteCurrentTrack_Click"
-                                ToolTipService.ToolTip="Toggle favorite">
+                                ToolTipService.ToolTip="Favorite Song">
                                 <FontIcon
                                     FontSize="20"
                                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
@@ -237,7 +237,7 @@
                                 BorderThickness="0"
                                 Click="FavoriteHistoryItem_Click"
                                 Tag="{x:Bind}"
-                                ToolTipService.ToolTip="Toggle favorite">
+                                ToolTipService.ToolTip="Favorite Song">
                                 <FontIcon
                                     FontSize="14"
                                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
