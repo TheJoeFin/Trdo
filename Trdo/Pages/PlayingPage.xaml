@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="using:Trdo.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:labs="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:Trdo.Models"
     mc:Ignorable="d">
@@ -267,6 +268,17 @@
                     FontSize="14"
                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                     Glyph="&#xE8D6;" />
+                <labs:MarqueeText
+                    x:Name="NowPlayingMarqueeText"
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    Behavior="Ticker"
+                    Direction="Left"
+                    FontSize="12"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    RepeatBehavior="Forever"
+                    Speed="40"
+                    Text="{x:Bind ViewModel.NowPlaying, Mode=OneWay}" />
                 <TextBlock
                     x:Name="NowPlayingText"
                     Grid.Column="1"
@@ -275,7 +287,8 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Text="{x:Bind ViewModel.NowPlaying, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap" />
+                    TextWrapping="NoWrap"
+                    Visibility="Collapsed" />
                 <!--  Favorite Button  -->
                 <Button
                     x:Name="FavoriteButton"

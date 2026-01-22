@@ -17,46 +17,48 @@
             Text="{x:Bind ViewModel.PageTitle, Mode=OneWay}" />
 
         <!--  Content Area  -->
-        <StackPanel Grid.Row="1" Spacing="12">
-            <!--  Station Name Input  -->
-            <StackPanel Spacing="4">
-                <TextBlock FontWeight="SemiBold" Text="Station Name" />
-                <TextBox
-                    x:Name="StationNameTextBox"
-                    PlaceholderText="e.g., WYMS - Hometown radio"
-                    Text="{x:Bind ViewModel.StationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            </StackPanel>
+        <ScrollView Grid.Row="1">
+            <StackPanel Spacing="12">
+                <!--  Station Name Input  -->
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Station Name" />
+                    <TextBox
+                        x:Name="StationNameTextBox"
+                        PlaceholderText="e.g., WYMS - Hometown radio"
+                        Text="{x:Bind ViewModel.StationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                </StackPanel>
 
-            <!--  Stream URL Input  -->
-            <StackPanel Spacing="4">
-                <TextBlock FontWeight="SemiBold" Text="Stream URL" />
-                <TextBox
-                    x:Name="StreamUrlTextBox"
-                    PlaceholderText="e.g., https://example.com/stream"
-                    Text="{x:Bind ViewModel.StreamUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    TextWrapping="Wrap" />
-            </StackPanel>
+                <!--  Stream URL Input  -->
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Stream URL" />
+                    <TextBox
+                        x:Name="StreamUrlTextBox"
+                        PlaceholderText="e.g., https://example.com/stream"
+                        Text="{x:Bind ViewModel.StreamUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
 
-            <!--  Homepage URL Input  -->
-            <StackPanel Spacing="4">
-                <TextBlock FontWeight="SemiBold" Text="Homepage (Optional)" />
-                <TextBox
-                    x:Name="HomepageTextBox"
-                    PlaceholderText="e.g., https://example.com"
-                    Text="{x:Bind ViewModel.Homepage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    TextWrapping="Wrap" />
-            </StackPanel>
+                <!--  Homepage URL Input  -->
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Homepage (Optional)" />
+                    <TextBox
+                        x:Name="HomepageTextBox"
+                        PlaceholderText="e.g., https://example.com"
+                        Text="{x:Bind ViewModel.Homepage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
 
-            <!--  Favicon URL Input  -->
-            <StackPanel Spacing="4">
-                <TextBlock FontWeight="SemiBold" Text="Station Logo/Icon URL (Optional)" />
-                <TextBox
-                    x:Name="FaviconUrlTextBox"
-                    PlaceholderText="e.g., https://example.com/logo.png"
-                    Text="{x:Bind ViewModel.FaviconUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                    TextWrapping="Wrap" />
+                <!--  Favicon URL Input  -->
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Station Logo/Icon URL (Optional)" />
+                    <TextBox
+                        x:Name="FaviconUrlTextBox"
+                        PlaceholderText="e.g., https://example.com/logo.png"
+                        Text="{x:Bind ViewModel.FaviconUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        TextWrapping="Wrap" />
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
+        </ScrollView>
 
         <!--  Buttons  -->
         <Grid Grid.Row="2" ColumnSpacing="8">

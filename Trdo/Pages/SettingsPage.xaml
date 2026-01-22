@@ -16,7 +16,7 @@
             Text="Settings" />
 
         <!--  Settings Content  -->
-        <ScrollViewer Grid.Row="1">
+        <ScrollView Grid.Row="1">
             <StackPanel Spacing="24">
                 <!--  Open on startup setting  -->
                 <StackPanel Spacing="8">
@@ -107,6 +107,6 @@
                     </Grid>
                 </StackPanel>
             </StackPanel>
-        </ScrollViewer>
+        </ScrollView>
     </Grid>
 </Page>
