@@ -30,7 +30,7 @@
             </TitleBar.IconSource>
         </TitleBar>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel
                 Margin="32,24,32,24"
                 Orientation="Vertical"
@@ -230,7 +230,7 @@
                         TextWrapping="Wrap" />
                 </StackPanel>
             </StackPanel>
-        </ScrollViewer>
+        </ScrollView>
 
         <!--  Bottom Action Button  -->
         <Border

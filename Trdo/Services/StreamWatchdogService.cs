@@ -1,13 +1,16 @@
 using Microsoft.UI.Dispatching;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.Storage;
 
 namespace Trdo.Services;
 
 /// <summary>
 /// Monitors the radio stream and automatically resumes playback when the stream stops unexpectedly.
+/// Also tracks stutter patterns and can automatically increase buffer when stuttering is detected.
 /// </summary>
 public sealed class StreamWatchdogService : IDisposable
 {
@@ -24,6 +27,13 @@ public sealed class StreamWatchdogService : IDisposable
     private double _lastBufferingProgress;
     private int _consecutiveSilentChecks;
 
+    // Stutter detection tracking
+    private readonly Queue<DateTime> _recoveryAttempts = new();
+    private bool _autoBufferIncreaseEnabled;
+    private double _currentBufferLevel;
+    private const string AutoBufferIncreaseKey = "AutoBufferIncreaseEnabled";
+    private const string BufferLevelKey = "BufferLevel";
+
     // Configuration
     private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(5);
     private readonly TimeSpan _recoveryDelay = TimeSpan.FromSeconds(3);
@@ -32,7 +42,16 @@ public sealed class StreamWatchdogService : IDisposable
     private readonly TimeSpan _silenceDetectionThreshold = TimeSpan.FromSeconds(10);
     private readonly int _maxConsecutiveSilentChecks = 2; // 2 checks * 5 seconds = 10 seconds
 
+    // Stutter detection configuration
+    private const int StutterThreshold = 3;  // Number of recovery attempts to trigger stutter detection
+    private readonly TimeSpan _stutterWindow = TimeSpan.FromMinutes(2);  // Time window to count recovery attempts
+    private const double MaxBufferLevel = 3.0;  // Maximum buffer level (0=default, 1=medium, 2=large, 3=extra large)
+    private const bool DefaultAutoBufferIncreaseEnabled = true;  // Auto-buffer increase is enabled by default for better user experience
+    private const double DefaultBufferLevel = 0.0;  // Start with default (no extra delay) buffer level
+
     public event EventHandler<StreamWatchdogEventArgs>? StreamStatusChanged;
+    public event EventHandler<StutterDetectedEventArgs>? StutterDetected;
+    public event EventHandler<double>? BufferLevelChanged;
 
     public bool IsEnabled
     {
@@ -49,6 +68,79 @@ public sealed class StreamWatchdogService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Gets or sets whether auto-buffer increase is enabled.
+    /// When enabled, the buffer level automatically increases when stutter is detected.
+    /// </summary>
+    public bool AutoBufferIncreaseEnabled
+    {
+        get => _autoBufferIncreaseEnabled;
+        set
+        {
+            if (_autoBufferIncreaseEnabled == value) return;
+            _autoBufferIncreaseEnabled = value;
+            SaveAutoBufferSettings();
+            Debug.WriteLine($"[Watchdog] Auto-buffer increase set to: {value}");
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the current buffer level (0-3).
+    /// 0 = Default, 1 = Medium, 2 = Large, 3 = Extra Large
+    /// </summary>
+    public double BufferLevel
+    {
+        get => _currentBufferLevel;
+        set
+        {
+            double clampedValue = Math.Clamp(value, 0, MaxBufferLevel);
+            if (Math.Abs(_currentBufferLevel - clampedValue) < 0.0001) return;
+            double oldValue = _currentBufferLevel;
+            _currentBufferLevel = clampedValue;
+            SaveAutoBufferSettings();
+            Debug.WriteLine($"[Watchdog] Buffer level changed from {oldValue} to {_currentBufferLevel}");
+            RaiseBufferLevelChanged(clampedValue);
+        }
+    }
+
+    /// <summary>
+    /// Gets the buffer delay in milliseconds based on current buffer level.
+    /// </summary>
+    public int BufferDelayMs
+    {
+        get
+        {
+            // Linear interpolation between buffer levels
+            // Level 0 = 0ms, Level 1 = 2000ms, Level 2 = 4000ms, Level 3 = 8000ms
+            if (_currentBufferLevel <= 0) return 0;
+            if (_currentBufferLevel >= 3) return 8000;
+            if (_currentBufferLevel <= 1) return (int)(_currentBufferLevel * 2000);
+            if (_currentBufferLevel <= 2) return (int)(2000 + (_currentBufferLevel - 1) * 2000);
+            return (int)(4000 + (_currentBufferLevel - 2) * 4000);
+        }
+    }
+
+    /// <summary>
+    /// Gets a human-readable description of the current buffer level.
+    /// </summary>
+    public string BufferLevelDescription
+    {
+        get
+        {
+            return _currentBufferLevel switch
+            {
+                0 => "Default",
+                1 => "Medium",
+                2 => "Large",
+                3 => "Extra Large",
+                _ when _currentBufferLevel < 0.5 => "Default",
+                _ when _currentBufferLevel < 1.5 => "Medium",
+                _ when _currentBufferLevel < 2.5 => "Large",
+                _ => "Extra Large"
+            };
+        }
+    }
+
     public StreamWatchdogService(RadioPlayerService playerService)
     {
         _playerService = playerService ?? throw new ArgumentNullException(nameof(playerService));
@@ -59,6 +151,66 @@ public sealed class StreamWatchdogService : IDisposable
         _lastPositionChangeTime = DateTime.UtcNow;
         _lastBufferingProgress = 0;
         _consecutiveSilentChecks = 0;
+
+        // Load auto-buffer settings
+        LoadAutoBufferSettings();
+    }
+
+    private void LoadAutoBufferSettings()
+    {
+        try
+        {
+            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(AutoBufferIncreaseKey, out object? autoBufferValue))
+            {
+                _autoBufferIncreaseEnabled = autoBufferValue switch
+                {
+                    bool b => b,
+                    string s when bool.TryParse(s, out bool b2) => b2,
+                    _ => DefaultAutoBufferIncreaseEnabled
+                };
+            }
+            else
+            {
+                _autoBufferIncreaseEnabled = DefaultAutoBufferIncreaseEnabled;
+            }
+
+            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(BufferLevelKey, out object? bufferLevelValue))
+            {
+                _currentBufferLevel = bufferLevelValue switch
+                {
+                    double d => Math.Clamp(d, 0, MaxBufferLevel),
+                    int i => Math.Clamp((double)i, 0, MaxBufferLevel),
+                    string s when double.TryParse(s, out double d2) => Math.Clamp(d2, 0, MaxBufferLevel),
+                    _ => DefaultBufferLevel
+                };
+            }
+            else
+            {
+                _currentBufferLevel = DefaultBufferLevel;
+            }
+
+            Debug.WriteLine($"[Watchdog] Loaded settings - AutoBufferIncrease: {_autoBufferIncreaseEnabled}, BufferLevel: {_currentBufferLevel}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Watchdog] Error loading auto-buffer settings: {ex.Message}");
+            _autoBufferIncreaseEnabled = DefaultAutoBufferIncreaseEnabled;
+            _currentBufferLevel = DefaultBufferLevel;
+        }
+    }
+
+    private void SaveAutoBufferSettings()
+    {
+        try
+        {
+            ApplicationData.Current.LocalSettings.Values[AutoBufferIncreaseKey] = _autoBufferIncreaseEnabled;
+            ApplicationData.Current.LocalSettings.Values[BufferLevelKey] = _currentBufferLevel;
+            Debug.WriteLine($"[Watchdog] Saved settings - AutoBufferIncrease: {_autoBufferIncreaseEnabled}, BufferLevel: {_currentBufferLevel}");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Watchdog] Error saving auto-buffer settings: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -273,13 +425,21 @@ public sealed class StreamWatchdogService : IDisposable
         {
             Debug.WriteLine("[Watchdog] Attempting to resume stream...");
 
+            // Track this recovery attempt for stutter detection
+            TrackRecoveryAttempt();
+
             // Wait a bit before attempting recovery
+            Debug.WriteLine($"[Watchdog] Waiting {_recoveryDelay.TotalMilliseconds}ms before recovery");
             await Task.Delay(_recoveryDelay, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested)
                 return;
 
             // Attempt to restart playback on UI thread
+            // Use PlayWithBufferAsync to ensure sufficient buffer is accumulated using GetBufferedRanges
+            bool playbackStarted = false;
+            Exception? playbackException = null;
+
             await RunOnUiThreadAsync(() =>
             {
                 try
@@ -289,20 +449,37 @@ public sealed class StreamWatchdogService : IDisposable
                     {
                         // Reinitialize the stream
                         _playerService.SetStreamUrl(streamUrl);
-
-                        // Resume playback
-                        _playerService.Play();
-
-                        Debug.WriteLine("[Watchdog] Stream recovery initiated");
-                        RaiseStatusChanged("Stream resumed", StreamWatchdogStatus.Recovering);
+                        Debug.WriteLine("[Watchdog] Stream URL set, starting buffered playback");
                     }
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"[Watchdog] Failed to resume stream: {ex.Message}");
-                    RaiseStatusChanged($"Recovery failed: {ex.Message}", StreamWatchdogStatus.Error);
+                    playbackException = ex;
+                    Debug.WriteLine($"[Watchdog] Failed to set stream URL: {ex.Message}");
                 }
             });
+
+            if (playbackException != null)
+            {
+                RaiseStatusChanged($"Recovery failed: {playbackException.Message}", StreamWatchdogStatus.Error);
+                return;
+            }
+
+            // Use PlayWithBufferAsync to wait for sufficient buffer based on GetBufferedRanges
+            // This ensures smooth playback by checking buffered content before audio starts
+            Debug.WriteLine($"[Watchdog] Starting playback with buffer monitoring (required: {_playerService.RequiredBufferDuration.TotalMilliseconds}ms)");
+            playbackStarted = await _playerService.PlayWithBufferAsync(cancellationToken);
+
+            if (playbackStarted)
+            {
+                Debug.WriteLine($"[Watchdog] Stream recovery successful with buffer: {_playerService.TotalBufferedDuration.TotalMilliseconds}ms");
+                RaiseStatusChanged("Stream resumed with buffer", StreamWatchdogStatus.Recovering);
+            }
+            else
+            {
+                Debug.WriteLine("[Watchdog] Playback start was cancelled");
+                RaiseStatusChanged("Recovery cancelled", StreamWatchdogStatus.Error);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -313,6 +490,64 @@ public sealed class StreamWatchdogService : IDisposable
             Debug.WriteLine($"[Watchdog] Error during recovery: {ex.Message}");
             RaiseStatusChanged($"Recovery error: {ex.Message}", StreamWatchdogStatus.Error);
         }
+    }
+
+    /// <summary>
+    /// Tracks a recovery attempt and checks for stutter pattern.
+    /// If stuttering is detected and auto-buffer increase is enabled, increases the buffer level.
+    /// </summary>
+    private void TrackRecoveryAttempt()
+    {
+        DateTime now = DateTime.UtcNow;
+        _recoveryAttempts.Enqueue(now);
+
+        // Remove old attempts outside the stutter window
+        while (_recoveryAttempts.Count > 0 &&
+               now - _recoveryAttempts.Peek() > _stutterWindow)
+        {
+            _recoveryAttempts.Dequeue();
+        }
+
+        Debug.WriteLine($"[Watchdog] Recovery attempts in last {_stutterWindow.TotalMinutes}min: {_recoveryAttempts.Count}");
+
+        // Check if we've hit the stutter threshold
+        if (_recoveryAttempts.Count >= StutterThreshold)
+        {
+            int recoveryCount = _recoveryAttempts.Count;
+            Debug.WriteLine($"[Watchdog] STUTTER DETECTED - {recoveryCount} recoveries in {_stutterWindow.TotalMinutes}min window");
+
+            double previousLevel = _currentBufferLevel;
+
+            // Auto-increase buffer if enabled and not at max
+            if (_autoBufferIncreaseEnabled && _currentBufferLevel < MaxBufferLevel)
+            {
+                BufferLevel = _currentBufferLevel + 1;
+                Debug.WriteLine($"[Watchdog] Auto-increased buffer level from {previousLevel} to {_currentBufferLevel} ({BufferLevelDescription})");
+
+                // Clear recovery attempts after buffer increase to give the new level a chance
+                _recoveryAttempts.Clear();
+            }
+
+            // Raise the stutter detected event
+            RaiseStutterDetected(new StutterDetectedEventArgs
+            {
+                RecoveryAttemptCount = recoveryCount,
+                TimeWindow = _stutterWindow,
+                PreviousBufferLevel = previousLevel,
+                NewBufferLevel = _currentBufferLevel,
+                BufferWasIncreased = Math.Abs(previousLevel - _currentBufferLevel) > 0.0001
+            });
+        }
+    }
+
+    /// <summary>
+    /// Resets the buffer level to default. Call this when the user manually changes stations or wants to reset.
+    /// </summary>
+    public void ResetBufferLevel()
+    {
+        _recoveryAttempts.Clear();
+        BufferLevel = 0;
+        Debug.WriteLine("[Watchdog] Buffer level reset to default");
     }
 
     private Task RunOnUiThreadAsync(Action action)
@@ -367,6 +602,40 @@ public sealed class StreamWatchdogService : IDisposable
         }
     }
 
+    private void RaiseStutterDetected(StutterDetectedEventArgs args)
+    {
+        Debug.WriteLine($"[Watchdog] Raising StutterDetected event - BufferIncreased: {args.BufferWasIncreased}, NewLevel: {args.NewBufferLevel}");
+
+        if (_uiQueue is null || _uiQueue.HasThreadAccess)
+        {
+            StutterDetected?.Invoke(this, args);
+        }
+        else
+        {
+            _uiQueue.TryEnqueue(() =>
+            {
+                StutterDetected?.Invoke(this, args);
+            });
+        }
+    }
+
+    private void RaiseBufferLevelChanged(double newLevel)
+    {
+        Debug.WriteLine($"[Watchdog] Raising BufferLevelChanged event - NewLevel: {newLevel}");
+
+        if (_uiQueue is null || _uiQueue.HasThreadAccess)
+        {
+            BufferLevelChanged?.Invoke(this, newLevel);
+        }
+        else
+        {
+            _uiQueue.TryEnqueue(() =>
+            {
+                BufferLevelChanged?.Invoke(this, newLevel);
+            });
+        }
+    }
+
     public void Dispose()
     {
         Stop();
@@ -401,4 +670,40 @@ public enum StreamWatchdogStatus
     Recovering,
     BackingOff,
     Error
+}
+
+/// <summary>
+/// Event arguments for stutter detection events.
+/// </summary>
+public class StutterDetectedEventArgs : EventArgs
+{
+    /// <summary>
+    /// Number of recovery attempts within the time window that triggered stutter detection.
+    /// </summary>
+    public int RecoveryAttemptCount { get; init; }
+
+    /// <summary>
+    /// The time window used for stutter detection.
+    /// </summary>
+    public TimeSpan TimeWindow { get; init; }
+
+    /// <summary>
+    /// The buffer level before auto-increase was applied.
+    /// </summary>
+    public double PreviousBufferLevel { get; init; }
+
+    /// <summary>
+    /// The buffer level after auto-increase was applied (may be same as previous if at max or disabled).
+    /// </summary>
+    public double NewBufferLevel { get; init; }
+
+    /// <summary>
+    /// Whether the buffer level was actually increased.
+    /// </summary>
+    public bool BufferWasIncreased { get; init; }
+
+    /// <summary>
+    /// Timestamp when the stutter was detected.
+    /// </summary>
+    public DateTime Timestamp { get; } = DateTime.UtcNow;
 }

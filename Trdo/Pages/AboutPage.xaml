@@ -17,7 +17,7 @@
             Text="About" />
 
         <!--  About Content  -->
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Padding="0,0,12,0" Spacing="24">
                 <!--  App Name and Version  -->
                 <Grid
@@ -80,17 +80,96 @@
 
                     <TextBlock
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="If you like this app, please consider leaving a review in the Microsoft Store. Your feedback helps improve the app!"
+                        Text="Rate your experience with the app:"
                         TextWrapping="Wrap" />
 
-                    <Button
+                    <!--  Star Rating  -->
+                    <StackPanel
                         Margin="0,8,0,0"
+                        HorizontalAlignment="Center"
+                        Orientation="Horizontal"
+                        Spacing="8">
+                        <Button
+                            x:Name="Star1"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="Star_Click"
+                            Padding="4"
+                            Tag="1">
+                            <FontIcon
+                                FontSize="32"
+                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                Glyph="&#xE734;" />
+                        </Button>
+                        <Button
+                            x:Name="Star2"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="Star_Click"
+                            Padding="4"
+                            Tag="2">
+                            <FontIcon
+                                FontSize="32"
+                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                Glyph="&#xE734;" />
+                        </Button>
+                        <Button
+                            x:Name="Star3"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="Star_Click"
+                            Padding="4"
+                            Tag="3">
+                            <FontIcon
+                                FontSize="32"
+                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                Glyph="&#xE734;" />
+                        </Button>
+                        <Button
+                            x:Name="Star4"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="Star_Click"
+                            Padding="4"
+                            Tag="4">
+                            <FontIcon
+                                FontSize="32"
+                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                Glyph="&#xE734;" />
+                        </Button>
+                        <Button
+                            x:Name="Star5"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Click="Star_Click"
+                            Padding="4"
+                            Tag="5">
+                            <FontIcon
+                                FontSize="32"
+                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                Glyph="&#xE734;" />
+                        </Button>
+                    </StackPanel>
+
+                    <!--  Contact Developer Section (shown for 3 or fewer stars)  -->
+                    <TextBlock
+                        Margin="0,8,0,0"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Having an issue or have a suggestion?"
+                        TextAlignment="Center"
+                        TextWrapping="Wrap"
+                        Visibility="{x:Bind ViewModel.ShowContactDeveloper, Mode=OneWay}" />
+
+                    <Button
+                        x:Name="ContactDeveloperButton"
+                        Margin="0,4,0,0"
                         HorizontalAlignment="Stretch"
-                        Click="ReviewButton_Click"
-                        Style="{StaticResource AccentButtonStyle}">
+                        Click="ContactDeveloperButton_Click"
+                        Style="{StaticResource AccentButtonStyle}"
+                        Visibility="{x:Bind ViewModel.ShowContactDeveloper, Mode=OneWay}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon FontSize="16" Glyph="&#xE734;" />
-                            <TextBlock Text="Rate and Review" TextWrapping="Wrap" />
+                            <FontIcon FontSize="16" Glyph="&#xE715;" />
+                            <TextBlock Text="Contact the Developer" TextWrapping="Wrap" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -183,103 +262,97 @@
                                 TextWrapping="Wrap" />
                         </Grid>
 
-                                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
-                                                    <FontIcon
-                                                        Grid.Column="0"
-                                                        VerticalAlignment="Top"
-                                                        FontSize="14"
-                                                        Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                                                        Glyph="&#xE73E;" />
-                                                    <TextBlock
-                                                        Grid.Column="1"
-                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                        Text="Start with Windows option"
-                                                        TextWrapping="Wrap" />
-                                                </Grid>
-                                            </StackPanel>
-                                        </StackPanel>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                            <FontIcon
+                                Grid.Column="0"
+                                VerticalAlignment="Top"
+                                FontSize="14"
+                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                Glyph="&#xE73E;" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Start with Windows option"
+                                TextWrapping="Wrap" />
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
 
-                                        <!--  Radio Browser Section  -->
-                                        <StackPanel Spacing="8">
-                                            <TextBlock
-                                                FontSize="16"
-                                                FontWeight="SemiBold"
-                                                Text="Radio Database"
-                                                TextWrapping="Wrap" />
+                <!--  Radio Browser Section  -->
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        FontSize="16"
+                        FontWeight="SemiBold"
+                        Text="Radio Database"
+                        TextWrapping="Wrap" />
 
-                                            <TextBlock
-                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                Text="{x:Bind ViewModel.RadioBrowserDescription}"
-                                                TextWrapping="Wrap" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{x:Bind ViewModel.RadioBrowserDescription}"
+                        TextWrapping="Wrap" />
 
-                                            <HyperlinkButton
-                                                Margin="0,8,0,0"
-                                                Click="RadioBrowserButton_Click">
-                                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                                    <FontIcon FontSize="16" Glyph="&#xE774;" />
-                                                    <TextBlock Text="{x:Bind ViewModel.RadioBrowserDisplayText}" TextWrapping="Wrap" />
-                                                </StackPanel>
-                                            </HyperlinkButton>
-                                        </StackPanel>
+                    <HyperlinkButton Margin="0,8,0,0" Click="RadioBrowserButton_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="16" Glyph="&#xE774;" />
+                            <TextBlock Text="{x:Bind ViewModel.RadioBrowserDisplayText}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </HyperlinkButton>
+                </StackPanel>
 
-                                        <!--  Open Source Libraries Section  -->
-                                        <StackPanel Spacing="8">
-                                            <TextBlock
-                                                FontSize="16"
-                                                FontWeight="SemiBold"
-                                                Text="Built With Open Source"
-                                                TextWrapping="Wrap" />
+                <!--  Open Source Libraries Section  -->
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        FontSize="16"
+                        FontWeight="SemiBold"
+                        Text="Built With Open Source"
+                        TextWrapping="Wrap" />
 
-                                            <TextBlock
-                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                Text="This app uses the following open source libraries:"
-                                                TextWrapping="Wrap" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="This app uses the following open source libraries:"
+                        TextWrapping="Wrap" />
 
-                                            <StackPanel Margin="0,8,0,0" Spacing="4">
-                                                <HyperlinkButton
-                                                    Padding="0,4"
-                                                    Click="WinUIExButton_Click">
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <FontIcon FontSize="14" Glyph="&#xE774;" />
-                                                        <TextBlock Text="{x:Bind ViewModel.WinUIExDisplayText}" TextWrapping="Wrap" />
-                                                    </StackPanel>
-                                                </HyperlinkButton>
+                    <StackPanel Margin="0,8,0,0" Spacing="4">
+                        <HyperlinkButton Padding="0,4" Click="WinUIExButton_Click">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="&#xE774;" />
+                                <TextBlock Text="{x:Bind ViewModel.WinUIExDisplayText}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </HyperlinkButton>
 
-                                                <HyperlinkButton
-                                                    Padding="0,4"
-                                                    Click="CommunityToolkitButton_Click">
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <FontIcon FontSize="14" Glyph="&#xE774;" />
-                                                        <TextBlock Text="{x:Bind ViewModel.CommunityToolkitDisplayText}" TextWrapping="Wrap" />
-                                                    </StackPanel>
-                                                </HyperlinkButton>
-                                            </StackPanel>
-                                        </StackPanel>
+                        <HyperlinkButton Padding="0,4" Click="CommunityToolkitButton_Click">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon FontSize="14" Glyph="&#xE774;" />
+                                <TextBlock Text="{x:Bind ViewModel.CommunityToolkitDisplayText}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </HyperlinkButton>
+                    </StackPanel>
+                </StackPanel>
 
-                                        <!--  Tutorial Section  -->
-                                        <StackPanel Spacing="8">
-                                            <TextBlock
-                                                FontSize="16"
-                                                FontWeight="SemiBold"
-                                                Text="Need Help?"
-                                                TextWrapping="Wrap" />
+                <!--  Tutorial Section  -->
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        FontSize="16"
+                        FontWeight="SemiBold"
+                        Text="Need Help?"
+                        TextWrapping="Wrap" />
 
-                                            <TextBlock
-                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                Text="View the tutorial again to learn how to use Trdo."
-                                                TextWrapping="Wrap" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="View the tutorial again to learn how to use Trdo."
+                        TextWrapping="Wrap" />
 
-                                            <Button
-                                                Margin="0,8,0,0"
-                                                HorizontalAlignment="Stretch"
-                                                Click="TutorialButton_Click">
-                                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                                    <FontIcon FontSize="16" Glyph="&#xE8F1;" />
-                                                    <TextBlock Text="View Tutorial" TextWrapping="Wrap" />
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                    </StackPanel>
-                                </ScrollViewer>
-                            </Grid>
-                        </Page>
+                    <Button
+                        Margin="0,8,0,0"
+                        HorizontalAlignment="Stretch"
+                        Click="TutorialButton_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontSize="16" Glyph="&#xE8F1;" />
+                            <TextBlock Text="View Tutorial" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </StackPanel>
+        </ScrollView>
+    </Grid>
+</Page>

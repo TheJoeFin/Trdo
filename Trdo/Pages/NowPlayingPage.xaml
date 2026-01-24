@@ -88,27 +88,27 @@
                                 <TextBlock
                                     FontSize="14"
                                     FontWeight="SemiBold"
+                                    IsTextSelectionEnabled="True"
                                     Text="{x:Bind ViewModel.Title, Mode=OneWay}"
-                                    TextTrimming="CharacterEllipsis"
-                                    TextWrapping="NoWrap"
+                                    TextWrapping="WrapWholeWords"
                                     Visibility="{x:Bind ViewModel.HasTitle, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
                                 <!--  Artist (if available)  -->
                                 <TextBlock
                                     FontSize="12"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    IsTextSelectionEnabled="True"
                                     Text="{x:Bind ViewModel.Artist, Mode=OneWay}"
-                                    TextTrimming="CharacterEllipsis"
-                                    TextWrapping="NoWrap"
+                                    TextWrapping="WrapWholeWords"
                                     Visibility="{x:Bind ViewModel.HasArtist, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
                                 <!--  Stream Title Only (shown when we don't have parsed artist/title)  -->
                                 <TextBlock
                                     FontSize="14"
                                     FontWeight="SemiBold"
+                                    IsTextSelectionEnabled="True"
                                     Text="{x:Bind ViewModel.StreamTitle, Mode=OneWay}"
-                                    TextTrimming="CharacterEllipsis"
-                                    TextWrapping="NoWrap"
+                                    TextWrapping="WrapWholeWords"
                                     Visibility="{x:Bind ViewModel.ShowStreamTitleOnly, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
                             </StackPanel>
 
@@ -121,7 +121,7 @@
                                 Background="Transparent"
                                 BorderThickness="0"
                                 Click="FavoriteCurrentTrack_Click"
-                                ToolTipService.ToolTip="Toggle favorite">
+                                ToolTipService.ToolTip="Favorite Song">
                                 <FontIcon
                                     FontSize="20"
                                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
@@ -237,7 +237,7 @@
                                 BorderThickness="0"
                                 Click="FavoriteHistoryItem_Click"
                                 Tag="{x:Bind}"
-                                ToolTipService.ToolTip="Toggle favorite">
+                                ToolTipService.ToolTip="Favorite Song">
                                 <FontIcon
                                     FontSize="14"
                                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"

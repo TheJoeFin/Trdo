@@ -31,6 +31,45 @@ public sealed partial class AboutPage : Page
         ViewModel.OpenRatingWindow();
     }
 
+    private void Star_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is string tagString && int.TryParse(tagString, out int rating))
+        {
+            ViewModel.SelectedRating = rating;
+            UpdateStarVisuals(rating);
+
+            // If 5 stars, immediately launch the store review
+            if (rating >= 4)
+            {
+                _ = ViewModel.OpenRatingWindow();
+            }
+        }
+    }
+
+    private void UpdateStarVisuals(int selectedRating)
+    {
+        // Update all star buttons to show filled or outline based on rating
+        UpdateStarButton("Star1", selectedRating >= 1);
+        UpdateStarButton("Star2", selectedRating >= 2);
+        UpdateStarButton("Star3", selectedRating >= 3);
+        UpdateStarButton("Star4", selectedRating >= 4);
+        UpdateStarButton("Star5", selectedRating >= 5);
+    }
+
+    private void UpdateStarButton(string buttonName, bool isFilled)
+    {
+        if (FindName(buttonName) is Button starButton && starButton.Content is FontIcon icon)
+        {
+            // E735 is filled star, E734 is outline star
+            icon.Glyph = isFilled ? "\uE735" : "\uE734";
+        }
+    }
+
+    private void ContactDeveloperButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = ViewModel.ContactDeveloper();
+    }
+
         private void TutorialButton_Click(object sender, RoutedEventArgs e)
         {
             TutorialWindow tutorialWindow = new();

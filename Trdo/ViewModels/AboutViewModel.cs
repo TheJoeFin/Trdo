@@ -11,6 +11,23 @@ public partial class AboutViewModel : INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    private int _selectedRating;
+    public int SelectedRating
+    {
+        get => _selectedRating;
+        set
+        {
+            if (_selectedRating != value)
+            {
+                _selectedRating = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowContactDeveloper));
+            }
+        }
+    }
+
+    public bool ShowContactDeveloper => SelectedRating > 0 && SelectedRating <= 3;
+
     public string AppName => "Trdo";
     public string AppDescription => "A simple, elegant internet radio player for Windows";
     public string Version
@@ -52,6 +69,13 @@ public partial class AboutViewModel : INotifyPropertyChanged
     public async Task OpenRatingWindow()
     {
         _ = await Launcher.LaunchUriAsync(new Uri("ms-windows-store://review/?ProductId=9NXT4TGJVHVV"));
+    }
+
+    public async Task ContactDeveloper()
+    {
+        string subject = Uri.EscapeDataString($"Trdo Feedback - {Version}");
+        string mailToUri = $"mailto:joe@joefinapps.com?subject={subject}";
+        await Launcher.LaunchUriAsync(new Uri(mailToUri));
     }
 
     public async Task OpenRadioBrowser()

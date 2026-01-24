@@ -54,6 +54,14 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine($"[PlayerViewModel] Watchdog status: {WatchdogStatus}");
         };
 
+        // Subscribe to buffer level changes (for auto-buffer increase)
+        _player.Watchdog.BufferLevelChanged += (_, newLevel) =>
+        {
+            Debug.WriteLine($"[PlayerViewModel] BufferLevelChanged event fired. NewLevel={newLevel}");
+            OnPropertyChanged(nameof(BufferLevel));
+            OnPropertyChanged(nameof(BufferLevelDescription));
+        };
+
         // Subscribe to stream metadata changes
         _player.StreamMetadataChanged += (_, metadata) =>
         {
@@ -255,6 +263,44 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
+
+    /// <summary>
+    /// Gets or sets whether auto-buffer increase is enabled.
+    /// When enabled, the buffer level automatically increases when stutter is detected.
+    /// </summary>
+    public bool AutoBufferIncreaseEnabled
+    {
+        get => _player.Watchdog.AutoBufferIncreaseEnabled;
+        set
+        {
+            if (value == _player.Watchdog.AutoBufferIncreaseEnabled) return;
+            Debug.WriteLine($"[PlayerViewModel] Setting AutoBufferIncreaseEnabled to {value}");
+            _player.Watchdog.AutoBufferIncreaseEnabled = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the current buffer level (0-3).
+    /// 0 = Default, 1 = Medium, 2 = Large, 3 = Extra Large
+    /// </summary>
+    public double BufferLevel
+    {
+        get => _player.Watchdog.BufferLevel;
+        set
+        {
+            if (Math.Abs(value - _player.Watchdog.BufferLevel) < 0.0001) return;
+            Debug.WriteLine($"[PlayerViewModel] Setting BufferLevel to {value}");
+            _player.Watchdog.BufferLevel = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(BufferLevelDescription));
+        }
+    }
+
+    /// <summary>
+    /// Gets a human-readable description of the current buffer level.
+    /// </summary>
+    public string BufferLevelDescription => _player.Watchdog.BufferLevelDescription;
 
     public string WatchdogStatus
     {

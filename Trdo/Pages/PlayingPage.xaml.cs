@@ -188,6 +188,13 @@ public sealed partial class PlayingPage : Page
             return;
         }
 
+        // Ensure ListView SelectedItem is synchronized with ViewModel
+        if (StationsListView.SelectedItem != ViewModel.SelectedStation)
+        {
+            StationsListView.SelectedItem = ViewModel.SelectedStation;
+            Debug.WriteLine($"[PlayingPage] Synchronized ListView.SelectedItem to {ViewModel.SelectedStation?.Name ?? "null"}");
+        }
+
         for (int i = 0; i < ViewModel.Stations.Count; i++)
         {
             if (StationsListView.ContainerFromIndex(i) is not ListViewItem container)

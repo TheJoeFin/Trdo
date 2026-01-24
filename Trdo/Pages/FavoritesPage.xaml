@@ -21,7 +21,7 @@
             Grid.Row="0"
             FontSize="16"
             FontWeight="SemiBold"
-            Text="Favorites" />
+            Text="Favorite Songs" />
 
         <!--  Content  -->
         <Grid Grid.Row="1" Padding="0,0,0,0">
@@ -41,13 +41,13 @@
                     HorizontalAlignment="Center"
                     FontSize="16"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="No favorites yet"
+                    Text="No favorite songs yet"
                     TextAlignment="Center" />
                 <TextBlock
                     HorizontalAlignment="Center"
                     FontSize="12"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                    Text="Tap the star icon on tracks you love to save them here"
+                    Text="Tap the star icon on songs you love to save them here"
                     TextAlignment="Center"
                     TextWrapping="Wrap" />
             </StackPanel>

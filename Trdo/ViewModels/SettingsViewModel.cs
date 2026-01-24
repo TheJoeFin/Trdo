@@ -13,6 +13,7 @@ public class SettingsViewModel : INotifyPropertyChanged
     private bool _isStartupToggleEnabled = true;
     private string _startupToggleText = "Off";
     private string _watchdogToggleText = "Off";
+    private string _autoBufferToggleText = "Off";
     private StartupTask? _startupTask;
     private bool _initDone;
 
@@ -28,16 +29,29 @@ public class SettingsViewModel : INotifyPropertyChanged
             if (args.PropertyName == nameof(PlayerViewModel.WatchdogEnabled))
             {
                 OnPropertyChanged(nameof(IsWatchdogEnabled));
-                WatchdogToggleText = _playerViewModel.WatchdogEnabled ? "On" : "Off";
+                WatchdogToggleText = GetToggleText(_playerViewModel.WatchdogEnabled);
+            }
+            else if (args.PropertyName == nameof(PlayerViewModel.AutoBufferIncreaseEnabled))
+            {
+                OnPropertyChanged(nameof(IsAutoBufferIncreaseEnabled));
+                AutoBufferToggleText = GetToggleText(_playerViewModel.AutoBufferIncreaseEnabled);
+            }
+            else if (args.PropertyName == nameof(PlayerViewModel.BufferLevel))
+            {
+                OnPropertyChanged(nameof(BufferLevel));
+                OnPropertyChanged(nameof(BufferLevelDescription));
             }
         };
 
-        // Initialize watchdog toggle text
-        WatchdogToggleText = _playerViewModel.WatchdogEnabled ? "On" : "Off";
+        // Initialize toggle text
+        WatchdogToggleText = GetToggleText(_playerViewModel.WatchdogEnabled);
+        AutoBufferToggleText = GetToggleText(_playerViewModel.AutoBufferIncreaseEnabled);
 
         // Initialize startup task
         _ = InitializeStartupTaskAsync();
     }
+
+    private static string GetToggleText(bool enabled) => enabled ? "On" : "Off";
 
     public bool IsStartupEnabled
     {
@@ -47,7 +61,7 @@ public class SettingsViewModel : INotifyPropertyChanged
             if (value == _isStartupEnabled) return;
             _isStartupEnabled = value;
             OnPropertyChanged();
-            StartupToggleText = value ? "On" : "Off";
+            StartupToggleText = GetToggleText(value);
 
             // Apply the change
             _ = ApplyStartupStateAsync(value);
@@ -84,7 +98,7 @@ public class SettingsViewModel : INotifyPropertyChanged
             if (value == _playerViewModel.WatchdogEnabled) return;
             _playerViewModel.WatchdogEnabled = value;
             OnPropertyChanged();
-            WatchdogToggleText = value ? "On" : "Off";
+            WatchdogToggleText = GetToggleText(value);
         }
     }
 
@@ -98,6 +112,54 @@ public class SettingsViewModel : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
+
+    /// <summary>
+    /// Gets or sets whether auto-buffer increase is enabled.
+    /// When enabled, the buffer level automatically increases when stutter is detected.
+    /// </summary>
+    public bool IsAutoBufferIncreaseEnabled
+    {
+        get => _playerViewModel.AutoBufferIncreaseEnabled;
+        set
+        {
+            if (value == _playerViewModel.AutoBufferIncreaseEnabled) return;
+            _playerViewModel.AutoBufferIncreaseEnabled = value;
+            OnPropertyChanged();
+            AutoBufferToggleText = GetToggleText(value);
+        }
+    }
+
+    public string AutoBufferToggleText
+    {
+        get => _autoBufferToggleText;
+        set
+        {
+            if (value == _autoBufferToggleText) return;
+            _autoBufferToggleText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the current buffer level (0-3).
+    /// 0 = Default, 1 = Medium, 2 = Large, 3 = Extra Large
+    /// </summary>
+    public double BufferLevel
+    {
+        get => _playerViewModel.BufferLevel;
+        set
+        {
+            if (Math.Abs(value - _playerViewModel.BufferLevel) < 0.0001) return;
+            _playerViewModel.BufferLevel = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(BufferLevelDescription));
+        }
+    }
+
+    /// <summary>
+    /// Gets a human-readable description of the current buffer level.
+    /// </summary>
+    public string BufferLevelDescription => _playerViewModel.BufferLevelDescription;
 
     private async Task InitializeStartupTaskAsync()
     {
@@ -125,13 +187,13 @@ public class SettingsViewModel : INotifyPropertyChanged
                 IsStartupToggleEnabled = true;
                 _isStartupEnabled = true;
                 OnPropertyChanged(nameof(IsStartupEnabled));
-                StartupToggleText = "On";
+                StartupToggleText = GetToggleText(true);
                 break;
             case StartupTaskState.Disabled:
                 IsStartupToggleEnabled = true;
                 _isStartupEnabled = false;
                 OnPropertyChanged(nameof(IsStartupEnabled));
-                StartupToggleText = "Off";
+                StartupToggleText = GetToggleText(false);
                 break;
             case StartupTaskState.DisabledByUser:
             case StartupTaskState.DisabledByPolicy:
@@ -139,7 +201,7 @@ public class SettingsViewModel : INotifyPropertyChanged
                 IsStartupToggleEnabled = false;
                 _isStartupEnabled = false;
                 OnPropertyChanged(nameof(IsStartupEnabled));
-                StartupToggleText = "Off";
+                StartupToggleText = GetToggleText(false);
                 break;
         }
     }
