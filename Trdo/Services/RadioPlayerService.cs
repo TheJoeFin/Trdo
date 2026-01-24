@@ -17,7 +17,7 @@ namespace Trdo.Services;
 public sealed partial class RadioPlayerService : IDisposable
 {
     private readonly MediaPlayer _player;
-    private readonly DispatcherQueue _uiQueue;
+    private readonly DispatcherQueue? _uiQueue;
     private readonly StreamWatchdogService _watchdog;
     private readonly StreamMetadataService _metadataService;
     private readonly SystemMediaTransportControls? _systemMediaControls;
@@ -31,10 +31,10 @@ public sealed partial class RadioPlayerService : IDisposable
     private string? _currentAlbumArtUrl;
     private bool _isInternalStateChange;
     private bool _wasExternalPause;
-    private System.Threading.Timer? _smtcUpdateTimer;
+    private Timer? _smtcUpdateTimer;
     private bool _smtcUpdatePending;
     private readonly object _smtcUpdateLock = new();
-    private System.Threading.Timer? _internalStateChangeTimer;
+    private Timer? _internalStateChangeTimer;
     private DateTime _lastExternalPauseRecovery = DateTime.MinValue;
     private bool _hasPlayedOnce;
     private bool _isManuallyBuffering;
@@ -132,9 +132,9 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             try
             {
-                var bufferedRanges = _player.PlaybackSession.GetBufferedRanges();
+                IReadOnlyList<MediaTimeRange> bufferedRanges = _player.PlaybackSession.GetBufferedRanges();
                 TimeSpan totalBuffered = TimeSpan.Zero;
-                foreach (var range in bufferedRanges)
+                foreach (MediaTimeRange range in bufferedRanges)
                 {
                     totalBuffered += range.End - range.Start;
                 }
@@ -151,7 +151,7 @@ public sealed partial class RadioPlayerService : IDisposable
     /// Gets the buffered ranges from the playback session.
     /// Each MediaTimeRange contains Start and End times representing buffered content.
     /// </summary>
-    public IReadOnlyList<Windows.Media.MediaTimeRange> GetBufferedRanges()
+    public IReadOnlyList<MediaTimeRange> GetBufferedRanges()
     {
         try
         {
@@ -159,7 +159,7 @@ public sealed partial class RadioPlayerService : IDisposable
         }
         catch
         {
-            return Array.Empty<Windows.Media.MediaTimeRange>();
+            return [];
         }
     }
 
@@ -267,7 +267,7 @@ public sealed partial class RadioPlayerService : IDisposable
                     Debug.WriteLine("[RadioPlayerService] External state change detected (likely hardware button)");
                     if (currentState == MediaPlaybackState.Playing)
                     {
-                        _watchdog.NotifyUserIntentionToPlay();
+                        _watchdog?.NotifyUserIntentionToPlay();
                         Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play (hardware button)");
 
                         // Mark that an external play was triggered
@@ -280,7 +280,7 @@ public sealed partial class RadioPlayerService : IDisposable
                     else if (currentState == MediaPlaybackState.Paused)
                     {
                         // Only notify pause intent if explicitly paused (not buffering, opening, or other states)
-                        _watchdog.NotifyUserIntentionToPause();
+                        _watchdog?.NotifyUserIntentionToPause();
                         Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause (hardware button)");
 
                         // Mark that this was an external pause
@@ -288,7 +288,7 @@ public sealed partial class RadioPlayerService : IDisposable
                         Debug.WriteLine("[RadioPlayerService] Marked as external pause - will refresh stream on next play");
 
                         // Stop metadata polling when paused
-                        _metadataService.StopPolling();
+                        _metadataService?.StopPolling();
                         Debug.WriteLine("[RadioPlayerService] Stopped metadata polling after external pause");
                     }
                     // For other states (Buffering, Opening, None), don't change watchdog intent
@@ -716,7 +716,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private async Task WaitForSufficientBufferAsync(CancellationToken cancellationToken = default)
     {
         // Calculate timeout based on required buffer (minimum 10s, max 30s)
-        int timeoutMs = Math.Clamp((int)RequiredBufferDuration.TotalMilliseconds * 3, 10000, 30000);
+        int timeoutMs = Math.Clamp((int)RequiredBufferDuration.TotalMilliseconds, 400, 8000);
         const int checkIntervalMs = 250; // Check every 250ms
         int elapsed = 0;
 
@@ -926,7 +926,7 @@ public sealed partial class RadioPlayerService : IDisposable
     {
         try
         {
-            var bufferedRanges = _player.PlaybackSession.GetBufferedRanges();
+            IReadOnlyList<MediaTimeRange> bufferedRanges = _player.PlaybackSession.GetBufferedRanges();
             if (bufferedRanges.Count == 0)
             {
                 Debug.WriteLine("[RadioPlayerService] No buffered ranges available");
@@ -935,9 +935,9 @@ public sealed partial class RadioPlayerService : IDisposable
 
             Debug.WriteLine($"[RadioPlayerService] Buffered ranges ({bufferedRanges.Count}):");
             TimeSpan totalBuffered = TimeSpan.Zero;
-            foreach (var range in bufferedRanges)
+            foreach (MediaTimeRange range in bufferedRanges)
             {
-                var duration = range.End - range.Start;
+                TimeSpan duration = range.End - range.Start;
                 totalBuffered += duration;
                 Debug.WriteLine($"  - {range.Start.TotalSeconds:F2}s to {range.End.TotalSeconds:F2}s (duration: {duration.TotalMilliseconds:F0}ms)");
             }
@@ -946,30 +946,30 @@ public sealed partial class RadioPlayerService : IDisposable
         catch (Exception ex)
         {
             Debug.WriteLine($"[RadioPlayerService] Error logging buffered ranges: {ex.Message}");
-            }
         }
+    }
 
-        /// <summary>
-        /// Sets the manual buffering state and notifies listeners.
-        /// </summary>
-        private void SetManualBuffering(bool isBuffering)
+    /// <summary>
+    /// Sets the manual buffering state and notifies listeners.
+    /// </summary>
+    private void SetManualBuffering(bool isBuffering)
+    {
+        if (_isManuallyBuffering == isBuffering) return;
+
+        Debug.WriteLine($"[RadioPlayerService] Manual buffering state changing from {_isManuallyBuffering} to {isBuffering}");
+        _isManuallyBuffering = isBuffering;
+
+        // Notify on UI thread
+        TryEnqueueOnUi(() =>
         {
-            if (_isManuallyBuffering == isBuffering) return;
+            BufferingStateChanged?.Invoke(this, IsBuffering);
+        });
+    }
 
-            Debug.WriteLine($"[RadioPlayerService] Manual buffering state changing from {_isManuallyBuffering} to {isBuffering}");
-            _isManuallyBuffering = isBuffering;
-
-            // Notify on UI thread
-            TryEnqueueOnUi(() =>
-            {
-                BufferingStateChanged?.Invoke(this, IsBuffering);
-            });
-        }
-
-        /// <summary>
-        /// Stop playback and clean up resources
-        /// </summary>
-        public void Pause()
+    /// <summary>
+    /// Stop playback and clean up resources
+    /// </summary>
+    public void Pause()
     {
         Debug.WriteLine($"=== Pause START ===");
         Debug.WriteLine($"[RadioPlayerService] Pause called");
@@ -1080,95 +1080,95 @@ public sealed partial class RadioPlayerService : IDisposable
                     Debug.WriteLine($"[RadioPlayerService] Unhandled button: {args.Button}");
                     break;
             }
-                });
-            }
+        });
+    }
 
-            /// <summary>
-            /// Sets the internal state change flag with a timer to automatically clear it.
-            /// This ensures the flag remains true long enough to cover asynchronous state changes.
-            /// </summary>
-            /// <param name="isInternal">True to mark state changes as internal, false to clear immediately</param>
-            private void SetInternalStateChange(bool isInternal)
-            {
-                _isInternalStateChange = isInternal;
+    /// <summary>
+    /// Sets the internal state change flag with a timer to automatically clear it.
+    /// This ensures the flag remains true long enough to cover asynchronous state changes.
+    /// </summary>
+    /// <param name="isInternal">True to mark state changes as internal, false to clear immediately</param>
+    private void SetInternalStateChange(bool isInternal)
+    {
+        _isInternalStateChange = isInternal;
 
-                if (isInternal)
-                {
-                    Debug.WriteLine("[RadioPlayerService] Internal state change flag SET (will auto-clear in 1000ms)");
-
-                    // Clear any existing timer
-                    _internalStateChangeTimer?.Dispose();
-
-                    // Set a timer to clear the flag after 1000ms
-                    // This gives enough time for all async state changes from Play()/Pause() to complete
-                    // Increased from 500ms to 1000ms to better handle slower network connections
-                    _internalStateChangeTimer = new System.Threading.Timer(
-                        callback: _ =>
-                        {
-                            _isInternalStateChange = false;
-                            Debug.WriteLine("[RadioPlayerService] Internal state change flag AUTO-CLEARED");
-                        },
-                        state: null,
-                        dueTime: 1000, // 1000ms to cover all async state transitions including network delays
-                        period: System.Threading.Timeout.Infinite
-                    );
-                }
-                else
-                {
-                    Debug.WriteLine("[RadioPlayerService] Internal state change flag CLEARED immediately");
-                    _internalStateChangeTimer?.Dispose();
-                    _internalStateChangeTimer = null;
-                }
-            }
-
-            /// <summary>
-            /// Schedules a debounced update to the System Media Transport Controls.
-        /// Multiple rapid calls will be coalesced into a single update after 100ms of inactivity.
-        /// </summary>
-        private void ScheduleSystemMediaTransportControlsUpdate()
+        if (isInternal)
         {
-            lock (_smtcUpdateLock)
+            Debug.WriteLine("[RadioPlayerService] Internal state change flag SET (will auto-clear in 1000ms)");
+
+            // Clear any existing timer
+            _internalStateChangeTimer?.Dispose();
+
+            // Set a timer to clear the flag after 1000ms
+            // This gives enough time for all async state changes from Play()/Pause() to complete
+            // Increased from 500ms to 1000ms to better handle slower network connections
+            _internalStateChangeTimer = new Timer(
+                callback: _ =>
+                {
+                    _isInternalStateChange = false;
+                    Debug.WriteLine("[RadioPlayerService] Internal state change flag AUTO-CLEARED");
+                },
+                state: null,
+                dueTime: 1000, // 1000ms to cover all async state transitions including network delays
+                period: System.Threading.Timeout.Infinite
+            );
+        }
+        else
+        {
+            Debug.WriteLine("[RadioPlayerService] Internal state change flag CLEARED immediately");
+            _internalStateChangeTimer?.Dispose();
+            _internalStateChangeTimer = null;
+        }
+    }
+
+    /// <summary>
+    /// Schedules a debounced update to the System Media Transport Controls.
+    /// Multiple rapid calls will be coalesced into a single update after 100ms of inactivity.
+    /// </summary>
+    private void ScheduleSystemMediaTransportControlsUpdate()
+    {
+        lock (_smtcUpdateLock)
+        {
+            // Mark that an update is pending
+            _smtcUpdatePending = true;
+
+            // Reset the timer - this will delay the update by another 100ms
+            _smtcUpdateTimer?.Dispose();
+            _smtcUpdateTimer = new Timer(
+                callback: _ => ExecuteSystemMediaTransportControlsUpdate(),
+                state: null,
+                dueTime: 100, // 100ms delay
+                period: System.Threading.Timeout.Infinite // Don't repeat
+            );
+
+            Debug.WriteLine("[RadioPlayerService] SMTC update scheduled (debounced)");
+        }
+    }
+
+    /// <summary>
+    /// Executes the actual System Media Transport Controls update on the UI thread.
+    /// </summary>
+    private void ExecuteSystemMediaTransportControlsUpdate()
+    {
+        lock (_smtcUpdateLock)
+        {
+            if (!_smtcUpdatePending)
             {
-                // Mark that an update is pending
-                _smtcUpdatePending = true;
-
-                // Reset the timer - this will delay the update by another 100ms
-                _smtcUpdateTimer?.Dispose();
-                _smtcUpdateTimer = new System.Threading.Timer(
-                    callback: _ => ExecuteSystemMediaTransportControlsUpdate(),
-                    state: null,
-                    dueTime: 100, // 100ms delay
-                    period: System.Threading.Timeout.Infinite // Don't repeat
-                );
-
-                Debug.WriteLine("[RadioPlayerService] SMTC update scheduled (debounced)");
+                return;
             }
+
+            _smtcUpdatePending = false;
+            Debug.WriteLine("[RadioPlayerService] Executing debounced SMTC update");
         }
 
-        /// <summary>
-        /// Executes the actual System Media Transport Controls update on the UI thread.
-        /// </summary>
-        private void ExecuteSystemMediaTransportControlsUpdate()
+        // Execute the update on the UI thread
+        TryEnqueueOnUi(() =>
         {
-            lock (_smtcUpdateLock)
-            {
-                if (!_smtcUpdatePending)
-                {
-                    return;
-                }
+            UpdateSystemMediaTransportControls();
+        });
+    }
 
-                _smtcUpdatePending = false;
-                Debug.WriteLine("[RadioPlayerService] Executing debounced SMTC update");
-            }
-
-            // Execute the update on the UI thread
-            TryEnqueueOnUi(() =>
-            {
-                UpdateSystemMediaTransportControls();
-            });
-        }
-
-        private void UpdateSystemMediaTransportControls()
+    private void UpdateSystemMediaTransportControls()
     {
         if (_systemMediaControls == null)
             return;

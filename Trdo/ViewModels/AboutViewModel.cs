@@ -74,8 +74,8 @@ public partial class AboutViewModel : INotifyPropertyChanged
     public async Task ContactDeveloper()
     {
         string subject = Uri.EscapeDataString($"Trdo Feedback - {Version}");
-        string mailtoUri = $"mailto:joe@joefinapps.com?subject={subject}";
-        await Launcher.LaunchUriAsync(new Uri(mailtoUri));
+        string mailToUri = $"mailto:joe@joefinapps.com?subject={subject}";
+        await Launcher.LaunchUriAsync(new Uri(mailToUri));
     }
 
     public async Task OpenRadioBrowser()
