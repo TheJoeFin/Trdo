@@ -268,7 +268,7 @@
                     FontSize="14"
                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                     Glyph="&#xE8D6;" />
-                <labs:Marquee
+                <controls:Marquee
                     x:Name="NowPlayingMarqueeText"
                     Grid.Column="1"
                     VerticalAlignment="Center"
