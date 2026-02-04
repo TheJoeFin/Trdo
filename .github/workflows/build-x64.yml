@@ -1,0 +1,34 @@
+name: CD - Build & Release (win-x64)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build_and_release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore Trdo.slnx
+
+    - name: Publish win-x64 self-contained
+      run: dotnet publish Trdo.slnx --configuration Release --runtime win-x64 --self-contained true --output publish /p:PublishSingleFile=true /p:PublishReadyToRun=false
+
+    - name: Control test
+      run: dir publish/
+
+    - name: Upload .exe to GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: publish/Trdo.exe
