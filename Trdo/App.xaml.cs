@@ -1,6 +1,7 @@
 ﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Win32;
 using System;
 using System.ComponentModel;
 using System.Linq;
@@ -240,12 +241,15 @@ public partial class App : Application
     {
         try
         {
-            UISettings uiSettings = new();
-            Color foregroundColor = uiSettings.GetColorValue(UIColorType.Foreground);
+            // Read the system (taskbar) theme, not the app theme.
+            // SystemUsesLightTheme = 0 means dark taskbar, 1 means light taskbar.
+            using RegistryKey? key = Registry.CurrentUser.OpenSubKey(
+                @"SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            object? value = key?.GetValue("SystemUsesLightTheme");
+            if (value is int intVal)
+                return intVal == 0;
 
-            // In dark mode, foreground color is light (high RGB values)
-            // In light mode, foreground color is dark (low RGB values)
-            return (foregroundColor.R + foregroundColor.G + foregroundColor.B) > 384;
+            return true;
         }
         catch
         {
