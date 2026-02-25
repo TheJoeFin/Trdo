@@ -3,9 +3,14 @@
     x:Class="Trdo.Pages.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:converters="using:Trdo.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
+
+    <Page.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVis" />
+    </Page.Resources>
 
     <Grid RowDefinitions="Auto,*" RowSpacing="24">
         <!--  Settings Title  -->
@@ -54,6 +59,85 @@
                             VerticalAlignment="Center"
                             FontSize="16"
                             Text="{x:Bind ViewModel.WatchdogToggleText, Mode=OneWay}" />
+                    </Grid>
+                </StackPanel>
+
+                <!--  Silence detection timeout setting  -->
+                <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.IsWatchdogEnabled, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <TextBlock FontSize="16" Text="Silence detection timeout" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Seconds of silence before the stream is automatically restarted"
+                        TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                        <Slider
+                            x:Name="SilenceTimeoutSlider"
+                            Grid.Column="0"
+                            Maximum="30"
+                            Minimum="1"
+                            SnapsTo="StepValues"
+                            StepFrequency="1"
+                            Value="{x:Bind ViewModel.SilenceTimeoutSeconds, Mode=TwoWay}" />
+                        <TextBlock
+                            Grid.Column="1"
+                            MinWidth="32"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Text="{x:Bind ViewModel.SilenceTimeoutDisplay, Mode=OneWay}" />
+                        <!--  Live audio-level bars driven by NAudio loopback  -->
+                        <StackPanel
+                            Grid.Column="2"
+                            Height="18"
+                            Orientation="Horizontal"
+                            Spacing="2"
+                            VerticalAlignment="Center">
+                            <Rectangle
+                                x:Name="Bar1"
+                                Width="3"
+                                Height="4"
+                                VerticalAlignment="Bottom"
+                                Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                Opacity="0.15"
+                                RadiusX="1"
+                                RadiusY="1" />
+                            <Rectangle
+                                x:Name="Bar2"
+                                Width="3"
+                                Height="7"
+                                VerticalAlignment="Bottom"
+                                Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                Opacity="0.15"
+                                RadiusX="1"
+                                RadiusY="1" />
+                            <Rectangle
+                                x:Name="Bar3"
+                                Width="3"
+                                Height="10"
+                                VerticalAlignment="Bottom"
+                                Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                Opacity="0.15"
+                                RadiusX="1"
+                                RadiusY="1" />
+                            <Rectangle
+                                x:Name="Bar4"
+                                Width="3"
+                                Height="13"
+                                VerticalAlignment="Bottom"
+                                Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                Opacity="0.15"
+                                RadiusX="1"
+                                RadiusY="1" />
+                            <Rectangle
+                                x:Name="Bar5"
+                                Width="3"
+                                Height="18"
+                                VerticalAlignment="Bottom"
+                                Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                Opacity="0.15"
+                                RadiusX="1"
+                                RadiusY="1" />
+                        </StackPanel>
                     </Grid>
                 </StackPanel>
 

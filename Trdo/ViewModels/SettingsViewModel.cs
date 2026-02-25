@@ -12,7 +12,7 @@ using Windows.Storage.Pickers;
 
 namespace Trdo.ViewModels;
 
-public class SettingsViewModel : INotifyPropertyChanged
+public partial class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly PlayerViewModel _playerViewModel;
     private bool _isStartupEnabled;
@@ -46,6 +46,11 @@ public class SettingsViewModel : INotifyPropertyChanged
             {
                 OnPropertyChanged(nameof(BufferLevel));
                 OnPropertyChanged(nameof(BufferLevelDescription));
+            }
+            else if (args.PropertyName == nameof(PlayerViewModel.SilenceTimeoutSeconds))
+            {
+                OnPropertyChanged(nameof(SilenceTimeoutSeconds));
+                OnPropertyChanged(nameof(SilenceTimeoutDisplay));
             }
         };
 
@@ -166,6 +171,27 @@ public class SettingsViewModel : INotifyPropertyChanged
     /// Gets a human-readable description of the current buffer level.
     /// </summary>
     public string BufferLevelDescription => _playerViewModel.BufferLevelDescription;
+
+    /// <summary>
+    /// Gets or sets the silence detection timeout in seconds.
+    /// If audio is silent for longer than this, the stream will be restarted.
+    /// </summary>
+    public double SilenceTimeoutSeconds
+    {
+        get => _playerViewModel.SilenceTimeoutSeconds;
+        set
+        {
+            if (Math.Abs(value - _playerViewModel.SilenceTimeoutSeconds) < 0.01) return;
+            _playerViewModel.SilenceTimeoutSeconds = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SilenceTimeoutDisplay));
+        }
+    }
+
+    /// <summary>
+    /// Gets a formatted display string for the current silence timeout value.
+    /// </summary>
+    public string SilenceTimeoutDisplay => $"{SilenceTimeoutSeconds:0}s";
 
     private async Task InitializeStartupTaskAsync()
     {
