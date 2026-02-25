@@ -18,6 +18,18 @@
     </Page.Resources>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowSpacing="12">
+        <Grid.ContextFlyout>
+            <MenuFlyout x:Name="PageContextMenu" Opening="PageContextMenu_Opening">
+                <MenuFlyoutItem
+                    x:Name="ShowVolumeMenuItem"
+                    Click="ShowVolumeSlider_Click"
+                    Text="Show Volume Slider">
+                    <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE767;" />
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+            </MenuFlyout>
+        </Grid.ContextFlyout>
 
         <Grid>
             <Grid.ColumnDefinitions>
@@ -222,7 +234,17 @@
         </Grid>
 
         <!--  Volume Control  -->
-        <Grid Grid.Row="3" ColumnSpacing="4">
+        <Grid
+            x:Name="VolumeControlGrid"
+            Grid.Row="3"
+            Background="Transparent"
+            ColumnSpacing="8"
+            PointerWheelChanged="VolumeControl_PointerWheelChanged">
+            <Grid.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem Click="HideVolumeSlider_Click" Text="Hide Volume Slider" />
+                </MenuFlyout>
+            </Grid.ContextFlyout>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto" />
                 <ColumnDefinition Width="*" />
