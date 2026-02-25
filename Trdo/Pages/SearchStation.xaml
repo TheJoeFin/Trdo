@@ -73,67 +73,90 @@
                     ItemsSource="{x:Bind ViewModel.SearchResults, Mode=OneWay}"
                     SelectionMode="None"
                     Visibility="{x:Bind ViewModel.SearchResults.Count, Mode=OneWay, Converter={StaticResource HasItemsVisibilityConverter}}">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:RadioBrowserStation">
-                            <Grid
-                                Margin="0,6"
-                                ColumnDefinitions="Auto,*"
-                                ColumnSpacing="12"
-                                RowDefinitions="Auto,Auto,Auto"
-                                RowSpacing="4">
-
-                                <!--  Favicon  -->
+                            <Border
+                                Margin="0,4"
+                                Padding="6"
+                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8">
                                 <Grid
-                                    Grid.Row="0"
-                                    Grid.RowSpan="2"
-                                    Grid.Column="0"
-                                    Width="40"
-                                    Height="40"
-                                    VerticalAlignment="Top"
-                                    Visibility="{x:Bind Favicon, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}">
-                                    <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="6">
-                                        <Image Source="{x:Bind Favicon, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}" Stretch="UniformToFill" />
-                                    </Border>
+                                    ColumnDefinitions="Auto,*"
+                                    ColumnSpacing="12"
+                                    RowDefinitions="Auto,Auto,Auto"
+                                    RowSpacing="4">
+
+                                    <!--  Favicon  -->
+                                    <Grid
+                                        Grid.Row="0"
+                                        Grid.RowSpan="2"
+                                        Grid.Column="0"
+                                        Width="40"
+                                        Height="40"
+                                        VerticalAlignment="Top"
+                                        Visibility="{x:Bind Favicon, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}">
+                                        <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="6">
+                                            <Image Source="{x:Bind Favicon, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}" Stretch="UniformToFill" />
+                                        </Border>
+                                    </Grid>
+
+                                    <!--  Station Name  -->
+                                    <TextBlock
+                                        Grid.Row="0"
+                                        Grid.Column="1"
+                                        FontWeight="SemiBold"
+                                        Text="{x:Bind Name}"
+                                        TextWrapping="WrapWholeWords" />
+
+                                    <!--  Station Info  -->
+                                    <TextBlock
+                                        Grid.Row="1"
+                                        Grid.Column="1"
+                                        TextWrapping="WrapWholeWords">
+                                        <Run
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="{x:Bind Country}" />
+                                        <Run
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text=" • " />
+                                        <Run
+                                            FontSize="12"
+                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                            Text="{x:Bind Tags}" />
+                                    </TextBlock>
+
+                                    <!--  Preview & Add Buttons  -->
+                                    <StackPanel
+                                        Grid.Row="2"
+                                        Grid.Column="0"
+                                        Grid.ColumnSpan="2"
+                                        Margin="0,4,0,0"
+                                        Orientation="Horizontal"
+                                        Spacing="8">
+                                        <Button
+                                            Click="PreviewButton_Click"
+                                            Tag="{x:Bind}"
+                                            ToolTipService.ToolTip="Preview station">
+                                            <FontIcon FontSize="14" Glyph="&#xE768;" />
+                                        </Button>
+                                        <Button
+                                            Click="AddStationButton_Click"
+                                            Content="Add Station"
+                                            Style="{StaticResource AccentButtonStyle}"
+                                            Tag="{x:Bind}" />
+                                    </StackPanel>
                                 </Grid>
-
-                                <!--  Station Name  -->
-                                <TextBlock
-                                    Grid.Row="0"
-                                    Grid.Column="1"
-                                    FontWeight="SemiBold"
-                                    Text="{x:Bind Name}"
-                                    TextWrapping="WrapWholeWords" />
-
-                                <!--  Station Info  -->
-                                <TextBlock
-                                    Grid.Row="1"
-                                    Grid.Column="1"
-                                    TextWrapping="WrapWholeWords">
-                                    <Run
-                                        FontSize="12"
-                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                        Text="{x:Bind Country}" />
-                                    <Run
-                                        FontSize="12"
-                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                        Text=" • " />
-                                    <Run
-                                        FontSize="12"
-                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                        Text="{x:Bind Tags}" />
-                                </TextBlock>
-
-                                <!--  Add Button  -->
-                                <Button
-                                    Grid.Row="2"
-                                    Grid.Column="0"
-                                    Grid.ColumnSpan="2"
-                                    Margin="0,4,0,0"
-                                    Click="AddStationButton_Click"
-                                    Content="Add Station"
-                                    Style="{StaticResource AccentButtonStyle}"
-                                    Tag="{x:Bind}" />
-                            </Grid>
+                            </Border>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>

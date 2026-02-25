@@ -1,7 +1,9 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using System;
 using Trdo.Models;
+using Trdo.Services;
 using Trdo.ViewModels;
 
 namespace Trdo.Pages;
@@ -11,8 +13,13 @@ namespace Trdo.Pages;
 /// </summary>
 public sealed partial class SearchStation : Page
 {
+    private const string PlayGlyph = "\uE768";
+    private const string PauseGlyph = "\uE769";
+
     public SearchStationViewModel ViewModel { get; }
     private ShellViewModel? _shellViewModel;
+    private Button? _activePreviewButton;
+    private string? _previewingStationUrl;
 
     public SearchStation()
     {
@@ -21,6 +28,7 @@ public sealed partial class SearchStation : Page
         DataContext = ViewModel;
 
         Loaded += SearchStation_Loaded;
+        Unloaded += SearchStation_Unloaded;
     }
 
     private void SearchStation_Loaded(object sender, RoutedEventArgs e)
@@ -28,6 +36,14 @@ public sealed partial class SearchStation : Page
         // Find the ShellViewModel from the parent page
         _shellViewModel = FindShellViewModel();
         SearchTextBox.Focus(FocusState.Programmatic);
+
+        RadioPlayerService.Instance.PlaybackStateChanged += OnPlaybackStateChanged;
+    }
+
+    private void SearchStation_Unloaded(object sender, RoutedEventArgs e)
+    {
+        RadioPlayerService.Instance.PlaybackStateChanged -= OnPlaybackStateChanged;
+        StopPreview();
     }
 
     private ShellViewModel? FindShellViewModel()
@@ -45,10 +61,76 @@ public sealed partial class SearchStation : Page
         return null;
     }
 
+    private void PreviewButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.Tag is not RadioBrowserStation station)
+            return;
+
+        string stationUrl = station.GetStreamUrl();
+
+        if (_previewingStationUrl == stationUrl && RadioPlayerService.Instance.IsPlaying)
+        {
+            // Same station is playing, pause it
+            RadioPlayerService.Instance.Pause();
+            SetButtonGlyph(button, PlayGlyph);
+            _activePreviewButton = null;
+            _previewingStationUrl = null;
+            return;
+        }
+
+        // Reset old preview button icon if switching stations
+        if (_activePreviewButton != null && _activePreviewButton != button)
+        {
+            SetButtonGlyph(_activePreviewButton, PlayGlyph);
+        }
+
+        // Start previewing the new station
+        RadioPlayerService.Instance.SetStreamUrl(stationUrl);
+        RadioPlayerService.Instance.SetStationName(station.Name);
+        RadioPlayerService.Instance.Play();
+
+        SetButtonGlyph(button, PauseGlyph);
+        _activePreviewButton = button;
+        _previewingStationUrl = stationUrl;
+    }
+
+    private void OnPlaybackStateChanged(object? sender, bool isPlaying)
+    {
+        if (_activePreviewButton == null)
+            return;
+
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_activePreviewButton != null)
+            {
+                SetButtonGlyph(_activePreviewButton, isPlaying ? PauseGlyph : PlayGlyph);
+            }
+        });
+    }
+
+    private static void SetButtonGlyph(Button button, string glyph)
+    {
+        if (button.Content is FontIcon icon)
+        {
+            icon.Glyph = glyph;
+        }
+    }
+
+    private void StopPreview()
+    {
+        if (_previewingStationUrl != null)
+        {
+            RadioPlayerService.Instance.Pause();
+            _activePreviewButton = null;
+            _previewingStationUrl = null;
+        }
+    }
+
     private void AddStationButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button button && button.Tag is RadioBrowserStation station)
         {
+            StopPreview();
             // Navigate to AddStation page with the selected station
             _shellViewModel?.NavigateToAddStationPage(station);
         }
@@ -56,12 +138,14 @@ public sealed partial class SearchStation : Page
 
     private void ManualEntryButton_Click(object sender, RoutedEventArgs e)
     {
+        StopPreview();
         // Navigate to manual entry page
         _shellViewModel?.NavigateToAddStationPage();
     }
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
     {
+        StopPreview();
         // Navigate back without adding
         _shellViewModel?.GoBack();
     }
