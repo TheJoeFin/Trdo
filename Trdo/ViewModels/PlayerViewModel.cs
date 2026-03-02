@@ -302,6 +302,22 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     /// </summary>
     public string BufferLevelDescription => _player.Watchdog.BufferLevelDescription;
 
+    /// <summary>
+    /// Gets or sets the silence detection timeout in seconds.
+    /// If audio is silent for longer than this, the stream will be restarted.
+    /// </summary>
+    public double SilenceTimeoutSeconds
+    {
+        get => _player.Watchdog.SilenceTimeoutSeconds;
+        set
+        {
+            if (Math.Abs(value - _player.Watchdog.SilenceTimeoutSeconds) < 0.01) return;
+            Debug.WriteLine($"[PlayerViewModel] Setting SilenceTimeoutSeconds to {value}");
+            _player.Watchdog.SilenceTimeoutSeconds = value;
+            OnPropertyChanged();
+        }
+    }
+
     public string WatchdogStatus
     {
         get => _watchdogStatus;

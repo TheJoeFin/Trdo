@@ -1,12 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Trdo.Models;
+using Trdo.Services;
 using Windows.ApplicationModel;
+using Windows.Storage;
+using Windows.Storage.Pickers;
 
 namespace Trdo.ViewModels;
 
-public class SettingsViewModel : INotifyPropertyChanged
+public partial class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly PlayerViewModel _playerViewModel;
     private bool _isStartupEnabled;
@@ -40,6 +46,11 @@ public class SettingsViewModel : INotifyPropertyChanged
             {
                 OnPropertyChanged(nameof(BufferLevel));
                 OnPropertyChanged(nameof(BufferLevelDescription));
+            }
+            else if (args.PropertyName == nameof(PlayerViewModel.SilenceTimeoutSeconds))
+            {
+                OnPropertyChanged(nameof(SilenceTimeoutSeconds));
+                OnPropertyChanged(nameof(SilenceTimeoutDisplay));
             }
         };
 
@@ -161,6 +172,27 @@ public class SettingsViewModel : INotifyPropertyChanged
     /// </summary>
     public string BufferLevelDescription => _playerViewModel.BufferLevelDescription;
 
+    /// <summary>
+    /// Gets or sets the silence detection timeout in seconds.
+    /// If audio is silent for longer than this, the stream will be restarted.
+    /// </summary>
+    public double SilenceTimeoutSeconds
+    {
+        get => _playerViewModel.SilenceTimeoutSeconds;
+        set
+        {
+            if (Math.Abs(value - _playerViewModel.SilenceTimeoutSeconds) < 0.01) return;
+            _playerViewModel.SilenceTimeoutSeconds = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SilenceTimeoutDisplay));
+        }
+    }
+
+    /// <summary>
+    /// Gets a formatted display string for the current silence timeout value.
+    /// </summary>
+    public string SilenceTimeoutDisplay => $"{SilenceTimeoutSeconds:0}s";
+
     private async Task InitializeStartupTaskAsync()
     {
         try
@@ -234,6 +266,87 @@ public class SettingsViewModel : INotifyPropertyChanged
 
         // Reflect actual state after operation
         UpdateStartupStateFromTask();
+    }
+
+    /// <summary>
+    /// Imports radio stations from a playlist file (M3U, M3U8, or PLS).
+    /// </summary>
+    public async Task<int> ImportStationsAsync(nint windowHandle)
+    {
+        FileOpenPicker picker = new();
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
+        picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
+        picker.FileTypeFilter.Add(".m3u");
+        picker.FileTypeFilter.Add(".m3u8");
+        picker.FileTypeFilter.Add(".pls");
+
+        StorageFile? file = await picker.PickSingleFileAsync();
+        if (file is null)
+            return 0;
+
+        string content = await FileIO.ReadTextAsync(file);
+        List<RadioStation> imported = PlaylistImportExportService.ImportFromFile(file.Path, content);
+
+        if (imported.Count == 0)
+            return 0;
+
+        PlayerViewModel player = PlayerViewModel.Shared;
+        int addedCount = 0;
+        foreach (RadioStation station in imported)
+        {
+            bool alreadyExists = false;
+            foreach (RadioStation existing in player.Stations)
+            {
+                if (string.Equals(existing.Name, station.Name, StringComparison.Ordinal) &&
+                    string.Equals(existing.StreamUrl, station.StreamUrl, StringComparison.Ordinal) &&
+                    string.Equals(existing.Homepage, station.Homepage, StringComparison.Ordinal) &&
+                    string.Equals(existing.FaviconUrl, station.FaviconUrl, StringComparison.Ordinal))
+                {
+                    alreadyExists = true;
+                    break;
+                }
+            }
+
+            if (!alreadyExists)
+            {
+                player.Stations.Add(station);
+                addedCount++;
+            }
+        }
+
+        if (addedCount > 0)
+            RadioStationService.Instance.SaveStations(player.Stations);
+
+        return addedCount;
+    }
+
+    /// <summary>
+    /// Exports all radio stations to a playlist file (M3U, M3U8, or PLS).
+    /// </summary>
+    public async Task<bool> ExportStationsAsync(nint windowHandle)
+    {
+        PlayerViewModel player = PlayerViewModel.Shared;
+        if (player.Stations.Count == 0)
+            return false;
+
+        FileSavePicker picker = new();
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
+        picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
+        picker.SuggestedFileName = "Trdo Stations";
+        picker.FileTypeChoices.Add("M3U Playlist", [".m3u"]);
+        picker.FileTypeChoices.Add("PLS Playlist", [".pls"]);
+
+        StorageFile? file = await picker.PickSaveFileAsync();
+        if (file is null)
+            return false;
+
+        string extension = Path.GetExtension(file.Name).ToLowerInvariant();
+        string content = extension == ".pls"
+            ? PlaylistImportExportService.ExportToPls(player.Stations)
+            : PlaylistImportExportService.ExportToM3u(player.Stations);
+
+        await FileIO.WriteTextAsync(file, content);
+        return true;
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

@@ -1,0 +1,226 @@
+using NAudio.Wave;
+using System;
+using System.Diagnostics;
+
+namespace Trdo.Services;
+
+/// <summary>
+/// Monitors the system audio output using WASAPI loopback capture to detect silence.
+/// When the captured audio RMS falls below a threshold for a configurable duration,
+/// raises a <see cref="SilenceDetected"/> event.
+/// </summary>
+public sealed partial class AudioSilenceMonitorService : IDisposable
+{
+    private WasapiLoopbackCapture? _capture;
+    private readonly object _lock = new();
+    private volatile bool _isMonitoring;
+    private DateTime _silenceStartTime;
+    private volatile bool _isSilent;
+    private double _silenceTimeoutSeconds = 5.0;
+
+    // RMS threshold below which audio is considered "silent".
+    // 32-bit float samples: typical quiet system noise sits around 0.0001–0.001.
+    private const float SilenceRmsThreshold = 0.001f;
+
+    // Throttle UI-facing level updates to ~30 fps for responsive visualisation
+    private DateTime _lastLevelUpdate = DateTime.MinValue;
+    private const double LevelUpdateIntervalMs = 33;
+
+    // Track the peak RMS between UI updates so short transients aren't lost
+    private float _peakSinceLastUpdate;
+
+    /// <summary>
+    /// Raised when silence has been detected for longer than <see cref="SilenceTimeoutSeconds"/>.
+    /// </summary>
+    public event EventHandler? SilenceDetected;
+
+    /// <summary>
+    /// Raised periodically (~10 fps) with the current RMS audio level.
+    /// Consumers can use this for visual feedback (e.g. level bars).
+    /// Fires on the NAudio capture thread — marshal to UI thread before touching XAML.
+    /// </summary>
+    public event Action<float>? AudioLevelUpdated;
+
+    /// <summary>
+    /// Gets or sets the silence timeout in seconds.
+    /// If audio output is silent for longer than this value the <see cref="SilenceDetected"/> event fires.
+    /// Clamped to [1, 60].
+    /// </summary>
+    public double SilenceTimeoutSeconds
+    {
+        get => _silenceTimeoutSeconds;
+        set => _silenceTimeoutSeconds = Math.Clamp(value, 1.0, 60.0);
+    }
+
+    /// <summary>
+    /// Gets whether the monitor is currently capturing audio.
+    /// </summary>
+    public bool IsMonitoring => _isMonitoring;
+
+    /// <summary>
+    /// Starts monitoring the default audio output device for silence.
+    /// </summary>
+    public void Start()
+    {
+        lock (_lock)
+        {
+            if (_isMonitoring) return;
+
+            try
+            {
+                WasapiLoopbackCapture capture = new();
+                capture.DataAvailable += OnDataAvailable;
+                capture.RecordingStopped += OnRecordingStopped;
+
+                _isSilent = false;
+                _peakSinceLastUpdate = 0;
+                _capture = capture;
+                capture.StartRecording();
+                _isMonitoring = true;
+                Debug.WriteLine("[SilenceMonitor] Started monitoring audio output");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SilenceMonitor] Failed to start: {ex.Message}");
+                DisposeCapture();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Stops monitoring and releases the capture device.
+    /// </summary>
+    public void Stop()
+    {
+        bool wasMonitoring;
+        lock (_lock)
+        {
+            wasMonitoring = _isMonitoring;
+            _isMonitoring = false;
+            _isSilent = false;
+        }
+
+        if (wasMonitoring)
+        {
+            DisposeCapture();
+            Debug.WriteLine("[SilenceMonitor] Stopped monitoring");
+        }
+    }
+
+    private void OnDataAvailable(object? sender, WaveInEventArgs e)
+    {
+        if (!_isMonitoring || e.BytesRecorded == 0) return;
+
+        float rms = CalculateRms(e.Buffer, e.BytesRecorded);
+
+        // Track peak between UI frames so short transients aren't swallowed
+        if (rms > _peakSinceLastUpdate)
+            _peakSinceLastUpdate = rms;
+
+        // Throttled level update for UI visualisation
+        DateTime now = DateTime.UtcNow;
+        if ((now - _lastLevelUpdate).TotalMilliseconds >= LevelUpdateIntervalMs)
+        {
+            _lastLevelUpdate = now;
+            AudioLevelUpdated?.Invoke(_peakSinceLastUpdate);
+            _peakSinceLastUpdate = 0;
+        }
+
+        if (rms < SilenceRmsThreshold)
+        {
+            if (!_isSilent)
+            {
+                _isSilent = true;
+                _silenceStartTime = DateTime.UtcNow;
+                Debug.WriteLine($"[SilenceMonitor] Silence started (RMS: {rms:F6})");
+            }
+
+            double silenceDuration = (DateTime.UtcNow - _silenceStartTime).TotalSeconds;
+            if (silenceDuration >= _silenceTimeoutSeconds)
+            {
+                Debug.WriteLine($"[SilenceMonitor] Silence threshold exceeded: {silenceDuration:F1}s >= {_silenceTimeoutSeconds}s");
+                _isSilent = false; // Reset to avoid repeated triggers until audio resumes
+                SilenceDetected?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        else
+        {
+            if (_isSilent)
+            {
+                double silenceDuration = (DateTime.UtcNow - _silenceStartTime).TotalSeconds;
+                Debug.WriteLine($"[SilenceMonitor] Audio resumed after {silenceDuration:F1}s silence (RMS: {rms:F6})");
+            }
+            _isSilent = false;
+        }
+    }
+
+    private void OnRecordingStopped(object? sender, StoppedEventArgs e)
+    {
+        if (e.Exception != null)
+        {
+            Debug.WriteLine($"[SilenceMonitor] Recording stopped with error: {e.Exception.Message}");
+        }
+        else
+        {
+            Debug.WriteLine("[SilenceMonitor] Recording stopped");
+        }
+    }
+
+    /// <summary>
+    /// Calculates the Root Mean Square of 32-bit IEEE float audio samples.
+    /// </summary>
+    private static float CalculateRms(byte[] buffer, int bytesRecorded)
+    {
+        int sampleCount = bytesRecorded / 4; // 32-bit float = 4 bytes per sample
+        if (sampleCount == 0) return 0f;
+
+        double sumOfSquares = 0;
+        for (int i = 0; i + 4 <= bytesRecorded; i += 4)
+        {
+            float sample = BitConverter.ToSingle(buffer, i);
+            sumOfSquares += sample * sample;
+        }
+
+        return (float)Math.Sqrt(sumOfSquares / sampleCount);
+    }
+
+    /// <summary>
+    /// Safely disposes the current capture device outside the lock to prevent
+    /// deadlocks with NAudio's internal capture thread.
+    /// </summary>
+    private void DisposeCapture()
+    {
+        WasapiLoopbackCapture? capture;
+        lock (_lock)
+        {
+            capture = _capture;
+            _capture = null;
+        }
+
+        if (capture != null)
+        {
+            try
+            {
+                capture.DataAvailable -= OnDataAvailable;
+                capture.RecordingStopped -= OnRecordingStopped;
+                capture.StopRecording();
+            }
+            catch { }
+
+            try
+            {
+                capture.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[SilenceMonitor] Error disposing capture: {ex.Message}");
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        _isMonitoring = false;
+        DisposeCapture();
+    }
+}

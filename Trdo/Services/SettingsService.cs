@@ -8,6 +8,46 @@ namespace Trdo.Services;
 public static class SettingsService
 {
     private const string IsFirstRunKey = "IsFirstRun";
+    private const string IsVolumeSliderVisibleKey = "IsVolumeSliderVisible";
+
+    /// <summary>
+    /// Gets or sets whether the volume slider is visible on the playing page.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsVolumeSliderVisible
+    {
+        get
+        {
+            try
+            {
+                if (ApplicationData.Current.LocalSettings.Values.TryGetValue(IsVolumeSliderVisibleKey, out object? value))
+                {
+                    return value switch
+                    {
+                        bool b => b,
+                        string s when bool.TryParse(s, out bool b2) => b2,
+                        _ => true
+                    };
+                }
+                return true;
+            }
+            catch
+            {
+                return true;
+            }
+        }
+        set
+        {
+            try
+            {
+                ApplicationData.Current.LocalSettings.Values[IsVolumeSliderVisibleKey] = value;
+            }
+            catch
+            {
+                // Silently fail if unable to save
+            }
+        }
+    }
 
     /// <summary>
     /// Gets whether this is the first run of the application

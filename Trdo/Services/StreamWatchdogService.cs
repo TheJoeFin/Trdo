@@ -12,10 +12,11 @@ namespace Trdo.Services;
 /// Monitors the radio stream and automatically resumes playback when the stream stops unexpectedly.
 /// Also tracks stutter patterns and can automatically increase buffer when stuttering is detected.
 /// </summary>
-public sealed class StreamWatchdogService : IDisposable
+public sealed partial class StreamWatchdogService : IDisposable
 {
     private readonly RadioPlayerService _playerService;
     private readonly DispatcherQueue _uiQueue;
+    private readonly AudioSilenceMonitorService _silenceMonitor;
     private CancellationTokenSource? _cts;
     private Task? _monitoringTask;
     private bool _isEnabled;
@@ -25,7 +26,7 @@ public sealed class StreamWatchdogService : IDisposable
     private TimeSpan _lastPosition;
     private DateTime _lastPositionChangeTime;
     private double _lastBufferingProgress;
-    private int _consecutiveSilentChecks;
+    private volatile bool _isRecovering;
 
     // Stutter detection tracking
     private readonly Queue<DateTime> _recoveryAttempts = new();
@@ -33,14 +34,14 @@ public sealed class StreamWatchdogService : IDisposable
     private double _currentBufferLevel;
     private const string AutoBufferIncreaseKey = "AutoBufferIncreaseEnabled";
     private const string BufferLevelKey = "BufferLevel";
+    private const string SilenceTimeoutKey = "SilenceTimeoutSeconds";
+    private const double DefaultSilenceTimeoutSeconds = 5.0;
 
     // Configuration
     private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(5);
     private readonly TimeSpan _recoveryDelay = TimeSpan.FromSeconds(3);
     private readonly int _maxConsecutiveFailures = 3;
     private readonly TimeSpan _backoffDelay = TimeSpan.FromSeconds(30);
-    private readonly TimeSpan _silenceDetectionThreshold = TimeSpan.FromSeconds(10);
-    private readonly int _maxConsecutiveSilentChecks = 2; // 2 checks * 5 seconds = 10 seconds
 
     // Stutter detection configuration
     private const int StutterThreshold = 3;  // Number of recovery attempts to trigger stutter detection
@@ -52,6 +53,30 @@ public sealed class StreamWatchdogService : IDisposable
     public event EventHandler<StreamWatchdogEventArgs>? StreamStatusChanged;
     public event EventHandler<StutterDetectedEventArgs>? StutterDetected;
     public event EventHandler<double>? BufferLevelChanged;
+
+    /// <summary>
+    /// Raised periodically with the current audio output RMS level (0–1 scale).
+    /// Forwarded from the NAudio silence monitor for UI visualisation.
+    /// Fires on a background thread — marshal to the UI thread before touching XAML.
+    /// </summary>
+    public event Action<float>? AudioLevelUpdated;
+
+    /// <summary>
+    /// Gets or sets the silence detection timeout in seconds.
+    /// If the audio output is silent for longer than this while the stream is supposed to be playing,
+    /// a recovery attempt is triggered. Persisted to local settings.
+    /// </summary>
+    public double SilenceTimeoutSeconds
+    {
+        get => _silenceMonitor.SilenceTimeoutSeconds;
+        set
+        {
+            if (Math.Abs(_silenceMonitor.SilenceTimeoutSeconds - value) < 0.01) return;
+            _silenceMonitor.SilenceTimeoutSeconds = value;
+            SaveSilenceTimeoutSetting();
+            Debug.WriteLine($"[Watchdog] Silence timeout set to: {value}s");
+        }
+    }
 
     public bool IsEnabled
     {
@@ -150,10 +175,15 @@ public sealed class StreamWatchdogService : IDisposable
         _lastPosition = TimeSpan.Zero;
         _lastPositionChangeTime = DateTime.UtcNow;
         _lastBufferingProgress = 0;
-        _consecutiveSilentChecks = 0;
 
-        // Load auto-buffer settings
+        // Initialize NAudio silence monitor
+        _silenceMonitor = new AudioSilenceMonitorService();
+        _silenceMonitor.SilenceDetected += OnSilenceDetected;
+        _silenceMonitor.AudioLevelUpdated += OnAudioLevelFromMonitor;
+
+        // Load settings
         LoadAutoBufferSettings();
+        LoadSilenceTimeoutSetting();
     }
 
     private void LoadAutoBufferSettings()
@@ -213,6 +243,47 @@ public sealed class StreamWatchdogService : IDisposable
         }
     }
 
+    private void LoadSilenceTimeoutSetting()
+    {
+        try
+        {
+            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(SilenceTimeoutKey, out object? value))
+            {
+                double timeout = value switch
+                {
+                    double d => d,
+                    int i => (double)i,
+                    string s when double.TryParse(s, out double d2) => d2,
+                    _ => DefaultSilenceTimeoutSeconds
+                };
+                _silenceMonitor.SilenceTimeoutSeconds = Math.Clamp(timeout, 1.0, 60.0);
+            }
+            else
+            {
+                _silenceMonitor.SilenceTimeoutSeconds = DefaultSilenceTimeoutSeconds;
+            }
+            Debug.WriteLine($"[Watchdog] Loaded silence timeout: {_silenceMonitor.SilenceTimeoutSeconds}s");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Watchdog] Error loading silence timeout: {ex.Message}");
+            _silenceMonitor.SilenceTimeoutSeconds = DefaultSilenceTimeoutSeconds;
+        }
+    }
+
+    private void SaveSilenceTimeoutSetting()
+    {
+        try
+        {
+            ApplicationData.Current.LocalSettings.Values[SilenceTimeoutKey] = _silenceMonitor.SilenceTimeoutSeconds;
+            Debug.WriteLine($"[Watchdog] Saved silence timeout: {_silenceMonitor.SilenceTimeoutSeconds}s");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Watchdog] Error saving silence timeout: {ex.Message}");
+        }
+    }
+
     /// <summary>
     /// Notify the watchdog that the user intentionally started playback.
     /// </summary>
@@ -220,8 +291,8 @@ public sealed class StreamWatchdogService : IDisposable
     {
         _userIntendedPlayback = true;
         _consecutiveFailures = 0;
-        _consecutiveSilentChecks = 0;
         _lastPositionChangeTime = DateTime.UtcNow;
+        StartSilenceMonitor();
         Debug.WriteLine("[Watchdog] User started playback - monitoring active");
     }
 
@@ -232,7 +303,7 @@ public sealed class StreamWatchdogService : IDisposable
     {
         _userIntendedPlayback = false;
         _consecutiveFailures = 0;
-        _consecutiveSilentChecks = 0;
+        StopSilenceMonitor();
         Debug.WriteLine("[Watchdog] User paused playback - recovery disabled");
     }
 
@@ -246,9 +317,11 @@ public sealed class StreamWatchdogService : IDisposable
 
         _cts = new CancellationTokenSource();
         _consecutiveFailures = 0;
-        _consecutiveSilentChecks = 0;
         _lastPositionChangeTime = DateTime.UtcNow;
         _monitoringTask = Task.Run(() => MonitorStreamAsync(_cts.Token));
+
+        if (_userIntendedPlayback)
+            StartSilenceMonitor();
 
         RaiseStatusChanged("Watchdog started", StreamWatchdogStatus.Monitoring);
     }
@@ -261,6 +334,7 @@ public sealed class StreamWatchdogService : IDisposable
         _cts?.Cancel();
         _monitoringTask = null;
         _userIntendedPlayback = false;
+        StopSilenceMonitor();
         RaiseStatusChanged("Watchdog stopped", StreamWatchdogStatus.Stopped);
     }
 
@@ -334,7 +408,6 @@ public sealed class StreamWatchdogService : IDisposable
                 if (timeSinceLastCheck > _checkInterval)
                 {
                     _consecutiveFailures++;
-                    _consecutiveSilentChecks = 0; // Reset silent checks when not playing
                     Debug.WriteLine($"[Watchdog] Stream stopped unexpectedly. Attempt {_consecutiveFailures}/{_maxConsecutiveFailures}");
 
                     RaiseStatusChanged($"Stream stopped. Recovery attempt {_consecutiveFailures}/{_maxConsecutiveFailures}",
@@ -360,55 +433,30 @@ public sealed class StreamWatchdogService : IDisposable
                 return;
             }
 
-            // Stream is playing - check if audio is actually progressing
-            // Don't overwrite user intention if they manually started
+            // Stream is playing - NAudio silence monitor handles actual audio detection
             if (!_userIntendedPlayback)
             {
                 _userIntendedPlayback = true;
-                Debug.WriteLine("[Watchdog] Stream is playing - monitoring active");
+                StartSilenceMonitor();
+                Debug.WriteLine("[Watchdog] Stream is playing - silence monitoring active");
             }
             _consecutiveFailures = 0;
 
-            // Check if position or buffering progress has changed
+            // Log position/buffering for debugging (silence detection is handled by NAudio)
             bool positionChanged = currentPosition != _lastPosition;
             bool bufferingProgressChanged = Math.Abs(currentBufferingProgress - _lastBufferingProgress) > 0.01;
 
             if (positionChanged || bufferingProgressChanged)
             {
-                // Stream is healthy - audio is progressing
                 _lastPosition = currentPosition;
                 _lastBufferingProgress = currentBufferingProgress;
                 _lastPositionChangeTime = DateTime.UtcNow;
-                _consecutiveSilentChecks = 0;
                 Debug.WriteLine($"[Watchdog] Stream healthy - Position: {currentPosition}, Buffering: {currentBufferingProgress:P0}");
             }
             else
             {
-                // Position hasn't changed - potential silent stream
-                TimeSpan silenceDuration = DateTime.UtcNow - _lastPositionChangeTime;
-                
-                if (silenceDuration > _silenceDetectionThreshold)
-                {
-                    _consecutiveSilentChecks++;
-                    Debug.WriteLine($"[Watchdog] Silent stream detected for {silenceDuration.TotalSeconds:F1}s. Check {_consecutiveSilentChecks}/{_maxConsecutiveSilentChecks}");
-
-                    if (_consecutiveSilentChecks >= _maxConsecutiveSilentChecks)
-                    {
-                        // Stream is playing but no audio for too long - attempt recovery
-                        Debug.WriteLine("[Watchdog] Stream is silent - attempting recovery");
-                        RaiseStatusChanged("Stream is silent - refreshing", StreamWatchdogStatus.Recovering);
-                        
-                        _consecutiveSilentChecks = 0;
-                        _lastPositionChangeTime = DateTime.UtcNow;
-                        
-                        await AttemptRecoveryAsync(cancellationToken);
-                    }
-                }
-                else
-                {
-                    // Within threshold, keep monitoring
-                    Debug.WriteLine($"[Watchdog] Position unchanged for {silenceDuration.TotalSeconds:F1}s (threshold: {_silenceDetectionThreshold.TotalSeconds}s)");
-                }
+                TimeSpan stalledDuration = DateTime.UtcNow - _lastPositionChangeTime;
+                Debug.WriteLine($"[Watchdog] Position unchanged for {stalledDuration.TotalSeconds:F1}s (NAudio silence monitor active)");
             }
 
             _lastStateCheck = DateTime.UtcNow;
@@ -550,6 +598,63 @@ public sealed class StreamWatchdogService : IDisposable
         Debug.WriteLine("[Watchdog] Buffer level reset to default");
     }
 
+    /// <summary>
+    /// Starts the NAudio silence monitor if the watchdog is enabled and user intends playback.
+    /// </summary>
+    private void StartSilenceMonitor()
+    {
+        if (_isEnabled && _userIntendedPlayback)
+        {
+            _silenceMonitor.Start();
+        }
+    }
+
+    /// <summary>
+    /// Stops the NAudio silence monitor.
+    /// </summary>
+    private void StopSilenceMonitor()
+    {
+        _silenceMonitor.Stop();
+    }
+
+    private void OnAudioLevelFromMonitor(float level) => AudioLevelUpdated?.Invoke(level);
+
+    /// <summary>
+    /// Called by the NAudio silence monitor when audio output has been silent
+    /// for longer than <see cref="SilenceTimeoutSeconds"/>.
+    /// </summary>
+    private async void OnSilenceDetected(object? sender, EventArgs e)
+    {
+        if (!_isEnabled || !_userIntendedPlayback || _isRecovering)
+            return;
+
+        try
+        {
+            _isRecovering = true;
+            StopSilenceMonitor();
+
+            Debug.WriteLine("[Watchdog] NAudio silence detected - attempting stream recovery");
+            RaiseStatusChanged("Stream is silent - refreshing", StreamWatchdogStatus.Recovering);
+
+            CancellationToken token = _cts?.Token ?? CancellationToken.None;
+            await AttemptRecoveryAsync(token);
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("[Watchdog] Silence recovery cancelled");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[Watchdog] Error during silence recovery: {ex.Message}");
+            RaiseStatusChanged($"Recovery error: {ex.Message}", StreamWatchdogStatus.Error);
+        }
+        finally
+        {
+            _isRecovering = false;
+            StartSilenceMonitor();
+        }
+    }
+
     private Task RunOnUiThreadAsync(Action action)
     {
         TaskCompletionSource<bool> tcs = new();
@@ -639,6 +744,9 @@ public sealed class StreamWatchdogService : IDisposable
     public void Dispose()
     {
         Stop();
+        _silenceMonitor.SilenceDetected -= OnSilenceDetected;
+        _silenceMonitor.AudioLevelUpdated -= OnAudioLevelFromMonitor;
+        _silenceMonitor.Dispose();
         _cts?.Dispose();
     }
 }

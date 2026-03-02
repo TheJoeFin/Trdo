@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Diagnostics;
@@ -63,6 +64,11 @@ public sealed partial class PlayingPage : Page
         UpdatePlayButtonState();
         UpdateStationSelection();
         UpdateFavoriteButtonState();
+
+        // Restore volume slider visibility from persisted setting
+        VolumeControlGrid.Visibility = SettingsService.IsVolumeSliderVisible
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
         // Find the ShellViewModel from the parent page
         _shellViewModel = FindShellViewModel();
@@ -395,5 +401,33 @@ public sealed partial class PlayingPage : Page
         }
 
         Debug.WriteLine("=== StationsListView_SelectionChanged END ===");
+    }
+
+    private void VolumeControl_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    {
+        int delta = e.GetCurrentPoint((UIElement)sender).Properties.MouseWheelDelta;
+        double change = (delta / 120.0) * 0.02;
+        ViewModel.Volume = Math.Clamp(ViewModel.Volume + change, 0, 1);
+        e.Handled = true;
+    }
+
+    private void HideVolumeSlider_Click(object sender, RoutedEventArgs e)
+    {
+        VolumeControlGrid.Visibility = Visibility.Collapsed;
+        SettingsService.IsVolumeSliderVisible = false;
+    }
+
+    private void ShowVolumeSlider_Click(object sender, RoutedEventArgs e)
+    {
+        VolumeControlGrid.Visibility = Visibility.Visible;
+        SettingsService.IsVolumeSliderVisible = true;
+    }
+
+    private void PageContextMenu_Opening(object sender, object e)
+    {
+        if (VolumeControlGrid.Visibility == Visibility.Visible)
+        {
+            ((MenuFlyout)sender).Hide();
+        }
     }
 }
