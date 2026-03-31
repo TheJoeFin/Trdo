@@ -356,8 +356,11 @@ public sealed partial class PlayingPage : Page
         if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
         {
             Debug.WriteLine($"[PlayingPage] Edit station clicked: {station.Name}");
-            // Navigate to AddStation page in edit mode with the station data
-            _shellViewModel?.NavigateToAddStationPage(station);
+            // Open a pop-out window for editing so the flyout closing doesn't clear the fields
+            ManualStationWindow editWindow = new();
+            WindowHelper.Track(editWindow);
+            editWindow.LoadStationForEdit(station);
+            editWindow.Activate();
         }
     }
 

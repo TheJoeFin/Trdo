@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
+using Trdo.Controls;
 using Trdo.Models;
 using Trdo.Services;
 using Trdo.ViewModels;
@@ -139,8 +140,10 @@ public sealed partial class SearchStation : Page
     private void ManualEntryButton_Click(object sender, RoutedEventArgs e)
     {
         StopPreview();
-        // Navigate to manual entry page
-        _shellViewModel?.NavigateToAddStationPage();
+        // Open a pop-out window for manual station entry so the flyout closing doesn't clear the fields
+        ManualStationWindow addWindow = new();
+        WindowHelper.Track(addWindow);
+        addWindow.Activate();
     }
 
     private void CancelButton_Click(object sender, RoutedEventArgs e)
