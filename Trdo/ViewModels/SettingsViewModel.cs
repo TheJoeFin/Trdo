@@ -28,7 +28,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
 
     public SettingsViewModel()
     {
-        _playerViewModel = new PlayerViewModel();
+        _playerViewModel = PlayerViewModel.Shared;
 
         // Subscribe to PlayerViewModel property changes
         _playerViewModel.PropertyChanged += (_, args) =>
