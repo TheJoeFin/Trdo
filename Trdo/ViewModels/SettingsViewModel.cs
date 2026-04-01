@@ -20,6 +20,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     private string _startupToggleText = "Off";
     private string _watchdogToggleText = "Off";
     private string _autoBufferToggleText = "Off";
+    private string _autoPlayOnStartupToggleText = "Off";
     private StartupTask? _startupTask;
     private bool _initDone;
 
@@ -27,7 +28,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
 
     public SettingsViewModel()
     {
-        _playerViewModel = new PlayerViewModel();
+        _playerViewModel = PlayerViewModel.Shared;
 
         // Subscribe to PlayerViewModel property changes
         _playerViewModel.PropertyChanged += (_, args) =>
@@ -57,6 +58,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         // Initialize toggle text
         WatchdogToggleText = GetToggleText(_playerViewModel.WatchdogEnabled);
         AutoBufferToggleText = GetToggleText(_playerViewModel.AutoBufferIncreaseEnabled);
+        AutoPlayOnStartupToggleText = GetToggleText(SettingsService.AutoPlayOnStartup);
 
         // Initialize startup task
         _ = InitializeStartupTaskAsync();
@@ -97,6 +99,32 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         {
             if (value == _startupToggleText) return;
             _startupToggleText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether the app should automatically start playing the last selected station on startup.
+    /// </summary>
+    public bool IsAutoPlayOnStartupEnabled
+    {
+        get => SettingsService.AutoPlayOnStartup;
+        set
+        {
+            if (value == SettingsService.AutoPlayOnStartup) return;
+            SettingsService.AutoPlayOnStartup = value;
+            OnPropertyChanged();
+            AutoPlayOnStartupToggleText = GetToggleText(value);
+        }
+    }
+
+    public string AutoPlayOnStartupToggleText
+    {
+        get => _autoPlayOnStartupToggleText;
+        set
+        {
+            if (value == _autoPlayOnStartupToggleText) return;
+            _autoPlayOnStartupToggleText = value;
             OnPropertyChanged();
         }
     }

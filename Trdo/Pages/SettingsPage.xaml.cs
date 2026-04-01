@@ -13,6 +13,7 @@ public sealed partial class SettingsPage : Page
     private static extern nint GetActiveWindow();
 
     private float _displayLevel;
+    private bool _isUpdatingAutoPlayToggle;
 
     public SettingsViewModel ViewModel { get; }
 
@@ -132,5 +133,50 @@ public sealed partial class SettingsPage : Page
             ImportExportInfoBar.Message = $"Export failed: {ex.Message}";
             ImportExportInfoBar.IsOpen = true;
         }
+    }
+
+    private void AutoPlayOnStartupToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_isUpdatingAutoPlayToggle)
+        {
+            return;
+        }
+
+        bool isEnabled = ViewModel.IsAutoPlayOnStartupEnabled;
+        bool requestedState = AutoPlayOnStartupToggle.IsOn;
+
+        if (requestedState == isEnabled)
+        {
+            if (!requestedState)
+            {
+                AutoPlayWarningInfoBar.IsOpen = false;
+            }
+
+            return;
+        }
+
+        if (!requestedState)
+        {
+            ViewModel.IsAutoPlayOnStartupEnabled = false;
+            AutoPlayWarningInfoBar.IsOpen = false;
+            return;
+        }
+
+        SetAutoPlayToggle(false);
+        AutoPlayWarningInfoBar.IsOpen = true;
+    }
+
+    private void ConfirmAutoPlayButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.IsAutoPlayOnStartupEnabled = true;
+        SetAutoPlayToggle(true);
+        AutoPlayWarningInfoBar.IsOpen = false;
+    }
+
+    private void SetAutoPlayToggle(bool value)
+    {
+        _isUpdatingAutoPlayToggle = true;
+        AutoPlayOnStartupToggle.IsOn = value;
+        _isUpdatingAutoPlayToggle = false;
     }
 }

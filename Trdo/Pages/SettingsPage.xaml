@@ -43,9 +43,52 @@
                     </Grid>
                 </StackPanel>
 
-                <!--  Enable Auto-Resume setting  -->
+                <!--  Play on startup setting  -->
                 <StackPanel Spacing="8">
-                    <TextBlock FontSize="16" Text="Enable Auto-Resume" />
+                    <TextBlock FontSize="16" Text="Play on startup" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Automatically start playing the last selected station when the app opens"
+                        TextWrapping="Wrap" />
+                    <InfoBar
+                        x:Name="AutoPlayWarningInfoBar"
+                        IsClosable="True"
+                        IsOpen="False"
+                        Message="This means audio will begin playing when Trdo is launched. It could be disruptive. Are you sure you want to enable this?"
+                        Severity="Warning">
+                        <InfoBar.ActionButton>
+                            <Button
+                                x:Name="ConfirmAutoPlayButton"
+                                Click="ConfirmAutoPlayButton_Click"
+                                Content="Enable anyway" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            x:Name="AutoPlayOnStartupToggle"
+                            Toggled="AutoPlayOnStartupToggle_Toggled"
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsAutoPlayOnStartupEnabled, Mode=OneWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Text="{x:Bind ViewModel.AutoPlayOnStartupToggleText, Mode=OneWay}" />
+                    </Grid>
+                </StackPanel>
+
+                <!--  Auto-recover setting  -->
+                <StackPanel Spacing="8">
+                    <TextBlock FontSize="16" Text="Auto-recover" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="If the stream is unstable or stops unexpectedly, Trdo will try to recover playback automatically"
+                        TextWrapping="Wrap" />
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                         <ToggleSwitch
                             x:Name="WatchdogToggle"
