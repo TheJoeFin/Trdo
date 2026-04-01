@@ -20,6 +20,7 @@
     <None Remove="Assets\Radio-White.ico" />
     <None Remove="Assets\spotify.svg" />
     <None Remove="Assets\Tutorial.gif" />
+    <None Remove="Controls\ManualStationWindow.xaml" />
     <None Remove="Controls\TutorialWindow.xaml" />
     <None Remove="Pages\AddStation.xaml" />
     <None Remove="Pages\FavoritesPage.xaml" />
@@ -116,6 +117,11 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\ShellPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\ManualStationWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
