@@ -29,8 +29,11 @@ internal static partial class WindowPlacementService
         int x = placeLeft ? anchor.X - width - WindowMargin : anchor.X + WindowMargin;
         int y = placeAbove ? anchor.Y - height - WindowMargin : anchor.Y + WindowMargin;
 
-        x = System.Math.Clamp(x, workArea.X, workArea.X + workArea.Width - width);
-        y = System.Math.Clamp(y, workArea.Y, workArea.Y + workArea.Height - height);
+        int maxX = System.Math.Max(workArea.X, workArea.X + workArea.Width - width);
+        int maxY = System.Math.Max(workArea.Y, workArea.Y + workArea.Height - height);
+
+        x = System.Math.Clamp(x, workArea.X, maxX);
+        y = System.Math.Clamp(y, workArea.Y, maxY);
 
         window.MoveAndResize(x, y, width, height);
     }
