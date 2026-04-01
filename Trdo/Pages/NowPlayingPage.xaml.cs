@@ -38,6 +38,18 @@ public sealed partial class NowPlayingPage : Page
         await ViewModel.SearchOnSpotify();
     }
 
+    private async void AppleMusicLink_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[NowPlayingPage] Apple Music link clicked");
+        await ViewModel.SearchOnAppleMusic();
+    }
+
+    private async void YouTubeMusicLink_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[NowPlayingPage] YouTube Music link clicked");
+        await ViewModel.SearchOnYouTubeMusic();
+    }
+
     private void FavoriteCurrentTrack_Click(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine("[NowPlayingPage] Favorite current track clicked");

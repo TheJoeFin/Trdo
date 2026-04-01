@@ -61,6 +61,12 @@ public sealed partial class FavoritesPage : Page
                 if (expandedContent != null)
                 {
                     expandedContent.Visibility = Visibility.Visible;
+
+                    // Apply per-service visibility based on settings
+                    SetButtonVisibility(container, "SpotifyButton", Trdo.Services.SettingsService.IsSpotifyEnabled);
+                    SetButtonVisibility(container, "DiscogsButton", Trdo.Services.SettingsService.IsDiscogsEnabled);
+                    SetButtonVisibility(container, "AppleMusicButton", Trdo.Services.SettingsService.IsAppleMusicEnabled);
+                    SetButtonVisibility(container, "YouTubeMusicButton", Trdo.Services.SettingsService.IsYouTubeMusicEnabled);
                 }
                 _previouslySelectedContainer = container;
             }
@@ -107,6 +113,53 @@ public sealed partial class FavoritesPage : Page
             string searchQuery = Uri.EscapeDataString(track.DisplayText);
             string url = $"https://www.discogs.com/search?q={searchQuery}";
             await Launcher.LaunchUriAsync(new Uri(url));
+        }
+    }
+
+    private async void AppleMusicLink_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is HyperlinkButton button && button.Tag is FavoriteTrack track)
+        {
+            Debug.WriteLine($"[FavoritesPage] Apple Music search for: {track.DisplayText}");
+            string searchQuery = Uri.EscapeDataString(track.DisplayText);
+
+            // Try Apple Music app first
+            string appleMusicAppUri = $"itmss://music.apple.com/search?term={searchQuery}";
+            try
+            {
+                bool success = await Launcher.LaunchUriAsync(new Uri(appleMusicAppUri));
+                if (!success)
+                {
+                    string webUrl = $"https://music.apple.com/search?term={searchQuery}";
+                    await Launcher.LaunchUriAsync(new Uri(webUrl));
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[FavoritesPage] Error launching Apple Music app: {ex.Message}");
+                string webUrl = $"https://music.apple.com/search?term={searchQuery}";
+                await Launcher.LaunchUriAsync(new Uri(webUrl));
+            }
+        }
+    }
+
+    private async void YouTubeMusicLink_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is HyperlinkButton button && button.Tag is FavoriteTrack track)
+        {
+            Debug.WriteLine($"[FavoritesPage] YouTube Music search for: {track.DisplayText}");
+            string searchQuery = Uri.EscapeDataString(track.DisplayText);
+            string url = $"https://music.youtube.com/search?q={searchQuery}";
+            await Launcher.LaunchUriAsync(new Uri(url));
+        }
+    }
+
+    private void SetButtonVisibility(DependencyObject container, string buttonName, bool isVisible)
+    {
+        HyperlinkButton? button = FindDescendant<HyperlinkButton>(container, buttonName);
+        if (button != null)
+        {
+            button.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 

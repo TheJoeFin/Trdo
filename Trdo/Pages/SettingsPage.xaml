@@ -234,6 +234,84 @@
                     </Grid>
                 </StackPanel>
 
+                <!--  Music search services  -->
+                <StackPanel Spacing="8">
+                    <TextBlock FontSize="16" Text="Music search services" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Choose which services appear as search links on the Now Playing and Favorites pages"
+                        TextWrapping="Wrap" />
+
+                    <!--  Spotify  -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsSpotifyEnabled, Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock FontSize="14" Text="Spotify" />
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Opens the Spotify app, or Spotify web if not installed" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  Discogs  -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsDiscogsEnabled, Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock FontSize="14" Text="Discogs" />
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Opens the Discogs music database website" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  Apple Music  -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsAppleMusicEnabled, Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock FontSize="14" Text="Apple Music" />
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Opens the Apple Music app if installed, otherwise the Apple Music website" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  YouTube Music  -->
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsYouTubeMusicEnabled, Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock FontSize="14" Text="YouTube Music" />
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Opens the YouTube Music website" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
                 <!--  Import / Export station list  -->
                 <StackPanel Spacing="8">
                     <TextBlock FontSize="16" Text="Import / Export stations" />

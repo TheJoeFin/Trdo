@@ -137,6 +137,7 @@
 
                                 <!--  Search on Spotify  -->
                                 <HyperlinkButton
+                                    x:Name="SpotifyButton"
                                     Padding="4"
                                     Click="SpotifyLink_Click"
                                     Tag="{x:Bind}">
@@ -152,12 +153,37 @@
 
                                 <!--  Search on Discogs  -->
                                 <HyperlinkButton
+                                    x:Name="DiscogsButton"
                                     Padding="4"
                                     Click="DiscogsLink_Click"
                                     Tag="{x:Bind}">
                                     <StackPanel Orientation="Horizontal" Spacing="6">
                                         <FontIcon FontSize="12" Glyph="&#xE721;" />
                                         <TextBlock FontSize="11" Text="Discogs" />
+                                    </StackPanel>
+                                </HyperlinkButton>
+
+                                <!--  Search on Apple Music  -->
+                                <HyperlinkButton
+                                    x:Name="AppleMusicButton"
+                                    Padding="4"
+                                    Click="AppleMusicLink_Click"
+                                    Tag="{x:Bind}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon FontSize="12" Glyph="&#xEC4F;" />
+                                        <TextBlock FontSize="11" Text="Apple Music" />
+                                    </StackPanel>
+                                </HyperlinkButton>
+
+                                <!--  Search on YouTube Music  -->
+                                <HyperlinkButton
+                                    x:Name="YouTubeMusicButton"
+                                    Padding="4"
+                                    Click="YouTubeMusicLink_Click"
+                                    Tag="{x:Bind}">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon FontSize="12" Glyph="&#xE714;" />
+                                        <TextBlock FontSize="11" Text="YouTube Music" />
                                     </StackPanel>
                                 </HyperlinkButton>
 
