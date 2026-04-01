@@ -43,6 +43,30 @@
                     </Grid>
                 </StackPanel>
 
+                <!--  Play on startup setting  -->
+                <StackPanel Spacing="8">
+                    <TextBlock FontSize="16" Text="Play on startup" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Automatically start playing the last selected station when the app opens"
+                        TextWrapping="Wrap" />
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            x:Name="AutoPlayOnStartupToggle"
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsAutoPlayOnStartupEnabled, Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <TextBlock
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            FontSize="16"
+                            Text="{x:Bind ViewModel.AutoPlayOnStartupToggleText, Mode=OneWay}" />
+                    </Grid>
+                </StackPanel>
+
                 <!--  Enable Auto-Resume setting  -->
                 <StackPanel Spacing="8">
                     <TextBlock FontSize="16" Text="Enable Auto-Resume" />

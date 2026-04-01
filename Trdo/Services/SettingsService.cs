@@ -9,6 +9,46 @@ public static class SettingsService
 {
     private const string IsFirstRunKey = "IsFirstRun";
     private const string IsVolumeSliderVisibleKey = "IsVolumeSliderVisible";
+    private const string AutoPlayOnStartupKey = "AutoPlayOnStartup";
+
+    /// <summary>
+    /// Gets or sets whether the app should automatically start playing the last selected station on startup.
+    /// Defaults to false when no saved value exists.
+    /// </summary>
+    public static bool AutoPlayOnStartup
+    {
+        get
+        {
+            try
+            {
+                if (ApplicationData.Current.LocalSettings.Values.TryGetValue(AutoPlayOnStartupKey, out object? value))
+                {
+                    return value switch
+                    {
+                        bool b => b,
+                        string s when bool.TryParse(s, out bool b2) => b2,
+                        _ => false
+                    };
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        set
+        {
+            try
+            {
+                ApplicationData.Current.LocalSettings.Values[AutoPlayOnStartupKey] = value;
+            }
+            catch
+            {
+                // Silently fail if unable to save
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets whether the volume slider is visible on the playing page.
