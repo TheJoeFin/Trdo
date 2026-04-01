@@ -11,7 +11,6 @@ using Trdo.Controls;
 using Trdo.Pages;
 using Trdo.Services;
 using Trdo.ViewModels;
-using Windows.UI;
 using Windows.UI.ViewManagement;
 using WinUIEx;
 
@@ -157,6 +156,7 @@ public partial class App : Application
 
     private void TrayIcon_ContextMenu(TrayIcon sender, TrayIconEventArgs args)
     {
+        WindowPlacementService.CapturePointerAnchor();
         args.Flyout = CreateFlyout();
     }
 
@@ -166,6 +166,7 @@ public partial class App : Application
         if (!_playerVm.CanPlay)
         {
             // No stations available, show the flyout to encourage user to add a station
+            WindowPlacementService.CapturePointerAnchor();
             args.Flyout = CreateFlyout();
             return;
         }
@@ -190,6 +191,7 @@ public partial class App : Application
 
         flyout.Opened += (s, e) =>
         {
+            WindowPlacementService.CapturePointerAnchor();
             // Clear the back stack when flyout opens to prevent accumulation
             Services.NavigationService.Instance.ClearBackStack();
         };
@@ -272,7 +274,7 @@ public partial class App : Application
         }
         else if (_playerVm.IsPlaying)
         {
-                
+
             // Include now playing info if available
             if (_playerVm.HasNowPlaying)
             {

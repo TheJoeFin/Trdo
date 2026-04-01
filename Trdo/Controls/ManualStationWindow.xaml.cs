@@ -1,4 +1,5 @@
 using Trdo.Models;
+using Trdo.Services;
 using Trdo.ViewModels;
 using WinUIEx;
 
@@ -38,6 +39,7 @@ public sealed partial class ManualStationWindow : WindowEx
         // Focus the station name field once the window is ready
         if (args.WindowActivationState != Microsoft.UI.Xaml.WindowActivationState.Deactivated)
         {
+            WindowPlacementService.PositionWindowNearAnchor(this, 400, 500);
             StationNameTextBox.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
             Activated -= ManualStationWindow_Activated;
         }

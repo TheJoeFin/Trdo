@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using System;
 using Trdo.Controls;
 using Trdo.Models;
 using Trdo.Services;
@@ -141,6 +140,7 @@ public sealed partial class SearchStation : Page
     {
         StopPreview();
         // Open a pop-out window for manual station entry so the flyout closing doesn't clear the fields
+        WindowPlacementService.CapturePointerAnchor();
         ManualStationWindow addWindow = new();
         WindowHelper.Track(addWindow);
         addWindow.Activate();

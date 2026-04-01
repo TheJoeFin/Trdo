@@ -13,6 +13,16 @@ public sealed partial class TutorialWindow : WindowEx
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(ModernTitlebar);
+        Activated += TutorialWindow_Activated;
+    }
+
+    private void TutorialWindow_Activated(object sender, Microsoft.UI.Xaml.WindowActivatedEventArgs args)
+    {
+        if (args.WindowActivationState == Microsoft.UI.Xaml.WindowActivationState.Deactivated)
+            return;
+
+        WindowPlacementService.PositionWindowNearAnchor(this, 400, 600);
+        Activated -= TutorialWindow_Activated;
     }
 
     private void Button_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
