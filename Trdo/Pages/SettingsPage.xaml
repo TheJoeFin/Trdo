@@ -86,6 +86,20 @@
                     </Grid>
                 </StackPanel>
 
+                <!--  Tray icon click behavior setting  -->
+                <StackPanel Spacing="8">
+                    <TextBlock FontSize="16" Text="Tray icon click behavior" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Choose what happens when you left or right click the tray icon"
+                        TextWrapping="Wrap" />
+                    <ComboBox SelectedIndex="{x:Bind ViewModel.TrayClickBehavior, Mode=TwoWay}">
+                        <ComboBoxItem Content="Left click: play/pause, right click: open flyout (Default)" />
+                        <ComboBoxItem Content="Left click: open flyout, right click: play/pause" />
+                    </ComboBox>
+                </StackPanel>
+
                 <!--  Auto-recover setting  -->
                 <!--  Music search services  -->
                 <StackPanel Spacing="8">

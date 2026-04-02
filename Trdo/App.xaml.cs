@@ -156,24 +156,48 @@ public partial class App : Application
 
     private void TrayIcon_ContextMenu(TrayIcon sender, TrayIconEventArgs args)
     {
-        WindowPlacementService.CapturePointerAnchor();
-        args.Flyout = CreateFlyout();
+        if (SettingsService.TrayClickBehavior == 1)
+        {
+            // Swapped: right click plays/pauses (fall back to flyout if no station selected)
+            if (_playerVm.CanPlay)
+            {
+                _playerVm.Toggle();
+                _ = UpdateTrayIconAsync();
+                return;
+            }
+        }
+
+        // Default: right click opens flyout; also fallback when no station is available
+        ShowFlyout(args);
     }
 
     private void TrayIcon_Selected(TrayIcon sender, TrayIconEventArgs args)
     {
+        if (SettingsService.TrayClickBehavior == 1)
+        {
+            // Swapped: left click opens flyout
+            ShowFlyout(args);
+            return;
+        }
+
+        // Default: left click plays/pauses
         // Check if we can play (have stations available and one selected)
         if (!_playerVm.CanPlay)
         {
             // No stations available, show the flyout to encourage user to add a station
-            WindowPlacementService.CapturePointerAnchor();
-            args.Flyout = CreateFlyout();
+            ShowFlyout(args);
             return;
         }
 
         // We have stations, toggle play/pause
         _playerVm.Toggle();
         _ = UpdateTrayIconAsync();
+    }
+
+    private void ShowFlyout(TrayIconEventArgs args)
+    {
+        WindowPlacementService.CapturePointerAnchor();
+        args.Flyout = CreateFlyout();
     }
 
     private Flyout CreateFlyout()
