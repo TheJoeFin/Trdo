@@ -31,15 +31,18 @@
                             x:Name="StartupToggle"
                             Grid.Column="0"
                             MinWidth="0"
-                            IsEnabled="{x:Bind ViewModel.IsStartupToggleEnabled, Mode=OneWay}"
-                            IsOn="{x:Bind ViewModel.IsStartupEnabled, Mode=TwoWay}"
+                            IsEnabled="{x:Bind ViewModel.IsStartupToggleEnabled,
+                                               Mode=OneWay}"
+                            IsOn="{x:Bind ViewModel.IsStartupEnabled,
+                                          Mode=TwoWay}"
                             OffContent=""
                             OnContent="" />
                         <TextBlock
                             Grid.Column="1"
                             VerticalAlignment="Center"
                             FontSize="16"
-                            Text="{x:Bind ViewModel.StartupToggleText, Mode=OneWay}" />
+                            Text="{x:Bind ViewModel.StartupToggleText,
+                                          Mode=OneWay}" />
                     </Grid>
                 </StackPanel>
 
@@ -67,17 +70,154 @@
                     <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                         <ToggleSwitch
                             x:Name="AutoPlayOnStartupToggle"
-                            Toggled="AutoPlayOnStartupToggle_Toggled"
                             Grid.Column="0"
                             MinWidth="0"
-                            IsOn="{x:Bind ViewModel.IsAutoPlayOnStartupEnabled, Mode=OneWay}"
+                            IsOn="{x:Bind ViewModel.IsAutoPlayOnStartupEnabled,
+                                          Mode=OneWay}"
                             OffContent=""
-                            OnContent="" />
+                            OnContent=""
+                            Toggled="AutoPlayOnStartupToggle_Toggled" />
                         <TextBlock
                             Grid.Column="1"
                             VerticalAlignment="Center"
                             FontSize="16"
-                            Text="{x:Bind ViewModel.AutoPlayOnStartupToggleText, Mode=OneWay}" />
+                            Text="{x:Bind ViewModel.AutoPlayOnStartupToggleText,
+                                          Mode=OneWay}" />
+                    </Grid>
+                </StackPanel>
+
+                <!--  Auto-recover setting  -->
+                <!--  Music search services  -->
+                <StackPanel Spacing="8">
+                    <TextBlock FontSize="16" Text="Music search services" />
+                    <TextBlock
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="Choose which services appear as search links on the Now Playing and Favorites pages"
+                        TextWrapping="Wrap" />
+
+                    <!--  Spotify  -->
+                    <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsSpotifyEnabled,
+                                          Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <Image
+                            Grid.Column="1"
+                            Width="16"
+                            Height="16"
+                            VerticalAlignment="Center">
+                            <Image.Source>
+                                <SvgImageSource UriSource="ms-appx:///Assets/spotify.svg" />
+                            </Image.Source>
+                        </Image>
+                        <StackPanel
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Spacing="2">
+                            <TextBlock FontSize="14" Text="Spotify" />
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Opens the Spotify app, or Spotify web if not installed"
+                                TextWrapping="WrapWholeWords" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  Discogs  -->
+                    <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsDiscogsEnabled,
+                                          Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <Image
+                            Grid.Column="1"
+                            Width="16"
+                            Height="16"
+                            VerticalAlignment="Center">
+                            <Image.Source>
+                                <SvgImageSource UriSource="ms-appx:///Assets/discogs.svg" />
+                            </Image.Source>
+                        </Image>
+                        <StackPanel
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Spacing="2">
+                            <TextBlock FontSize="14" Text="Discogs" />
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Opens the Discogs music database website"
+                                TextWrapping="WrapWholeWords" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  Apple Music  -->
+                    <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsAppleMusicEnabled,
+                                          Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <Image
+                            Grid.Column="1"
+                            Width="16"
+                            Height="16"
+                            VerticalAlignment="Center">
+                            <Image.Source>
+                                <SvgImageSource UriSource="ms-appx:///Assets/apple_music.svg" />
+                            </Image.Source>
+                        </Image>
+                        <StackPanel
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Spacing="2">
+                            <TextBlock FontSize="14" Text="Apple Music" />
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Opens the Apple Music website"
+                                TextWrapping="WrapWholeWords" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--  YouTube Music  -->
+                    <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
+                        <ToggleSwitch
+                            Grid.Column="0"
+                            MinWidth="0"
+                            IsOn="{x:Bind ViewModel.IsYouTubeMusicEnabled,
+                                          Mode=TwoWay}"
+                            OffContent=""
+                            OnContent="" />
+                        <Image
+                            Grid.Column="1"
+                            Width="16"
+                            Height="16"
+                            VerticalAlignment="Center">
+                            <Image.Source>
+                                <SvgImageSource UriSource="ms-appx:///Assets/ytmusic.svg" />
+                            </Image.Source>
+                        </Image>
+                        <StackPanel
+                            Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Spacing="2">
+                            <TextBlock FontSize="14" Text="YouTube Music" />
+                            <TextBlock
+                                FontSize="11"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Opens the YouTube Music website"
+                                TextWrapping="WrapWholeWords" />
+                        </StackPanel>
                     </Grid>
                 </StackPanel>
 
@@ -94,14 +234,16 @@
                             x:Name="WatchdogToggle"
                             Grid.Column="0"
                             MinWidth="0"
-                            IsOn="{x:Bind ViewModel.IsWatchdogEnabled, Mode=TwoWay}"
+                            IsOn="{x:Bind ViewModel.IsWatchdogEnabled,
+                                          Mode=TwoWay}"
                             OffContent=""
                             OnContent="" />
                         <TextBlock
                             Grid.Column="1"
                             VerticalAlignment="Center"
                             FontSize="16"
-                            Text="{x:Bind ViewModel.WatchdogToggleText, Mode=OneWay}" />
+                            Text="{x:Bind ViewModel.WatchdogToggleText,
+                                          Mode=OneWay}" />
                     </Grid>
                 </StackPanel>
 
@@ -121,13 +263,15 @@
                             Minimum="1"
                             SnapsTo="StepValues"
                             StepFrequency="1"
-                            Value="{x:Bind ViewModel.SilenceTimeoutSeconds, Mode=TwoWay}" />
+                            Value="{x:Bind ViewModel.SilenceTimeoutSeconds,
+                                           Mode=TwoWay}" />
                         <TextBlock
                             Grid.Column="1"
                             MinWidth="32"
                             VerticalAlignment="Center"
                             FontSize="16"
-                            Text="{x:Bind ViewModel.SilenceTimeoutDisplay, Mode=OneWay}" />
+                            Text="{x:Bind ViewModel.SilenceTimeoutDisplay,
+                                          Mode=OneWay}" />
                         <!--  Live audio-level bars driven by NAudio loopback  -->
                         <StackPanel
                             Grid.Column="2"
@@ -197,14 +341,16 @@
                             x:Name="AutoBufferToggle"
                             Grid.Column="0"
                             MinWidth="0"
-                            IsOn="{x:Bind ViewModel.IsAutoBufferIncreaseEnabled, Mode=TwoWay}"
+                            IsOn="{x:Bind ViewModel.IsAutoBufferIncreaseEnabled,
+                                          Mode=TwoWay}"
                             OffContent=""
                             OnContent="" />
                         <TextBlock
                             Grid.Column="1"
                             VerticalAlignment="Center"
                             FontSize="16"
-                            Text="{x:Bind ViewModel.AutoBufferToggleText, Mode=OneWay}" />
+                            Text="{x:Bind ViewModel.AutoBufferToggleText,
+                                          Mode=OneWay}" />
                     </Grid>
                 </StackPanel>
 
@@ -224,91 +370,15 @@
                             Minimum="0"
                             SnapsTo="StepValues"
                             StepFrequency="0.1"
-                            Value="{x:Bind ViewModel.BufferLevel, Mode=TwoWay}" />
+                            Value="{x:Bind ViewModel.BufferLevel,
+                                           Mode=TwoWay}" />
                         <TextBlock
                             Grid.Column="1"
                             VerticalAlignment="Center"
                             FontSize="16"
-                            Text="{x:Bind ViewModel.BufferLevelDescription, Mode=OneWay}"
+                            Text="{x:Bind ViewModel.BufferLevelDescription,
+                                          Mode=OneWay}"
                             Visibility="Collapsed" />
-                    </Grid>
-                </StackPanel>
-
-                <!--  Music search services  -->
-                <StackPanel Spacing="8">
-                    <TextBlock FontSize="16" Text="Music search services" />
-                    <TextBlock
-                        FontSize="12"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Choose which services appear as search links on the Now Playing and Favorites pages"
-                        TextWrapping="Wrap" />
-
-                    <!--  Spotify  -->
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <ToggleSwitch
-                            Grid.Column="0"
-                            MinWidth="0"
-                            IsOn="{x:Bind ViewModel.IsSpotifyEnabled, Mode=TwoWay}"
-                            OffContent=""
-                            OnContent="" />
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                            <TextBlock FontSize="14" Text="Spotify" />
-                            <TextBlock
-                                FontSize="11"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Opens the Spotify app, or Spotify web if not installed" />
-                        </StackPanel>
-                    </Grid>
-
-                    <!--  Discogs  -->
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <ToggleSwitch
-                            Grid.Column="0"
-                            MinWidth="0"
-                            IsOn="{x:Bind ViewModel.IsDiscogsEnabled, Mode=TwoWay}"
-                            OffContent=""
-                            OnContent="" />
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                            <TextBlock FontSize="14" Text="Discogs" />
-                            <TextBlock
-                                FontSize="11"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Opens the Discogs music database website" />
-                        </StackPanel>
-                    </Grid>
-
-                    <!--  Apple Music  -->
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <ToggleSwitch
-                            Grid.Column="0"
-                            MinWidth="0"
-                            IsOn="{x:Bind ViewModel.IsAppleMusicEnabled, Mode=TwoWay}"
-                            OffContent=""
-                            OnContent="" />
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                            <TextBlock FontSize="14" Text="Apple Music" />
-                            <TextBlock
-                                FontSize="11"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Opens the Apple Music app if installed, otherwise the Apple Music website" />
-                        </StackPanel>
-                    </Grid>
-
-                    <!--  YouTube Music  -->
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <ToggleSwitch
-                            Grid.Column="0"
-                            MinWidth="0"
-                            IsOn="{x:Bind ViewModel.IsYouTubeMusicEnabled, Mode=TwoWay}"
-                            OffContent=""
-                            OnContent="" />
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                            <TextBlock FontSize="14" Text="YouTube Music" />
-                            <TextBlock
-                                FontSize="11"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Opens the YouTube Music website" />
-                        </StackPanel>
                     </Grid>
                 </StackPanel>
 

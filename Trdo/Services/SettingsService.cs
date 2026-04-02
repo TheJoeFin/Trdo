@@ -1,3 +1,4 @@
+using System;
 using Windows.Storage;
 
 namespace Trdo.Services;
@@ -14,6 +15,8 @@ public static class SettingsService
     private const string IsDiscogsEnabledKey = "IsDiscogsEnabled";
     private const string IsAppleMusicEnabledKey = "IsAppleMusicEnabled";
     private const string IsYouTubeMusicEnabledKey = "IsYouTubeMusicEnabled";
+
+    public static event EventHandler? MusicSearchServicesChanged;
 
     /// <summary>
     /// Gets or sets whether the app should automatically start playing the last selected station on startup.
@@ -159,6 +162,10 @@ public static class SettingsService
         try
         {
             ApplicationData.Current.LocalSettings.Values[key] = value;
+            if (key is IsSpotifyEnabledKey or IsDiscogsEnabledKey or IsAppleMusicEnabledKey or IsYouTubeMusicEnabledKey)
+            {
+                MusicSearchServicesChanged?.Invoke(null, EventArgs.Empty);
+            }
         }
         catch
         {

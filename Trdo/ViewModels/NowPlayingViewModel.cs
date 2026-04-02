@@ -40,6 +40,7 @@ public class NowPlayingViewModel : INotifyPropertyChanged
     {
         // Subscribe to metadata changes for UI updates
         _player.StreamMetadataChanged += OnStreamMetadataChanged;
+        SettingsService.MusicSearchServicesChanged += OnMusicSearchServicesChanged;
 
         // Subscribe to favorites changes to update UI
         _favoritesService.FavoritesChanged += (_, _) =>
@@ -51,6 +52,15 @@ public class NowPlayingViewModel : INotifyPropertyChanged
         UpdateCurrentTrackFavoriteStatus();
 
         Debug.WriteLine($"[NowPlayingViewModel] Initialized with {PlaylistHistory.Count} history items from service");
+    }
+
+    private void OnMusicSearchServicesChanged(object? sender, EventArgs e)
+    {
+        OnPropertyChanged(nameof(IsSpotifyEnabled));
+        OnPropertyChanged(nameof(IsDiscogsEnabled));
+        OnPropertyChanged(nameof(IsAppleMusicEnabled));
+        OnPropertyChanged(nameof(IsYouTubeMusicEnabled));
+        OnPropertyChanged(nameof(HasEnabledMusicServices));
     }
 
     private void OnStreamMetadataChanged(object? sender, StreamMetadata metadata)
@@ -71,6 +81,7 @@ public class NowPlayingViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(IsDiscogsEnabled));
         OnPropertyChanged(nameof(IsAppleMusicEnabled));
         OnPropertyChanged(nameof(IsYouTubeMusicEnabled));
+        OnPropertyChanged(nameof(HasEnabledMusicServices));
 
         // History is now managed by PlaylistHistoryService singleton
         UpdateCurrentTrackFavoriteStatus();
@@ -240,37 +251,14 @@ public class NowPlayingViewModel : INotifyPropertyChanged
 
     /// <summary>
     /// Opens Apple Music search with the current track information.
-    /// Tries to open the local Apple Music app first, falls back to web.
     /// </summary>
     public async Task SearchOnAppleMusic()
     {
         if (!HasMetadata)
             return;
 
-        string query = Uri.EscapeDataString(DisplayText.Length > 0 ? DisplayText : StreamTitle);
-
-        // Try to open the Apple Music app using the itmss: URI scheme
-        string appleMusicAppUri = $"itmss://music.apple.com/search?term={query}";
-        try
-        {
-            bool success = await Launcher.LaunchUriAsync(new Uri(appleMusicAppUri));
-            if (!success)
-            {
-                Debug.WriteLine("[NowPlayingViewModel] Apple Music app not available, falling back to web");
-                await OpenAppleMusicWeb(query);
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[NowPlayingViewModel] Error launching Apple Music app: {ex.Message}");
-            await OpenAppleMusicWeb(query);
-        }
-    }
-
-    private async Task OpenAppleMusicWeb(string query)
-    {
-        string webUrl = $"https://music.apple.com/search?term={query}";
-        await Launcher.LaunchUriAsync(new Uri(webUrl));
+        string searchText = DisplayText.Length > 0 ? DisplayText : StreamTitle;
+        await MusicSearchLinkService.LaunchAppleMusicWebSearchAsync(searchText);
     }
 
     /// <summary>
@@ -305,6 +293,15 @@ public class NowPlayingViewModel : INotifyPropertyChanged
     /// Gets whether YouTube Music search links should be shown.
     /// </summary>
     public bool IsYouTubeMusicEnabled => SettingsService.IsYouTubeMusicEnabled;
+
+    /// <summary>
+    /// Gets whether at least one music service search link should be shown.
+    /// </summary>
+    public bool HasEnabledMusicServices =>
+        IsSpotifyEnabled ||
+        IsDiscogsEnabled ||
+        IsAppleMusicEnabled ||
+        IsYouTubeMusicEnabled;
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {

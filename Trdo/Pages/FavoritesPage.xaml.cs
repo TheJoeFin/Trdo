@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Media;
 using System;
 using System.Diagnostics;
 using Trdo.Models;
+using Trdo.Services;
 using Trdo.ViewModels;
 using Windows.System;
 
@@ -15,6 +16,12 @@ namespace Trdo.Pages;
 public sealed partial class FavoritesPage : Page
 {
     private ListViewItem? _previouslySelectedContainer;
+    private ShellViewModel? _shellViewModel;
+    private static bool HasEnabledMusicServices =>
+        SettingsService.IsSpotifyEnabled ||
+        SettingsService.IsDiscogsEnabled ||
+        SettingsService.IsAppleMusicEnabled ||
+        SettingsService.IsYouTubeMusicEnabled;
 
     public FavoritesViewModel ViewModel { get; }
 
@@ -25,9 +32,31 @@ public sealed partial class FavoritesPage : Page
         InitializeComponent();
         ViewModel = new FavoritesViewModel();
         DataContext = ViewModel;
+        Loaded += FavoritesPage_Loaded;
+        Unloaded += FavoritesPage_Unloaded;
+        SettingsService.MusicSearchServicesChanged += SettingsService_MusicSearchServicesChanged;
 
         Debug.WriteLine($"[FavoritesPage] ViewModel created with {ViewModel.Favorites.Count} favorites");
         Debug.WriteLine("=== FavoritesPage Constructor END ===");
+    }
+
+    private void FavoritesPage_Loaded(object sender, RoutedEventArgs e)
+    {
+        _shellViewModel = FindShellViewModel();
+        Debug.WriteLine($"[FavoritesPage] ShellViewModel found: {_shellViewModel != null}");
+    }
+
+    private void FavoritesPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        SettingsService.MusicSearchServicesChanged -= SettingsService_MusicSearchServicesChanged;
+    }
+
+    private void SettingsService_MusicSearchServicesChanged(object? sender, EventArgs e)
+    {
+        if (_previouslySelectedContainer != null)
+        {
+            ApplyMusicServiceVisibility(_previouslySelectedContainer);
+        }
     }
 
     private void RemoveFavorite_Click(object sender, RoutedEventArgs e)
@@ -44,7 +73,7 @@ public sealed partial class FavoritesPage : Page
         // Collapse the previously selected item
         if (_previouslySelectedContainer != null)
         {
-            StackPanel? previousExpandedContent = FindDescendant<StackPanel>(_previouslySelectedContainer, "ExpandedContent");
+            Grid? previousExpandedContent = FindDescendant<Grid>(_previouslySelectedContainer, "ExpandedContent");
             if (previousExpandedContent != null)
             {
                 previousExpandedContent.Visibility = Visibility.Collapsed;
@@ -57,17 +86,7 @@ public sealed partial class FavoritesPage : Page
             ListViewItem? container = listView.ContainerFromItem(listView.SelectedItem) as ListViewItem;
             if (container != null)
             {
-                StackPanel? expandedContent = FindDescendant<StackPanel>(container, "ExpandedContent");
-                if (expandedContent != null)
-                {
-                    expandedContent.Visibility = Visibility.Visible;
-
-                    // Apply per-service visibility based on settings
-                    SetButtonVisibility(container, "SpotifyButton", Trdo.Services.SettingsService.IsSpotifyEnabled);
-                    SetButtonVisibility(container, "DiscogsButton", Trdo.Services.SettingsService.IsDiscogsEnabled);
-                    SetButtonVisibility(container, "AppleMusicButton", Trdo.Services.SettingsService.IsAppleMusicEnabled);
-                    SetButtonVisibility(container, "YouTubeMusicButton", Trdo.Services.SettingsService.IsYouTubeMusicEnabled);
-                }
+                ApplyMusicServiceVisibility(container);
                 _previouslySelectedContainer = container;
             }
         }
@@ -121,25 +140,7 @@ public sealed partial class FavoritesPage : Page
         if (sender is HyperlinkButton button && button.Tag is FavoriteTrack track)
         {
             Debug.WriteLine($"[FavoritesPage] Apple Music search for: {track.DisplayText}");
-            string searchQuery = Uri.EscapeDataString(track.DisplayText);
-
-            // Try Apple Music app first
-            string appleMusicAppUri = $"itmss://music.apple.com/search?term={searchQuery}";
-            try
-            {
-                bool success = await Launcher.LaunchUriAsync(new Uri(appleMusicAppUri));
-                if (!success)
-                {
-                    string webUrl = $"https://music.apple.com/search?term={searchQuery}";
-                    await Launcher.LaunchUriAsync(new Uri(webUrl));
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[FavoritesPage] Error launching Apple Music app: {ex.Message}");
-                string webUrl = $"https://music.apple.com/search?term={searchQuery}";
-                await Launcher.LaunchUriAsync(new Uri(webUrl));
-            }
+            await MusicSearchLinkService.LaunchAppleMusicWebSearchAsync(track.DisplayText);
         }
     }
 
@@ -154,13 +155,40 @@ public sealed partial class FavoritesPage : Page
         }
     }
 
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[FavoritesPage] Music service settings button clicked");
+        _shellViewModel?.NavigateToSettingsPage();
+    }
+
     private void SetButtonVisibility(DependencyObject container, string buttonName, bool isVisible)
     {
-        HyperlinkButton? button = FindDescendant<HyperlinkButton>(container, buttonName);
+        HyperlinkButton? button = container is FrameworkElement element
+            ? element.FindName(buttonName) as HyperlinkButton
+            : null;
+
         if (button != null)
         {
             button.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
         }
+    }
+
+    private void ApplyMusicServiceVisibility(ListViewItem container)
+    {
+        Grid? expandedContent = FindDescendant<Grid>(container, "ExpandedContent");
+        if (expandedContent == null)
+        {
+            return;
+        }
+
+        expandedContent.Visibility = HasEnabledMusicServices
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+
+        SetButtonVisibility(expandedContent, "SpotifyButton", SettingsService.IsSpotifyEnabled);
+        SetButtonVisibility(expandedContent, "DiscogsButton", SettingsService.IsDiscogsEnabled);
+        SetButtonVisibility(expandedContent, "AppleMusicButton", SettingsService.IsAppleMusicEnabled);
+        SetButtonVisibility(expandedContent, "YouTubeMusicButton", SettingsService.IsYouTubeMusicEnabled);
     }
 
     private T? FindDescendant<T>(DependencyObject parent, string name = "") where T : DependencyObject
@@ -184,6 +212,22 @@ public sealed partial class FavoritesPage : Page
                 return result;
             }
         }
+        return null;
+    }
+
+    private ShellViewModel? FindShellViewModel()
+    {
+        DependencyObject current = this;
+        while (current != null)
+        {
+            if (current is ShellPage shellPage)
+            {
+                return shellPage.ViewModel;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
         return null;
     }
 }
