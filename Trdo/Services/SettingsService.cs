@@ -15,6 +15,7 @@ public static class SettingsService
     private const string IsDiscogsEnabledKey = "IsDiscogsEnabled";
     private const string IsAppleMusicEnabledKey = "IsAppleMusicEnabled";
     private const string IsYouTubeMusicEnabledKey = "IsYouTubeMusicEnabled";
+    private const string TrayClickBehaviorKey = "TrayClickBehavior";
 
     public static event EventHandler? MusicSearchServicesChanged;
 
@@ -134,6 +135,49 @@ public static class SettingsService
     {
         get => GetBoolSetting(IsYouTubeMusicEnabledKey, defaultValue: true);
         set => SetBoolSetting(IsYouTubeMusicEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the tray icon click behavior.
+    /// 0 = left click plays/pauses, right click opens flyout (default).
+    /// 1 = left click opens flyout, right click plays/pauses.
+    /// </summary>
+    public static int TrayClickBehavior
+    {
+        get
+        {
+            try
+            {
+                if (ApplicationData.Current.LocalSettings.Values.TryGetValue(TrayClickBehaviorKey, out object? value))
+                {
+                    return value switch
+                    {
+                        int i => i,
+                        string s when int.TryParse(s, out int i2) => i2,
+                        _ => 0
+                    };
+                }
+                return 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+        set
+        {
+            try
+            {
+                // Only valid values are 0 (default) and 1 (swapped)
+                if (value < 0 || value > 1)
+                    value = 0;
+                ApplicationData.Current.LocalSettings.Values[TrayClickBehaviorKey] = value;
+            }
+            catch
+            {
+                // Silently fail if unable to save
+            }
+        }
     }
 
     private static bool GetBoolSetting(string key, bool defaultValue)

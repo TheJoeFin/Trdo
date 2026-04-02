@@ -241,6 +241,22 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// Gets or sets the tray icon click behavior.
+    /// 0 = left click plays/pauses, right click opens flyout (default).
+    /// 1 = left click opens flyout, right click plays/pauses.
+    /// </summary>
+    public int TrayClickBehavior
+    {
+        get => SettingsService.TrayClickBehavior;
+        set
+        {
+            if (value == SettingsService.TrayClickBehavior) return;
+            SettingsService.TrayClickBehavior = value;
+            OnPropertyChanged();
+        }
+    }
+
     public bool IsWatchdogEnabled
     {
         get => _playerViewModel.WatchdogEnabled;
