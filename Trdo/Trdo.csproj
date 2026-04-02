@@ -18,7 +18,10 @@
   <ItemGroup>
     <None Remove="Assets\Radio-Black.ico" />
     <None Remove="Assets\Radio-White.ico" />
+    <None Remove="Assets\apple_music.svg" />
+    <None Remove="Assets\discogs.svg" />
     <None Remove="Assets\spotify.svg" />
+    <None Remove="Assets\ytmusic.svg" />
     <None Remove="Assets\Tutorial.gif" />
     <None Remove="Controls\ManualStationWindow.xaml" />
     <None Remove="Controls\TutorialWindow.xaml" />
@@ -78,7 +81,16 @@
     <Content Update="Assets\Radio.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Update="Assets\apple_music.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\discogs.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Update="Assets\spotify.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\ytmusic.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Update="Assets\Tutorial.gif">

@@ -1,3 +1,4 @@
+using System;
 using Windows.Storage;
 
 namespace Trdo.Services;
@@ -10,6 +11,12 @@ public static class SettingsService
     private const string IsFirstRunKey = "IsFirstRun";
     private const string IsVolumeSliderVisibleKey = "IsVolumeSliderVisible";
     private const string AutoPlayOnStartupKey = "AutoPlayOnStartup";
+    private const string IsSpotifyEnabledKey = "IsSpotifyEnabled";
+    private const string IsDiscogsEnabledKey = "IsDiscogsEnabled";
+    private const string IsAppleMusicEnabledKey = "IsAppleMusicEnabled";
+    private const string IsYouTubeMusicEnabledKey = "IsYouTubeMusicEnabled";
+
+    public static event EventHandler? MusicSearchServicesChanged;
 
     /// <summary>
     /// Gets or sets whether the app should automatically start playing the last selected station on startup.
@@ -86,6 +93,83 @@ public static class SettingsService
             {
                 // Silently fail if unable to save
             }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether Spotify search links are shown.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsSpotifyEnabled
+    {
+        get => GetBoolSetting(IsSpotifyEnabledKey, defaultValue: true);
+        set => SetBoolSetting(IsSpotifyEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether Discogs search links are shown.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsDiscogsEnabled
+    {
+        get => GetBoolSetting(IsDiscogsEnabledKey, defaultValue: true);
+        set => SetBoolSetting(IsDiscogsEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether Apple Music search links are shown.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsAppleMusicEnabled
+    {
+        get => GetBoolSetting(IsAppleMusicEnabledKey, defaultValue: true);
+        set => SetBoolSetting(IsAppleMusicEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether YouTube Music search links are shown.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsYouTubeMusicEnabled
+    {
+        get => GetBoolSetting(IsYouTubeMusicEnabledKey, defaultValue: true);
+        set => SetBoolSetting(IsYouTubeMusicEnabledKey, value);
+    }
+
+    private static bool GetBoolSetting(string key, bool defaultValue)
+    {
+        try
+        {
+            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(key, out object? value))
+            {
+                return value switch
+                {
+                    bool b => b,
+                    string s when bool.TryParse(s, out bool b2) => b2,
+                    _ => defaultValue
+                };
+            }
+            return defaultValue;
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    private static void SetBoolSetting(string key, bool value)
+    {
+        try
+        {
+            ApplicationData.Current.LocalSettings.Values[key] = value;
+            if (key is IsSpotifyEnabledKey or IsDiscogsEnabledKey or IsAppleMusicEnabledKey or IsYouTubeMusicEnabledKey)
+            {
+                MusicSearchServicesChanged?.Invoke(null, EventArgs.Empty);
+            }
+        }
+        catch
+        {
+            // Silently fail if unable to save
         }
     }
 

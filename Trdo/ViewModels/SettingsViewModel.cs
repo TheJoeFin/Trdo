@@ -21,6 +21,10 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     private string _watchdogToggleText = "Off";
     private string _autoBufferToggleText = "Off";
     private string _autoPlayOnStartupToggleText = "Off";
+    private string _spotifyToggleText = "On";
+    private string _discogsToggleText = "On";
+    private string _appleMusicToggleText = "On";
+    private string _youtubeMusicToggleText = "On";
     private StartupTask? _startupTask;
     private bool _initDone;
 
@@ -59,6 +63,10 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         WatchdogToggleText = GetToggleText(_playerViewModel.WatchdogEnabled);
         AutoBufferToggleText = GetToggleText(_playerViewModel.AutoBufferIncreaseEnabled);
         AutoPlayOnStartupToggleText = GetToggleText(SettingsService.AutoPlayOnStartup);
+        SpotifyToggleText = GetToggleText(SettingsService.IsSpotifyEnabled);
+        DiscogsToggleText = GetToggleText(SettingsService.IsDiscogsEnabled);
+        AppleMusicToggleText = GetToggleText(SettingsService.IsAppleMusicEnabled);
+        YouTubeMusicToggleText = GetToggleText(SettingsService.IsYouTubeMusicEnabled);
 
         // Initialize startup task
         _ = InitializeStartupTaskAsync();
@@ -125,6 +133,110 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         {
             if (value == _autoPlayOnStartupToggleText) return;
             _autoPlayOnStartupToggleText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether Spotify search links are shown in Now Playing and Favorites.
+    /// </summary>
+    public bool IsSpotifyEnabled
+    {
+        get => SettingsService.IsSpotifyEnabled;
+        set
+        {
+            if (value == SettingsService.IsSpotifyEnabled) return;
+            SettingsService.IsSpotifyEnabled = value;
+            OnPropertyChanged();
+            SpotifyToggleText = GetToggleText(value);
+        }
+    }
+
+    public string SpotifyToggleText
+    {
+        get => _spotifyToggleText;
+        set
+        {
+            if (value == _spotifyToggleText) return;
+            _spotifyToggleText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether Discogs search links are shown in Now Playing and Favorites.
+    /// </summary>
+    public bool IsDiscogsEnabled
+    {
+        get => SettingsService.IsDiscogsEnabled;
+        set
+        {
+            if (value == SettingsService.IsDiscogsEnabled) return;
+            SettingsService.IsDiscogsEnabled = value;
+            OnPropertyChanged();
+            DiscogsToggleText = GetToggleText(value);
+        }
+    }
+
+    public string DiscogsToggleText
+    {
+        get => _discogsToggleText;
+        set
+        {
+            if (value == _discogsToggleText) return;
+            _discogsToggleText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether Apple Music search links are shown in Now Playing and Favorites.
+    /// </summary>
+    public bool IsAppleMusicEnabled
+    {
+        get => SettingsService.IsAppleMusicEnabled;
+        set
+        {
+            if (value == SettingsService.IsAppleMusicEnabled) return;
+            SettingsService.IsAppleMusicEnabled = value;
+            OnPropertyChanged();
+            AppleMusicToggleText = GetToggleText(value);
+        }
+    }
+
+    public string AppleMusicToggleText
+    {
+        get => _appleMusicToggleText;
+        set
+        {
+            if (value == _appleMusicToggleText) return;
+            _appleMusicToggleText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether YouTube Music search links are shown in Now Playing and Favorites.
+    /// </summary>
+    public bool IsYouTubeMusicEnabled
+    {
+        get => SettingsService.IsYouTubeMusicEnabled;
+        set
+        {
+            if (value == SettingsService.IsYouTubeMusicEnabled) return;
+            SettingsService.IsYouTubeMusicEnabled = value;
+            OnPropertyChanged();
+            YouTubeMusicToggleText = GetToggleText(value);
+        }
+    }
+
+    public string YouTubeMusicToggleText
+    {
+        get => _youtubeMusicToggleText;
+        set
+        {
+            if (value == _youtubeMusicToggleText) return;
+            _youtubeMusicToggleText = value;
             OnPropertyChanged();
         }
     }
