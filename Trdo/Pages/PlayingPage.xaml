@@ -103,8 +103,10 @@
                 CanDragItems="True"
                 CanReorderItems="True"
                 DragItemsCompleted="StationsListView_DragItemsCompleted"
-                ItemsSource="{x:Bind ViewModel.Stations, Mode=OneWay}"
-                SelectedItem="{x:Bind ViewModel.SelectedStation, Mode=TwoWay}"
+                ItemsSource="{x:Bind ViewModel.Stations,
+                                     Mode=OneWay}"
+                SelectedItem="{x:Bind ViewModel.SelectedStation,
+                                      Mode=TwoWay}"
                 SelectionChanged="StationsListView_SelectionChanged"
                 SelectionMode="Single">
                 <ListView.ItemContainerStyle>
@@ -162,7 +164,9 @@
                                 Height="24"
                                 Margin="0,0,12,0"
                                 VerticalAlignment="Center"
-                                Visibility="{x:Bind FaviconUrl, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}">
+                                Visibility="{x:Bind FaviconUrl,
+                                                    Converter={StaticResource NullToVisibilityConverter},
+                                                    Mode=OneWay}">
                                 <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="4">
                                     <Image Source="{x:Bind FaviconUrl, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}" Stretch="UniformToFill" />
                                 </Border>
@@ -187,7 +191,9 @@
                 Padding="6"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                Visibility="{x:Bind ViewModel.Stations.Count, Mode=OneWay, Converter={StaticResource CountToEmptyStateVisibilityConverter}}">
+                Visibility="{x:Bind ViewModel.Stations.Count,
+                                    Mode=OneWay,
+                                    Converter={StaticResource CountToEmptyStateVisibilityConverter}}">
                 <StackPanel
                     MaxWidth="240"
                     HorizontalAlignment="Center"
@@ -261,7 +267,8 @@
                 Minimum="0"
                 SmallChange="0.01"
                 StepFrequency="0.01"
-                Value="{x:Bind ViewModel.Volume, Mode=TwoWay}" />
+                Value="{x:Bind ViewModel.Volume,
+                               Mode=TwoWay}" />
         </Grid>
 
         <!--  Now Playing Info  -->
@@ -276,7 +283,9 @@
             Click="NowPlayingInfo_Click"
             CornerRadius="4"
             ToolTipService.ToolTip="Click for details"
-            Visibility="{x:Bind ViewModel.HasNowPlaying, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+            Visibility="{x:Bind ViewModel.HasNowPlaying,
+                                Mode=OneWay,
+                                Converter={StaticResource BooleanToVisibilityConverter}}">
             <Grid VerticalAlignment="Center" ColumnSpacing="6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -300,14 +309,16 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     RepeatBehavior="Forever"
                     Speed="40"
-                    Text="{x:Bind ViewModel.NowPlaying, Mode=OneWay}" />
+                    Text="{x:Bind ViewModel.NowPlaying,
+                                  Mode=OneWay}" />
                 <TextBlock
                     x:Name="NowPlayingText"
                     Grid.Column="1"
                     VerticalAlignment="Center"
                     FontSize="12"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="{x:Bind ViewModel.NowPlaying, Mode=OneWay}"
+                    Text="{x:Bind ViewModel.NowPlaying,
+                                  Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
                     TextWrapping="NoWrap"
                     Visibility="Collapsed" />

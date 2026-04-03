@@ -9,7 +9,6 @@ using Trdo.Controls;
 using Trdo.Models;
 using Trdo.Services;
 using Trdo.ViewModels;
-using WinUIEx;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -23,9 +22,9 @@ public sealed partial class PlayingPage : Page
     private const int MinIndexForScrolling = 3;
     private const string FilledStar = "\uE735";
     private const string OutlineStar = "\uE734";
-    
+
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;
-    
+
     public PlayerViewModel ViewModel { get; }
     private ShellViewModel? _shellViewModel;
 
@@ -117,7 +116,7 @@ public sealed partial class PlayingPage : Page
         UpdatePlayButtonState();
         UpdateStationSelection();
 
-        if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata) || 
+        if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata) ||
                  e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
         {
             UpdateFavoriteButtonState();
@@ -321,7 +320,7 @@ public sealed partial class PlayingPage : Page
     private void FavoriteButton_Click(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine("[PlayingPage] Favorite button clicked");
-        
+
         if (ViewModel.CurrentMetadata?.HasMetadata != true)
         {
             Debug.WriteLine("[PlayingPage] No metadata to favorite");
@@ -331,7 +330,7 @@ public sealed partial class PlayingPage : Page
         string stationName = ViewModel.SelectedStation?.Name ?? "Unknown Station";
         bool isFavorited = _favoritesService.ToggleFavorite(ViewModel.CurrentMetadata, stationName);
         Debug.WriteLine($"[PlayingPage] Track favorite toggled. IsFavorited: {isFavorited}");
-        
+
         // UpdateFavoriteButtonState will be called via the FavoritesChanged event
     }
 
@@ -356,8 +355,12 @@ public sealed partial class PlayingPage : Page
         if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
         {
             Debug.WriteLine($"[PlayingPage] Edit station clicked: {station.Name}");
-            // Navigate to AddStation page in edit mode with the station data
-            _shellViewModel?.NavigateToAddStationPage(station);
+            // Open a pop-out window for editing so the flyout closing doesn't clear the fields
+            WindowPlacementService.CapturePointerAnchor();
+            ManualStationWindow editWindow = new();
+            WindowHelper.Track(editWindow);
+            editWindow.LoadStationForEdit(station);
+            editWindow.Activate();
         }
     }
 

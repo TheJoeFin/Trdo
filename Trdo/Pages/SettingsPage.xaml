@@ -10,6 +10,35 @@
 
     <Page.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <Style x:Key="SettingCardStyle" TargetType="Border">
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="10" />
+        </Style>
+        <Style x:Key="NestedSettingCardStyle" TargetType="Border">
+            <Setter Property="Padding" Value="10" />
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+        </Style>
+        <Style x:Key="SettingTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="SettingDescriptionStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="SettingStatusStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
     </Page.Resources>
 
     <Grid RowDefinitions="Auto,*" RowSpacing="24">
@@ -22,198 +51,360 @@
 
         <!--  Settings Content  -->
         <ScrollView Grid.Row="1">
-            <StackPanel Spacing="24">
-                <!--  Open on startup setting  -->
-                <StackPanel Spacing="8">
-                    <TextBlock FontSize="16" Text="Open on startup" />
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <ToggleSwitch
-                            x:Name="StartupToggle"
-                            Grid.Column="0"
-                            MinWidth="0"
-                            IsEnabled="{x:Bind ViewModel.IsStartupToggleEnabled, Mode=OneWay}"
-                            IsOn="{x:Bind ViewModel.IsStartupEnabled, Mode=TwoWay}"
-                            OffContent=""
-                            OnContent="" />
-                        <TextBlock
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            FontSize="16"
-                            Text="{x:Bind ViewModel.StartupToggleText, Mode=OneWay}" />
-                    </Grid>
-                </StackPanel>
-
-                <!--  Enable Auto-Resume setting  -->
-                <StackPanel Spacing="8">
-                    <TextBlock FontSize="16" Text="Enable Auto-Resume" />
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <ToggleSwitch
-                            x:Name="WatchdogToggle"
-                            Grid.Column="0"
-                            MinWidth="0"
-                            IsOn="{x:Bind ViewModel.IsWatchdogEnabled, Mode=TwoWay}"
-                            OffContent=""
-                            OnContent="" />
-                        <TextBlock
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            FontSize="16"
-                            Text="{x:Bind ViewModel.WatchdogToggleText, Mode=OneWay}" />
-                    </Grid>
-                </StackPanel>
-
-                <!--  Silence detection timeout setting  -->
-                <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.IsWatchdogEnabled, Mode=OneWay, Converter={StaticResource BoolToVis}}">
-                    <TextBlock FontSize="16" Text="Silence detection timeout" />
-                    <TextBlock
-                        FontSize="12"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Seconds of silence before the stream is automatically restarted"
-                        TextWrapping="Wrap" />
-                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
-                        <Slider
-                            x:Name="SilenceTimeoutSlider"
-                            Grid.Column="0"
-                            Maximum="30"
-                            Minimum="1"
-                            SnapsTo="StepValues"
-                            StepFrequency="1"
-                            Value="{x:Bind ViewModel.SilenceTimeoutSeconds, Mode=TwoWay}" />
-                        <TextBlock
-                            Grid.Column="1"
-                            MinWidth="32"
-                            VerticalAlignment="Center"
-                            FontSize="16"
-                            Text="{x:Bind ViewModel.SilenceTimeoutDisplay, Mode=OneWay}" />
-                        <!--  Live audio-level bars driven by NAudio loopback  -->
-                        <StackPanel
-                            Grid.Column="2"
-                            Height="18"
-                            VerticalAlignment="Center"
-                            Orientation="Horizontal"
-                            Spacing="2">
-                            <Rectangle
-                                x:Name="Bar1"
-                                Width="3"
-                                Height="4"
-                                VerticalAlignment="Bottom"
-                                Fill="{ThemeResource AccentFillColorDefaultBrush}"
-                                Opacity="0.15"
-                                RadiusX="1"
-                                RadiusY="1" />
-                            <Rectangle
-                                x:Name="Bar2"
-                                Width="3"
-                                Height="7"
-                                VerticalAlignment="Bottom"
-                                Fill="{ThemeResource AccentFillColorDefaultBrush}"
-                                Opacity="0.15"
-                                RadiusX="1"
-                                RadiusY="1" />
-                            <Rectangle
-                                x:Name="Bar3"
-                                Width="3"
-                                Height="10"
-                                VerticalAlignment="Bottom"
-                                Fill="{ThemeResource AccentFillColorDefaultBrush}"
-                                Opacity="0.15"
-                                RadiusX="1"
-                                RadiusY="1" />
-                            <Rectangle
-                                x:Name="Bar4"
-                                Width="3"
-                                Height="13"
-                                VerticalAlignment="Bottom"
-                                Fill="{ThemeResource AccentFillColorDefaultBrush}"
-                                Opacity="0.15"
-                                RadiusX="1"
-                                RadiusY="1" />
-                            <Rectangle
-                                x:Name="Bar5"
-                                Width="3"
-                                Height="18"
-                                VerticalAlignment="Bottom"
-                                Fill="{ThemeResource AccentFillColorDefaultBrush}"
-                                Opacity="0.15"
-                                RadiusX="1"
-                                RadiusY="1" />
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-
-                <!--  Auto-increase buffer on stutter setting  -->
-                <StackPanel Spacing="8">
-                    <TextBlock FontSize="16" Text="Auto-increase buffer on stutter" />
-                    <TextBlock
-                        FontSize="12"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Automatically increases buffer when stream stutters or has connection issues"
-                        TextWrapping="Wrap" />
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                        <ToggleSwitch
-                            x:Name="AutoBufferToggle"
-                            Grid.Column="0"
-                            MinWidth="0"
-                            IsOn="{x:Bind ViewModel.IsAutoBufferIncreaseEnabled, Mode=TwoWay}"
-                            OffContent=""
-                            OnContent="" />
-                        <TextBlock
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            FontSize="16"
-                            Text="{x:Bind ViewModel.AutoBufferToggleText, Mode=OneWay}" />
-                    </Grid>
-                </StackPanel>
-
-                <!--  Buffer level setting  -->
-                <StackPanel Spacing="8">
-                    <TextBlock FontSize="16" Text="Buffer level" />
-                    <TextBlock
-                        FontSize="12"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Higher buffer levels help with unstable connections but increase delay"
-                        TextWrapping="Wrap" />
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <Slider
-                            x:Name="BufferLevelSlider"
-                            Grid.Column="0"
-                            Maximum="3"
-                            Minimum="0"
-                            SnapsTo="StepValues"
-                            StepFrequency="0.1"
-                            Value="{x:Bind ViewModel.BufferLevel, Mode=TwoWay}" />
-                        <TextBlock
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            FontSize="16"
-                            Text="{x:Bind ViewModel.BufferLevelDescription, Mode=OneWay}"
-                            Visibility="Collapsed" />
-                    </Grid>
-                </StackPanel>
-
-                <!--  Import / Export station list  -->
-                <StackPanel Spacing="8">
-                    <TextBlock FontSize="16" Text="Import / Export stations" />
-                    <TextBlock
-                        FontSize="12"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Import or export your radio station list as M3U or PLS playlist files"
-                        TextWrapping="Wrap" />
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button
-                            x:Name="ImportButton"
-                            Click="ImportButton_Click"
-                            Content="Import stations" />
-                        <Button
-                            x:Name="ExportButton"
-                            Click="ExportButton_Click"
-                            Content="Export stations" />
+            <StackPanel Padding="0,0,8,8" Spacing="12">
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Open on startup" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Launch Trdo automatically when you sign in so the player is ready without opening it manually." />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <ToggleSwitch
+                                x:Name="StartupToggle"
+                                Grid.Column="0"
+                                MinWidth="0"
+                                IsEnabled="{x:Bind ViewModel.IsStartupToggleEnabled,
+                                                   Mode=OneWay}"
+                                IsOn="{x:Bind ViewModel.IsStartupEnabled,
+                                              Mode=TwoWay}"
+                                OffContent=""
+                                OnContent="" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.StartupToggleText,
+                                              Mode=OneWay}" />
+                        </Grid>
                     </StackPanel>
-                    <InfoBar
-                        x:Name="ImportExportInfoBar"
-                        IsClosable="True"
-                        IsOpen="False" />
-                </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Play on startup" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Automatically resume the last station as soon as Trdo opens." />
+                        <InfoBar
+                            x:Name="AutoPlayWarningInfoBar"
+                            Margin="-12"
+                            IsClosable="True"
+                            IsOpen="False"
+                            Message="This means audio will begin playing when Trdo is launched. It could be disruptive. Are you sure you want to enable this?"
+                            Severity="Warning">
+                            <InfoBar.ActionButton>
+                                <Button
+                                    x:Name="ConfirmAutoPlayButton"
+                                    Click="ConfirmAutoPlayButton_Click"
+                                    Content="Enable" />
+                            </InfoBar.ActionButton>
+                        </InfoBar>
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <ToggleSwitch
+                                x:Name="AutoPlayOnStartupToggle"
+                                Grid.Column="0"
+                                MinWidth="0"
+                                IsOn="{x:Bind ViewModel.IsAutoPlayOnStartupEnabled,
+                                              Mode=OneWay}"
+                                OffContent=""
+                                OnContent=""
+                                Toggled="AutoPlayOnStartupToggle_Toggled" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.AutoPlayOnStartupToggleText,
+                                              Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Tray icon click behavior" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose whether the tray icon prioritizes playback controls or opening the flyout menu." />
+                        <ComboBox SelectedIndex="{x:Bind ViewModel.TrayClickBehavior, Mode=TwoWay}">
+                            <ComboBoxItem Content="Left click: play/pause, right click: open flyout (Default)" />
+                            <ComboBoxItem Content="Left click: open flyout, right click: play/pause" />
+                        </ComboBox>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Music search services" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose which shortcuts appear on Now Playing and Favorites when you want to search for the current song elsewhere." />
+
+                        <StackPanel Spacing="6">
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                <Image
+                                    Grid.Column="0"
+                                    Width="20"
+                                    Height="20"
+                                    VerticalAlignment="Center">
+                                    <Image.Source>
+                                        <SvgImageSource UriSource="ms-appx:///Assets/spotify.svg" />
+                                    </Image.Source>
+                                </Image>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Text="Spotify"
+                                    TextWrapping="Wrap" />
+                                <ToggleSwitch
+                                    Grid.Column="2"
+                                    MinWidth="0"
+                                    HorizontalAlignment="Right"
+                                    IsOn="{x:Bind ViewModel.IsSpotifyEnabled,
+                                                  Mode=TwoWay}"
+                                    OffContent=""
+                                    OnContent="" />
+                            </Grid>
+
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                <Image
+                                    Grid.Column="0"
+                                    Width="20"
+                                    Height="20"
+                                    VerticalAlignment="Center">
+                                    <Image.Source>
+                                        <SvgImageSource UriSource="ms-appx:///Assets/discogs.svg" />
+                                    </Image.Source>
+                                </Image>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Text="Discogs"
+                                    TextWrapping="Wrap" />
+                                <ToggleSwitch
+                                    Grid.Column="2"
+                                    MinWidth="0"
+                                    HorizontalAlignment="Right"
+                                    IsOn="{x:Bind ViewModel.IsDiscogsEnabled,
+                                                  Mode=TwoWay}"
+                                    OffContent=""
+                                    OnContent="" />
+                            </Grid>
+
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                <Image
+                                    Grid.Column="0"
+                                    Width="20"
+                                    Height="20"
+                                    VerticalAlignment="Center">
+                                    <Image.Source>
+                                        <SvgImageSource UriSource="ms-appx:///Assets/apple_music.svg" />
+                                    </Image.Source>
+                                </Image>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Text="Apple Music"
+                                    TextWrapping="Wrap" />
+                                <ToggleSwitch
+                                    Grid.Column="2"
+                                    MinWidth="0"
+                                    HorizontalAlignment="Right"
+                                    IsOn="{x:Bind ViewModel.IsAppleMusicEnabled,
+                                                  Mode=TwoWay}"
+                                    OffContent=""
+                                    OnContent="" />
+                            </Grid>
+
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                <Image
+                                    Grid.Column="0"
+                                    Width="20"
+                                    Height="20"
+                                    VerticalAlignment="Center">
+                                    <Image.Source>
+                                        <SvgImageSource UriSource="ms-appx:///Assets/ytmusic.svg" />
+                                    </Image.Source>
+                                </Image>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Text="YouTube Music"
+                                    TextWrapping="Wrap" />
+                                <ToggleSwitch
+                                    Grid.Column="2"
+                                    MinWidth="0"
+                                    HorizontalAlignment="Right"
+                                    IsOn="{x:Bind ViewModel.IsYouTubeMusicEnabled,
+                                                  Mode=TwoWay}"
+                                    OffContent=""
+                                    OnContent="" />
+                            </Grid>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Auto-recover" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Monitor playback and automatically try to recover when a stream stalls, drops out, or goes silent." />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <ToggleSwitch
+                                x:Name="WatchdogToggle"
+                                Grid.Column="0"
+                                MinWidth="0"
+                                IsOn="{x:Bind ViewModel.IsWatchdogEnabled,
+                                              Mode=TwoWay}"
+                                OffContent=""
+                                OnContent="" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.WatchdogToggleText,
+                                              Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}" Visibility="{x:Bind ViewModel.IsWatchdogEnabled, Mode=OneWay, Converter={StaticResource BoolToVis}}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Silence detection timeout" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Set how long playback can stay silent before Trdo restarts the stream automatically." />
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                            <Slider
+                                x:Name="SilenceTimeoutSlider"
+                                Grid.Column="0"
+                                Maximum="30"
+                                Minimum="1"
+                                SnapsTo="StepValues"
+                                StepFrequency="1"
+                                Value="{x:Bind ViewModel.SilenceTimeoutSeconds,
+                                               Mode=TwoWay}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                MinWidth="36"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.SilenceTimeoutDisplay,
+                                              Mode=OneWay}" />
+                            <StackPanel
+                                Grid.Column="2"
+                                Height="18"
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal"
+                                Spacing="2">
+                                <Rectangle
+                                    x:Name="Bar1"
+                                    Width="3"
+                                    Height="4"
+                                    VerticalAlignment="Bottom"
+                                    Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                    Opacity="0.15"
+                                    RadiusX="1"
+                                    RadiusY="1" />
+                                <Rectangle
+                                    x:Name="Bar2"
+                                    Width="3"
+                                    Height="7"
+                                    VerticalAlignment="Bottom"
+                                    Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                    Opacity="0.15"
+                                    RadiusX="1"
+                                    RadiusY="1" />
+                                <Rectangle
+                                    x:Name="Bar3"
+                                    Width="3"
+                                    Height="10"
+                                    VerticalAlignment="Bottom"
+                                    Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                    Opacity="0.15"
+                                    RadiusX="1"
+                                    RadiusY="1" />
+                                <Rectangle
+                                    x:Name="Bar4"
+                                    Width="3"
+                                    Height="13"
+                                    VerticalAlignment="Bottom"
+                                    Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                    Opacity="0.15"
+                                    RadiusX="1"
+                                    RadiusY="1" />
+                                <Rectangle
+                                    x:Name="Bar5"
+                                    Width="3"
+                                    Height="18"
+                                    VerticalAlignment="Bottom"
+                                    Fill="{ThemeResource AccentFillColorDefaultBrush}"
+                                    Opacity="0.15"
+                                    RadiusX="1"
+                                    RadiusY="1" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Auto-increase buffer on stutter" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Let Trdo raise the buffer automatically when the stream is struggling to stay smooth." />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <ToggleSwitch
+                                x:Name="AutoBufferToggle"
+                                Grid.Column="0"
+                                MinWidth="0"
+                                IsOn="{x:Bind ViewModel.IsAutoBufferIncreaseEnabled,
+                                              Mode=TwoWay}"
+                                OffContent=""
+                                OnContent="" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.AutoBufferToggleText,
+                                              Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Buffer level" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Higher buffer levels help on unstable connections, but they can add a little more playback delay." />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Slider
+                                x:Name="BufferLevelSlider"
+                                Grid.Column="0"
+                                Maximum="3"
+                                Minimum="0"
+                                SnapsTo="StepValues"
+                                StepFrequency="0.1"
+                                Value="{x:Bind ViewModel.BufferLevel,
+                                               Mode=TwoWay}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                MinWidth="92"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.BufferLevelDescription,
+                                              Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Import / Export stations" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Back up your station list or move it to another device with M3U and PLS playlist files." />
+                        <StackPanel Orientation="Vertical" Spacing="8">
+                            <Button
+                                x:Name="ImportButton"
+                                Click="ImportButton_Click"
+                                Content="Import stations" />
+                            <Button
+                                x:Name="ExportButton"
+                                Click="ExportButton_Click"
+                                Content="Export stations" />
+                        </StackPanel>
+                        <InfoBar
+                            x:Name="ImportExportInfoBar"
+                            IsClosable="True"
+                            IsOpen="False" />
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollView>
     </Grid>

@@ -108,6 +108,13 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine($"[PlayerViewModel] Initializing stream with URL: {_selectedStation.StreamUrl}");
             InitializeStream(_selectedStation.StreamUrl);
+
+            // Auto-play on startup if the setting is enabled
+            if (SettingsService.AutoPlayOnStartup)
+            {
+                Debug.WriteLine("[PlayerViewModel] AutoPlayOnStartup is enabled, starting playback...");
+                _player.Play();
+            }
         }
         else
         {

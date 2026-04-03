@@ -31,7 +31,9 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="12"
-                Visibility="{x:Bind ViewModel.Favorites.Count, Mode=OneWay, Converter={StaticResource CountToEmptyStateVisibilityConverter}}">
+                Visibility="{x:Bind ViewModel.Favorites.Count,
+                                    Mode=OneWay,
+                                    Converter={StaticResource CountToEmptyStateVisibilityConverter}}">
                 <FontIcon
                     HorizontalAlignment="Center"
                     FontSize="48"
@@ -56,10 +58,13 @@
             <ListView
                 x:Name="FavoritesListView"
                 Padding="0,0,12,0"
-                ItemsSource="{x:Bind ViewModel.Favorites, Mode=OneWay}"
+                ItemsSource="{x:Bind ViewModel.Favorites,
+                                     Mode=OneWay}"
                 SelectionChanged="FavoritesListView_SelectionChanged"
                 SelectionMode="Single"
-                Visibility="{x:Bind ViewModel.Favorites.Count, Mode=OneWay, Converter={StaticResource CountToHasItemsVisibilityConverter}}">
+                Visibility="{x:Bind ViewModel.Favorites.Count,
+                                    Mode=OneWay,
+                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -127,41 +132,106 @@
                             </Grid>
 
                             <!--  Expanded Row: Search Links (shown when selected)  -->
-                            <StackPanel
+                            <Grid
                                 x:Name="ExpandedContent"
                                 Grid.Row="1"
                                 Margin="0,8,0,0"
-                                Orientation="Horizontal"
-                                Spacing="16"
+                                ColumnDefinitions="*,Auto"
+                                ColumnSpacing="8"
                                 Visibility="Collapsed">
+                                <Border
+                                    Grid.Column="0"
+                                    Padding="4,0"
+                                    Background="{ThemeResource ControlFillColorSecondaryBrush}"
+                                    CornerRadius="10">
+                                    <ScrollViewer
+                                        HorizontalScrollBarVisibility="Hidden"
+                                        HorizontalScrollMode="Enabled"
+                                        VerticalScrollBarVisibility="Disabled"
+                                        VerticalScrollMode="Disabled"
+                                        ZoomMode="Disabled">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
 
-                                <!--  Search on Spotify  -->
-                                <HyperlinkButton
-                                    Padding="4"
-                                    Click="SpotifyLink_Click"
-                                    Tag="{x:Bind}">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <Image Width="16" Height="16">
-                                            <Image.Source>
-                                                <SvgImageSource UriSource="ms-appx:///Assets/spotify.svg" />
-                                            </Image.Source>
-                                        </Image>
-                                        <TextBlock FontSize="11" Text="Spotify" />
-                                    </StackPanel>
-                                </HyperlinkButton>
+                                            <!--  Search on Spotify  -->
+                                            <HyperlinkButton
+                                                x:Name="SpotifyButton"
+                                                Padding="6,4"
+                                                Click="SpotifyLink_Click"
+                                                Tag="{x:Bind}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <Image Width="16" Height="16">
+                                                        <Image.Source>
+                                                            <SvgImageSource UriSource="ms-appx:///Assets/spotify.svg" />
+                                                        </Image.Source>
+                                                    </Image>
+                                                    <TextBlock FontSize="11" Text="Spotify" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
 
-                                <!--  Search on Discogs  -->
-                                <HyperlinkButton
-                                    Padding="4"
-                                    Click="DiscogsLink_Click"
-                                    Tag="{x:Bind}">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon FontSize="12" Glyph="&#xE721;" />
-                                        <TextBlock FontSize="11" Text="Discogs" />
-                                    </StackPanel>
-                                </HyperlinkButton>
+                                            <!--  Search on Discogs  -->
+                                            <HyperlinkButton
+                                                x:Name="DiscogsButton"
+                                                Padding="6,4"
+                                                Click="DiscogsLink_Click"
+                                                Tag="{x:Bind}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <Image Width="16" Height="16">
+                                                        <Image.Source>
+                                                            <SvgImageSource UriSource="ms-appx:///Assets/discogs.svg" />
+                                                        </Image.Source>
+                                                    </Image>
+                                                    <TextBlock FontSize="11" Text="Discogs" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
 
-                            </StackPanel>
+                                            <!--  Search on Apple Music  -->
+                                            <HyperlinkButton
+                                                x:Name="AppleMusicButton"
+                                                Padding="6,4"
+                                                Click="AppleMusicLink_Click"
+                                                Tag="{x:Bind}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <Image Width="16" Height="16">
+                                                        <Image.Source>
+                                                            <SvgImageSource UriSource="ms-appx:///Assets/apple_music.svg" />
+                                                        </Image.Source>
+                                                    </Image>
+                                                    <TextBlock FontSize="11" Text="Apple Music" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
+
+                                            <!--  Search on YouTube Music  -->
+                                            <HyperlinkButton
+                                                x:Name="YouTubeMusicButton"
+                                                Padding="6,4"
+                                                Click="YouTubeMusicLink_Click"
+                                                Tag="{x:Bind}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <Image Width="16" Height="16">
+                                                        <Image.Source>
+                                                            <SvgImageSource UriSource="ms-appx:///Assets/ytmusic.svg" />
+                                                        </Image.Source>
+                                                    </Image>
+                                                    <TextBlock FontSize="11" Text="YouTube Music" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Border>
+
+                                <Button
+                                    Grid.Column="1"
+                                    Padding="8"
+                                    VerticalAlignment="Center"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Click="SettingsButton_Click"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Tag="{x:Bind}"
+                                    ToolTipService.ToolTip="Music search settings">
+                                    <FontIcon FontSize="14" Glyph="&#xE713;" />
+                                </Button>
+                            </Grid>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

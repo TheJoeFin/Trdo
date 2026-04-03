@@ -1,3 +1,4 @@
+using System;
 using Windows.Storage;
 
 namespace Trdo.Services;
@@ -9,6 +10,53 @@ public static class SettingsService
 {
     private const string IsFirstRunKey = "IsFirstRun";
     private const string IsVolumeSliderVisibleKey = "IsVolumeSliderVisible";
+    private const string AutoPlayOnStartupKey = "AutoPlayOnStartup";
+    private const string IsSpotifyEnabledKey = "IsSpotifyEnabled";
+    private const string IsDiscogsEnabledKey = "IsDiscogsEnabled";
+    private const string IsAppleMusicEnabledKey = "IsAppleMusicEnabled";
+    private const string IsYouTubeMusicEnabledKey = "IsYouTubeMusicEnabled";
+    private const string TrayClickBehaviorKey = "TrayClickBehavior";
+
+    public static event EventHandler? MusicSearchServicesChanged;
+
+    /// <summary>
+    /// Gets or sets whether the app should automatically start playing the last selected station on startup.
+    /// Defaults to false when no saved value exists.
+    /// </summary>
+    public static bool AutoPlayOnStartup
+    {
+        get
+        {
+            try
+            {
+                if (ApplicationData.Current.LocalSettings.Values.TryGetValue(AutoPlayOnStartupKey, out object? value))
+                {
+                    return value switch
+                    {
+                        bool b => b,
+                        string s when bool.TryParse(s, out bool b2) => b2,
+                        _ => false
+                    };
+                }
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        set
+        {
+            try
+            {
+                ApplicationData.Current.LocalSettings.Values[AutoPlayOnStartupKey] = value;
+            }
+            catch
+            {
+                // Silently fail if unable to save
+            }
+        }
+    }
 
     /// <summary>
     /// Gets or sets whether the volume slider is visible on the playing page.
@@ -46,6 +94,126 @@ public static class SettingsService
             {
                 // Silently fail if unable to save
             }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether Spotify search links are shown.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsSpotifyEnabled
+    {
+        get => GetBoolSetting(IsSpotifyEnabledKey, defaultValue: true);
+        set => SetBoolSetting(IsSpotifyEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether Discogs search links are shown.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsDiscogsEnabled
+    {
+        get => GetBoolSetting(IsDiscogsEnabledKey, defaultValue: true);
+        set => SetBoolSetting(IsDiscogsEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether Apple Music search links are shown.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsAppleMusicEnabled
+    {
+        get => GetBoolSetting(IsAppleMusicEnabledKey, defaultValue: false);
+        set => SetBoolSetting(IsAppleMusicEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether YouTube Music search links are shown.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsYouTubeMusicEnabled
+    {
+        get => GetBoolSetting(IsYouTubeMusicEnabledKey, defaultValue: false);
+        set => SetBoolSetting(IsYouTubeMusicEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the tray icon click behavior.
+    /// 0 = left click plays/pauses, right click opens flyout (default).
+    /// 1 = left click opens flyout, right click plays/pauses.
+    /// </summary>
+    public static int TrayClickBehavior
+    {
+        get
+        {
+            try
+            {
+                if (ApplicationData.Current.LocalSettings.Values.TryGetValue(TrayClickBehaviorKey, out object? value))
+                {
+                    return value switch
+                    {
+                        int i => i,
+                        string s when int.TryParse(s, out int i2) => i2,
+                        _ => 0
+                    };
+                }
+                return 0;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+        set
+        {
+            try
+            {
+                // Only valid values are 0 (default) and 1 (swapped)
+                if (value < 0 || value > 1)
+                    value = 0;
+                ApplicationData.Current.LocalSettings.Values[TrayClickBehaviorKey] = value;
+            }
+            catch
+            {
+                // Silently fail if unable to save
+            }
+        }
+    }
+
+    private static bool GetBoolSetting(string key, bool defaultValue)
+    {
+        try
+        {
+            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(key, out object? value))
+            {
+                return value switch
+                {
+                    bool b => b,
+                    string s when bool.TryParse(s, out bool b2) => b2,
+                    _ => defaultValue
+                };
+            }
+            return defaultValue;
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    private static void SetBoolSetting(string key, bool value)
+    {
+        try
+        {
+            ApplicationData.Current.LocalSettings.Values[key] = value;
+            if (key is IsSpotifyEnabledKey or IsDiscogsEnabledKey or IsAppleMusicEnabledKey or IsYouTubeMusicEnabledKey)
+            {
+                MusicSearchServicesChanged?.Invoke(null, EventArgs.Empty);
+            }
+        }
+        catch
+        {
+            // Silently fail if unable to save
         }
     }
 

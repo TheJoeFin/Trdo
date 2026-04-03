@@ -18,8 +18,12 @@
   <ItemGroup>
     <None Remove="Assets\Radio-Black.ico" />
     <None Remove="Assets\Radio-White.ico" />
+    <None Remove="Assets\apple_music.svg" />
+    <None Remove="Assets\discogs.svg" />
     <None Remove="Assets\spotify.svg" />
+    <None Remove="Assets\ytmusic.svg" />
     <None Remove="Assets\Tutorial.gif" />
+    <None Remove="Controls\ManualStationWindow.xaml" />
     <None Remove="Controls\TutorialWindow.xaml" />
     <None Remove="Pages\AddStation.xaml" />
     <None Remove="Pages\FavoritesPage.xaml" />
@@ -55,10 +59,10 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Labs.WinUI.MarqueeText" Version="0.1.250828-build.2223" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7705" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260209005" />
-    <PackageReference Include="NAudio" Version="2.2.1" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1721" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
+    <PackageReference Include="NAudio" Version="2.3.0" />
     <PackageReference Include="WinUIEx" Version="2.9.0" />
   </ItemGroup>
   <ItemGroup>
@@ -77,7 +81,16 @@
     <Content Update="Assets\Radio.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Update="Assets\apple_music.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\discogs.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Update="Assets\spotify.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\ytmusic.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Update="Assets\Tutorial.gif">
@@ -116,6 +129,11 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\ShellPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\ManualStationWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
