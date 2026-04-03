@@ -82,6 +82,7 @@
                         <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Automatically resume the last station as soon as Trdo opens." />
                         <InfoBar
                             x:Name="AutoPlayWarningInfoBar"
+                            Margin="-12"
                             IsClosable="True"
                             IsOpen="False"
                             Message="This means audio will begin playing when Trdo is launched. It could be disruptive. Are you sure you want to enable this?"
@@ -90,7 +91,7 @@
                                 <Button
                                     x:Name="ConfirmAutoPlayButton"
                                     Click="ConfirmAutoPlayButton_Click"
-                                    Content="Enable anyway" />
+                                    Content="Enable" />
                             </InfoBar.ActionButton>
                         </InfoBar>
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">

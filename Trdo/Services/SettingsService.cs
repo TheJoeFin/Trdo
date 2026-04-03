@@ -123,7 +123,7 @@ public static class SettingsService
     /// </summary>
     public static bool IsAppleMusicEnabled
     {
-        get => GetBoolSetting(IsAppleMusicEnabledKey, defaultValue: true);
+        get => GetBoolSetting(IsAppleMusicEnabledKey, defaultValue: false);
         set => SetBoolSetting(IsAppleMusicEnabledKey, value);
     }
 
@@ -133,7 +133,7 @@ public static class SettingsService
     /// </summary>
     public static bool IsYouTubeMusicEnabled
     {
-        get => GetBoolSetting(IsYouTubeMusicEnabledKey, defaultValue: true);
+        get => GetBoolSetting(IsYouTubeMusicEnabledKey, defaultValue: false);
         set => SetBoolSetting(IsYouTubeMusicEnabledKey, value);
     }
 
