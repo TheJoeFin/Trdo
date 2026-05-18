@@ -349,11 +349,12 @@
             </Grid>
         </Button>
 
-        <!--  Play and Quit Buttons  -->
-        <Grid Grid.Row="5" ColumnSpacing="4">
+        <!--  Playback Actions  -->
+        <Grid Grid.Row="5" ColumnSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <Button
                 x:Name="PlayButton"
@@ -362,26 +363,26 @@
                 Click="PlayButton_Click"
                 Style="{StaticResource AccentButtonStyle}">
                 <StackPanel Orientation="Horizontal" Spacing="12">
-                    <FontIcon
-                        x:Name="PlayIcon"
-                        FontSize="16"
-                        Glyph="&#xE768;" />
-                    <TextBlock
-                        x:Name="PlayText"
-                        FontSize="12"
-                        Text="Play" />
+                    <FontIcon FontSize="16" Glyph="{x:Bind ViewModel.PlaybackButtonGlyph, Mode=OneWay}" />
+                    <TextBlock FontSize="12" Text="{x:Bind ViewModel.PlaybackButtonText, Mode=OneWay}" />
                 </StackPanel>
             </Button>
 
-            <Button
+            <HyperlinkButton
                 Grid.Column="1"
-                HorizontalAlignment="Stretch"
-                Click="QuitButton_Click">
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                    <FontIcon FontSize="16" Glyph="&#xE711;" />
-                    <TextBlock FontSize="12" Text="Quit" />
+                VerticalAlignment="Center"
+                Click="PopOutButton_Click"
+                ToolTipService.ToolTip="Open mini player">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <FontIcon FontSize="16" Glyph="&#xE93A;" />
                 </StackPanel>
-            </Button>
+            </HyperlinkButton>
+
+            <HyperlinkButton
+                Grid.Column="2" ToolTipService.ToolTip="Quit Trdo"
+                VerticalAlignment="Center"
+                Click="CloseButton_Click"
+                Content="Quit" />
         </Grid>
     </Grid>
 </Page>

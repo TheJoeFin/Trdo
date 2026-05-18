@@ -71,7 +71,6 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] Current SelectedStation: {ViewModel.SelectedStation?.Name ?? "null"}");
         Debug.WriteLine($"[PlayingPage] Current StreamUrl: {ViewModel.StreamUrl}");
 
-        UpdatePlayButtonState();
         UpdateStationSelection();
         UpdateFavoriteButtonState();
 
@@ -132,7 +131,6 @@ public sealed partial class PlayingPage : Page
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         Debug.WriteLine($"[PlayingPage] ViewModel PropertyChanged: {e.PropertyName}");
-        UpdatePlayButtonState();
         UpdateStationSelection();
 
         if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata) ||
@@ -179,30 +177,6 @@ public sealed partial class PlayingPage : Page
         {
             Debug.WriteLine($"[PlayingPage] EXCEPTION showing error dialog: {ex.Message}");
             // If dialog fails, silently ignore
-        }
-    }
-
-    private void UpdatePlayButtonState()
-    {
-        if (ViewModel.IsBuffering)
-        {
-            PlayIcon.Glyph = "\uF16A"; // Progress ring
-            PlayText.Text = "Buffering";
-            Debug.WriteLine("[PlayingPage] Play button updated to 'Buffering'");
-            return;
-        }
-
-        if (ViewModel.IsPlaying)
-        {
-            PlayIcon.Glyph = "\uE769"; // Pause icon
-            PlayText.Text = "Pause";
-            Debug.WriteLine("[PlayingPage] Play button updated to 'Pause'");
-        }
-        else
-        {
-            PlayIcon.Glyph = "\uE768"; // Play icon
-            PlayText.Text = "Play";
-            Debug.WriteLine("[PlayingPage] Play button updated to 'Play'");
         }
     }
 
@@ -284,9 +258,19 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine("=== PlayButton_Click END ===");
     }
 
-    private void QuitButton_Click(object sender, RoutedEventArgs e)
+    private void PopOutButton_Click(object sender, RoutedEventArgs e)
     {
-        Debug.WriteLine("[PlayingPage] Quit button clicked");
+        Debug.WriteLine("[PlayingPage] Pop-out button clicked");
+
+        if (Application.Current is App app)
+        {
+            app.ShowMiniPlayerWindow();
+        }
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[PlayingPage] Close button clicked");
         Application.Current.Exit();
     }
 

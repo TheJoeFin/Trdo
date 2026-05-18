@@ -33,12 +33,18 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine($"[PlayerViewModel] PlaybackStateChanged event fired. IsPlaying={IsPlaying}");
             OnPropertyChanged(nameof(IsPlaying));
+            OnPropertyChanged(nameof(PlaybackButtonGlyph));
+            OnPropertyChanged(nameof(PlaybackButtonText));
+            OnPropertyChanged(nameof(MiniPlayerCloseButtonText));
         };
 
         _player.BufferingStateChanged += (_, _) =>
         {
             Debug.WriteLine($"[PlayerViewModel] BufferingStateChanged event fired. IsBuffering={IsBuffering}");
             OnPropertyChanged(nameof(IsBuffering));
+            OnPropertyChanged(nameof(PlaybackButtonGlyph));
+            OnPropertyChanged(nameof(PlaybackButtonText));
+            OnPropertyChanged(nameof(MiniPlayerCloseButtonText));
         };
 
         _player.VolumeChanged += (_, _) =>
@@ -69,6 +75,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(CurrentMetadata));
             OnPropertyChanged(nameof(NowPlaying));
             OnPropertyChanged(nameof(HasNowPlaying));
+            OnPropertyChanged(nameof(CurrentTrackDisplay));
+            OnPropertyChanged(nameof(CurrentTrackSupportingText));
         };
 
         // Load stations from settings
@@ -76,7 +84,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         List<RadioStation> loadedStations = _stationService.LoadStations();
         Debug.WriteLine($"[PlayerViewModel] Loaded {loadedStations.Count} stations");
         Stations = new ObservableCollection<RadioStation>(loadedStations);
-        
+
         // Subscribe to collection changes to update CanPlay
         // We notify on all changes since CanPlay depends on Stations.Count > 0
         Stations.CollectionChanged += (_, _) =>
@@ -148,6 +156,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             _selectedStation = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanPlay));
+            OnPropertyChanged(nameof(SelectedStationDisplayName));
 
             if (_selectedStation != null)
             {
@@ -355,6 +364,32 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     /// </summary>
     public bool HasNowPlaying => CurrentMetadata?.HasMetadata ?? false;
 
+    public string PlaybackButtonGlyph => IsBuffering
+        ? "\uF16A"
+        : IsPlaying
+            ? "\uE769"
+            : "\uE768";
+
+    public string PlaybackButtonText => IsBuffering
+        ? "Buffering"
+        : IsPlaying
+            ? "Pause"
+            : "Play";
+
+    public string MiniPlayerCloseButtonText => IsPlaying
+        ? "Pause & close"
+        : "Close";
+
+    public string CurrentTrackDisplay => HasNowPlaying
+        ? NowPlaying
+        : "No track information";
+
+    public string CurrentTrackSupportingText => HasNowPlaying
+        ? "Live now playing"
+        : "Track info appears here when the station broadcasts it";
+
+    public string SelectedStationDisplayName => SelectedStation?.Name ?? "No station selected";
+
     public double Volume
     {
         get => _player.Volume;
@@ -389,6 +424,35 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         }
 
         Debug.WriteLine("=== Toggle END ===");
+    }
+
+    public void Pause()
+    {
+        Debug.WriteLine("=== Pause START ===");
+        Debug.WriteLine($"[PlayerViewModel] Current IsPlaying: {IsPlaying}");
+
+        if (!IsPlaying && !IsBuffering)
+        {
+            Debug.WriteLine("[PlayerViewModel] Pause skipped because playback is already idle");
+            Debug.WriteLine("=== Pause END (idle) ===");
+            return;
+        }
+
+        try
+        {
+            _player.Pause();
+            _lastError = null;
+        }
+        catch (Exception ex)
+        {
+            string stationName = _selectedStation?.Name ?? "Unknown";
+            _lastError = $"Failed to pause {stationName}: {ex.Message}";
+            Debug.WriteLine($"[PlayerViewModel] EXCEPTION in Pause: {_lastError}");
+            Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
+            PlaybackError?.Invoke(this, _lastError);
+        }
+
+        Debug.WriteLine("=== Pause END ===");
     }
 
     /// <summary>

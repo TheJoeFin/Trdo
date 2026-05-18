@@ -23,6 +23,7 @@ namespace Trdo;
 public partial class App : Application
 {
     private TrayIcon? _trayIcon;
+    private MiniPlayerWindow? _miniPlayerWindow;
     private readonly PlayerViewModel _playerVm = PlayerViewModel.Shared;
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
@@ -53,6 +54,21 @@ public partial class App : Application
             return;
 
         // TODO: find a way to programmatically show the flyout on the Icon
+    }
+
+    public void ShowMiniPlayerWindow()
+    {
+        WindowPlacementService.CapturePointerAnchor();
+
+        if (_miniPlayerWindow is null)
+        {
+            _miniPlayerWindow = new MiniPlayerWindow();
+            WindowHelper.Track(_miniPlayerWindow);
+            _miniPlayerWindow.Closed += (_, _) => _miniPlayerWindow = null;
+        }
+
+        _miniPlayerWindow.Activate();
+        WindowPlacementService.PositionWindowNearAnchor(_miniPlayerWindow, 360, 220);
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
