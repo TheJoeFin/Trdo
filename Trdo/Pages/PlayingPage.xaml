@@ -299,29 +299,32 @@
                     FontSize="14"
                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                     Glyph="&#xE8D6;" />
-                <labs:MarqueeText
-                    x:Name="NowPlayingMarqueeText"
+                <Grid
+                    x:Name="NowPlayingTextHost"
                     Grid.Column="1"
-                    VerticalAlignment="Center"
-                    Behavior="Ticker"
-                    Direction="Left"
-                    FontSize="12"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    RepeatBehavior="Forever"
-                    Speed="40"
-                    Text="{x:Bind ViewModel.NowPlaying,
-                                  Mode=OneWay}" />
-                <TextBlock
-                    x:Name="NowPlayingText"
-                    Grid.Column="1"
-                    VerticalAlignment="Center"
-                    FontSize="12"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="{x:Bind ViewModel.NowPlaying,
-                                  Mode=OneWay}"
-                    TextTrimming="CharacterEllipsis"
-                    TextWrapping="NoWrap"
-                    Visibility="Collapsed" />
+                    SizeChanged="NowPlayingTextHost_SizeChanged">
+                    <labs:MarqueeText
+                        x:Name="NowPlayingMarqueeText"
+                        VerticalAlignment="Center"
+                        Behavior="Looping"
+                        Direction="Left"
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        RepeatBehavior="1x"
+                        Speed="40"
+                        Text="{x:Bind ViewModel.NowPlaying,
+                                      Mode=OneWay}"
+                        Visibility="Collapsed" />
+                    <TextBlock
+                        x:Name="NowPlayingText"
+                        VerticalAlignment="Center"
+                        FontSize="12"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{x:Bind ViewModel.NowPlaying,
+                                      Mode=OneWay}"
+                        TextTrimming="Clip"
+                        TextWrapping="NoWrap" />
+                </Grid>
                 <!--  Favorite Button  -->
                 <Button
                     x:Name="FavoriteButton"
