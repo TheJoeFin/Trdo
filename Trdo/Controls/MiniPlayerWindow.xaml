@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ex:WindowEx
+    x:Class="Trdo.Controls.MiniPlayerWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:ex="using:WinUIEx"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Trdo Mini Player"
+    Width="360"
+    Height="220"
+    IsMaximizable="False"
+    IsMinimizable="False"
+    mc:Ignorable="d">
+
+    <ex:WindowEx.SystemBackdrop>
+        <MicaBackdrop />
+    </ex:WindowEx.SystemBackdrop>
+
+    <Grid
+        Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+        RowDefinitions="Auto,*">
+        <TitleBar
+            x:Name="ModernTitlebar"
+            Title="Trdo"
+            Subtitle="Mini Player">
+            <TitleBar.IconSource>
+                <ImageIconSource ImageSource="/Assets/Radio.ico" />
+            </TitleBar.IconSource>
+        </TitleBar>
+
+        <Viewbox
+            Grid.Row="1"
+            Margin="12,8,12,12"
+            HorizontalAlignment="Stretch"
+            Stretch="Uniform"
+            StretchDirection="DownOnly"
+            VerticalAlignment="Stretch">
+            <Grid
+                Width="336"
+                RowDefinitions="Auto,Auto"
+                RowSpacing="8">
+                <Border
+                    Padding="12"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource OverlayCornerRadius}">
+                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <FontIcon
+                                VerticalAlignment="Top"
+                                FontSize="20"
+                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                Glyph="&#xE8D6;" />
+                            <StackPanel
+                                Grid.Column="1"
+                                Spacing="4">
+                                <TextBlock
+                                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                                    Text="{x:Bind ViewModel.CurrentTrackDisplay, Mode=OneWay}"
+                                    TextWrapping="WrapWholeWords" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind ViewModel.CurrentTrackSupportingText, Mode=OneWay}"
+                                    TextWrapping="WrapWholeWords" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Border
+                            Grid.Row="1"
+                            Height="1"
+                            Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                        <Grid
+                            Grid.Row="2"
+                            ColumnDefinitions="Auto,*"
+                            ColumnSpacing="12">
+                            <FontIcon
+                                VerticalAlignment="Center"
+                                FontSize="16"
+                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                Glyph="&#xE95A;" />
+                            <TextBlock
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind ViewModel.SelectedStationDisplayName, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="NoWrap" />
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Grid
+                    Grid.Row="1"
+                    ColumnDefinitions="*,Auto"
+                    ColumnSpacing="12">
+                    <Button
+                        MinHeight="40"
+                        HorizontalAlignment="Stretch"
+                        Click="PlayPauseButton_Click"
+                        Style="{StaticResource AccentButtonStyle}">
+                        <StackPanel
+                            HorizontalAlignment="Center"
+                            Orientation="Horizontal"
+                            Spacing="10">
+                            <FontIcon
+                                FontSize="16"
+                                Glyph="{x:Bind ViewModel.PlaybackButtonGlyph, Mode=OneWay}" />
+                            <TextBlock
+                                Style="{StaticResource BodyStrongTextBlockStyle}"
+                                Text="{x:Bind ViewModel.PlaybackButtonText, Mode=OneWay}" />
+                        </StackPanel>
+                    </Button>
+
+                    <HyperlinkButton
+                        Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Click="PauseAndCloseButton_Click"
+                        Content="{x:Bind ViewModel.MiniPlayerCloseButtonText, Mode=OneWay}" />
+                </Grid>
+            </Grid>
+        </Viewbox>
+    </Grid>
+</ex:WindowEx>
