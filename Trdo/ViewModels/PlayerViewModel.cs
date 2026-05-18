@@ -469,6 +469,27 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         Debug.WriteLine("=== Pause END ===");
     }
 
+    public void RestoreSelectedStationPlaybackTarget()
+    {
+        Debug.WriteLine("=== RestoreSelectedStationPlaybackTarget START ===");
+
+        try
+        {
+            PrepareSelectedStationForPlayback();
+            _lastError = null;
+        }
+        catch (Exception ex)
+        {
+            string stationName = _selectedStation?.Name ?? "Unknown";
+            _lastError = $"Failed to restore {stationName}: {ex.Message}";
+            Debug.WriteLine($"[PlayerViewModel] EXCEPTION in RestoreSelectedStationPlaybackTarget: {_lastError}");
+            Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
+            PlaybackError?.Invoke(this, _lastError);
+        }
+
+        Debug.WriteLine("=== RestoreSelectedStationPlaybackTarget END ===");
+    }
+
     /// <summary>
     /// Add a new station and save to settings
     /// </summary>
@@ -626,6 +647,33 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine($"[PlayerViewModel] Invalid URL, skipping initialization: {streamUrl}");
         }
+    }
+
+    private void PrepareSelectedStationForPlayback()
+    {
+        if (_selectedStation == null)
+        {
+            Debug.WriteLine("[PlayerViewModel] Clearing playback target because no station is selected");
+            _player.ClearPlaybackTarget();
+            return;
+        }
+
+        if (!IsValidUrl(_selectedStation.StreamUrl))
+        {
+            throw new InvalidOperationException($"Invalid stream URL for {_selectedStation.Name}");
+        }
+
+        bool streamChanged = !string.Equals(_player.StreamUrl, _selectedStation.StreamUrl, StringComparison.Ordinal);
+
+        if (streamChanged)
+        {
+            Debug.WriteLine($"[PlayerViewModel] Preparing selected station stream: {_selectedStation.StreamUrl}");
+            _player.SetStreamUrl(_selectedStation.StreamUrl);
+        }
+
+        Debug.WriteLine($"[PlayerViewModel] Preparing selected station metadata: {_selectedStation.Name}");
+        _player.SetStationName(_selectedStation.Name);
+        _player.SetStationFavicon(_selectedStation.FaviconUrl);
     }
 
     private static bool IsValidUrl(string? url)

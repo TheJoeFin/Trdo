@@ -68,13 +68,11 @@ public sealed partial class SearchStation : Page
 
         string stationUrl = station.GetStreamUrl();
 
-        if (_previewingStationUrl == stationUrl && RadioPlayerService.Instance.IsPlaying)
+        if (_previewingStationUrl == stationUrl &&
+            (RadioPlayerService.Instance.IsPlaying || RadioPlayerService.Instance.IsBuffering))
         {
             // Same station is playing, pause it
-            RadioPlayerService.Instance.Pause();
-            SetButtonGlyph(button, PlayGlyph);
-            _activePreviewButton = null;
-            _previewingStationUrl = null;
+            StopPreview();
             return;
         }
 
@@ -121,6 +119,13 @@ public sealed partial class SearchStation : Page
         if (_previewingStationUrl != null)
         {
             RadioPlayerService.Instance.Pause();
+            PlayerViewModel.Shared.RestoreSelectedStationPlaybackTarget();
+
+            if (_activePreviewButton != null)
+            {
+                SetButtonGlyph(_activePreviewButton, PlayGlyph);
+            }
+
             _activePreviewButton = null;
             _previewingStationUrl = null;
         }

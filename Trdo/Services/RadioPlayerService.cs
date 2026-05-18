@@ -495,6 +495,39 @@ public sealed partial class RadioPlayerService : IDisposable
         ScheduleSystemMediaTransportControlsUpdate();
     }
 
+    public void ClearPlaybackTarget()
+    {
+        Debug.WriteLine("=== ClearPlaybackTarget START ===");
+
+        if (!string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            Pause();
+        }
+        else
+        {
+            SetManualBuffering(false);
+            _metadataService.StopPolling();
+        }
+
+        if (_player.Source is MediaSource oldMedia)
+        {
+            Debug.WriteLine("[RadioPlayerService] Disposing MediaSource while clearing playback target");
+            oldMedia.Reset();
+            oldMedia.Dispose();
+        }
+
+        _player.Source = null;
+        _streamUrl = null;
+        _currentStationName = null;
+        _currentStationFaviconUrl = null;
+        _currentAlbumArtUrl = null;
+        _hasPlayedOnce = false;
+        _wasExternalPause = false;
+
+        ScheduleSystemMediaTransportControlsUpdate();
+        Debug.WriteLine("=== ClearPlaybackTarget END ===");
+    }
+
     /// <summary>
     /// Start playback of the current stream.
     /// Always applies buffer settings based on current buffer level using GetBufferedRanges.
