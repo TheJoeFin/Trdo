@@ -1,4 +1,6 @@
 using Microsoft.UI.Windowing;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Input;
 using Trdo.ViewModels;
 using WinUIEx;
 
@@ -24,7 +26,7 @@ public sealed partial class MiniPlayerWindow : WindowEx
         CompactOverlayPresenter presenter = CompactOverlayPresenter.Create();
         presenter.InitialSize = CompactOverlaySize.Medium;
         AppWindow.SetPresenter(presenter);
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(WindowWidth, WindowHeight));
+        // AppWindow.Resize(new Windows.Graphics.SizeInt32(WindowWidth, WindowHeight));
     }
 
     private void PlayPauseButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -36,5 +38,21 @@ public sealed partial class MiniPlayerWindow : WindowEx
     {
         ViewModel.Pause();
         Close();
+    }
+
+    private void WindowLayout_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (e.Pointer.PointerDeviceType is Microsoft.UI.Input.PointerDeviceType.Mouse)
+        {
+            HoverPlayPauseButton.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void WindowLayout_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (e.Pointer.PointerDeviceType == Microsoft.UI.Input.PointerDeviceType.Mouse)
+        {
+            HoverPlayPauseButton.Visibility = Visibility.Collapsed;
+        }
     }
 }

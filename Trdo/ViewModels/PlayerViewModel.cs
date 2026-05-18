@@ -1,3 +1,6 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -75,6 +78,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(CurrentMetadata));
             OnPropertyChanged(nameof(NowPlaying));
             OnPropertyChanged(nameof(HasNowPlaying));
+            OnPropertyChanged(nameof(CurrentAlbumArtImageSource));
             OnPropertyChanged(nameof(CurrentTrackDisplay));
             OnPropertyChanged(nameof(CurrentTrackSupportingText));
         };
@@ -156,6 +160,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             _selectedStation = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanPlay));
+            OnPropertyChanged(nameof(SelectedStationFallbackIconVisibility));
+            OnPropertyChanged(nameof(SelectedStationFaviconImageSource));
             OnPropertyChanged(nameof(SelectedStationDisplayName));
 
             if (_selectedStation != null)
@@ -378,7 +384,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
     public string MiniPlayerCloseButtonText => IsPlaying
         ? "Pause & close"
-        : "Close";
+        : "";
 
     public string CurrentTrackDisplay => HasNowPlaying
         ? NowPlaying
@@ -387,6 +393,14 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     public string CurrentTrackSupportingText => HasNowPlaying
         ? "Live now playing"
         : "Track info appears here when the station broadcasts it";
+
+    public ImageSource? CurrentAlbumArtImageSource => CreateImageSource(CurrentMetadata?.AlbumArtUrl);
+
+    public ImageSource? SelectedStationFaviconImageSource => CreateImageSource(SelectedStation?.FaviconUrl);
+
+    public Visibility SelectedStationFallbackIconVisibility => SelectedStationFaviconImageSource is null
+        ? Visibility.Visible
+        : Visibility.Collapsed;
 
     public string SelectedStationDisplayName => SelectedStation?.Name ?? "No station selected";
 
@@ -619,6 +633,16 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(url)) return false;
         if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri)) return false;
         return uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps;
+    }
+
+    private static ImageSource? CreateImageSource(string? url)
+    {
+        if (!IsValidUrl(url))
+        {
+            return null;
+        }
+
+        return new BitmapImage(new Uri(url!, UriKind.Absolute));
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? name = null)

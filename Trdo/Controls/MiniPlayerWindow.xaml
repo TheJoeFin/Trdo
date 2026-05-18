@@ -18,7 +18,10 @@
     </ex:WindowEx.SystemBackdrop>
 
     <Grid
+        x:Name="WindowLayout"
         Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+        PointerEntered="WindowLayout_PointerEntered"
+        PointerExited="WindowLayout_PointerExited"
         RowDefinitions="Auto,*">
         <TitleBar
             x:Name="ModernTitlebar"
@@ -29,99 +32,130 @@
             </TitleBar.IconSource>
         </TitleBar>
 
-        <Viewbox
-            Grid.Row="1"
-            Margin="12,8,12,12"
-            HorizontalAlignment="Stretch"
-            Stretch="Uniform"
-            StretchDirection="DownOnly"
-            VerticalAlignment="Stretch">
-            <Grid
-                Width="336"
-                RowDefinitions="Auto,Auto"
-                RowSpacing="8">
-                <Border
-                    Padding="12"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="{StaticResource OverlayCornerRadius}">
-                    <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                            <FontIcon
-                                VerticalAlignment="Top"
-                                FontSize="20"
-                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                                Glyph="&#xE8D6;" />
-                            <StackPanel
-                                Grid.Column="1"
-                                Spacing="4">
-                                <TextBlock
-                                    Style="{StaticResource BodyStrongTextBlockStyle}"
-                                    Text="{x:Bind ViewModel.CurrentTrackDisplay, Mode=OneWay}"
-                                    TextWrapping="WrapWholeWords" />
-                                <TextBlock
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Style="{StaticResource CaptionTextBlockStyle}"
-                                    Text="{x:Bind ViewModel.CurrentTrackSupportingText, Mode=OneWay}"
-                                    TextWrapping="WrapWholeWords" />
-                            </StackPanel>
-                        </Grid>
-
-                        <Border
-                            Grid.Row="1"
-                            Height="1"
-                            Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
-
-                        <Grid
-                            Grid.Row="2"
-                            ColumnDefinitions="Auto,*"
-                            ColumnSpacing="12">
-                            <FontIcon
-                                VerticalAlignment="Center"
-                                FontSize="16"
-                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                                Glyph="&#xE95A;" />
-                            <TextBlock
-                                Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Style="{StaticResource BodyStrongTextBlockStyle}"
-                                Text="{x:Bind ViewModel.SelectedStationDisplayName, Mode=OneWay}"
-                                TextTrimming="CharacterEllipsis"
-                                TextWrapping="NoWrap" />
-                        </Grid>
-                    </Grid>
-                </Border>
-
+        <Grid Grid.Row="1" Margin="12,8,12,12">
+            <Viewbox
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                Stretch="Uniform"
+                StretchDirection="DownOnly">
                 <Grid
-                    Grid.Row="1"
-                    ColumnDefinitions="*,Auto"
-                    ColumnSpacing="12">
-                    <Button
-                        MinHeight="40"
-                        HorizontalAlignment="Stretch"
-                        Click="PlayPauseButton_Click"
-                        Style="{StaticResource AccentButtonStyle}">
-                        <StackPanel
-                            HorizontalAlignment="Center"
-                            Orientation="Horizontal"
-                            Spacing="10">
-                            <FontIcon
-                                FontSize="16"
-                                Glyph="{x:Bind ViewModel.PlaybackButtonGlyph, Mode=OneWay}" />
-                            <TextBlock
-                                Style="{StaticResource BodyStrongTextBlockStyle}"
-                                Text="{x:Bind ViewModel.PlaybackButtonText, Mode=OneWay}" />
-                        </StackPanel>
-                    </Button>
+                    Width="336"
+                    RowDefinitions="Auto,Auto"
+                    RowSpacing="8">
+                    <Border
+                        Padding="12"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{StaticResource OverlayCornerRadius}">
+                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                                <Grid
+                                    Width="40"
+                                    Height="40"
+                                    VerticalAlignment="Top">
+                                    <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="8" />
+                                    <FontIcon
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        FontSize="20"
+                                        Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                        Glyph="&#xE8D6;" />
+                                    <Border CornerRadius="8">
+                                        <Image Source="{x:Bind ViewModel.CurrentAlbumArtImageSource, Mode=OneWay}" Stretch="UniformToFill" />
+                                    </Border>
+                                </Grid>
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock
+                                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                                        Text="{x:Bind ViewModel.CurrentTrackDisplay,
+                                                      Mode=OneWay}"
+                                        TextWrapping="WrapWholeWords" />
+                                    <TextBlock
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind ViewModel.CurrentTrackSupportingText,
+                                                      Mode=OneWay}"
+                                        TextWrapping="WrapWholeWords" />
+                                </StackPanel>
+                            </Grid>
 
-                    <HyperlinkButton
-                        Grid.Column="1"
-                        VerticalAlignment="Center"
-                        Click="PauseAndCloseButton_Click"
-                        Content="{x:Bind ViewModel.MiniPlayerCloseButtonText, Mode=OneWay}" />
+                            <Border
+                                Grid.Row="1"
+                                Height="1"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                            <Grid
+                                Grid.Row="2"
+                                ColumnDefinitions="Auto,*"
+                                ColumnSpacing="12">
+                                <Grid
+                                    Width="20"
+                                    Height="20"
+                                    VerticalAlignment="Center">
+                                    <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="4" />
+                                    <FontIcon
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        FontSize="16"
+                                        Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                        Glyph="&#xE95A;"
+                                        Visibility="{x:Bind ViewModel.SelectedStationFallbackIconVisibility,
+                                                            Mode=OneWay}" />
+                                    <Border CornerRadius="4">
+                                        <Image Source="{x:Bind ViewModel.SelectedStationFaviconImageSource, Mode=OneWay}" Stretch="UniformToFill" />
+                                    </Border>
+                                </Grid>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                                    Text="{x:Bind ViewModel.SelectedStationDisplayName,
+                                                  Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="NoWrap" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+
+                    <Grid Grid.Row="1">
+                        <HyperlinkButton
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Click="PauseAndCloseButton_Click"
+                            Content="{x:Bind ViewModel.MiniPlayerCloseButtonText,
+                                             Mode=OneWay}" />
+                    </Grid>
                 </Grid>
-            </Grid>
-        </Viewbox>
+            </Viewbox>
+
+            <HyperlinkButton
+                Padding="6"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                AutomationProperties.Name="{x:Bind ViewModel.PlaybackButtonText,
+                                                   Mode=OneWay}"
+                Click="PlayPauseButton_Click"
+                ToolTipService.ToolTip="{x:Bind ViewModel.PlaybackButtonText,
+                                                Mode=OneWay}">
+                <FontIcon FontSize="16" Glyph="{x:Bind ViewModel.PlaybackButtonGlyph, Mode=OneWay}" />
+            </HyperlinkButton>
+
+            <Button
+                x:Name="HoverPlayPauseButton"
+                Width="72"
+                Height="72"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                AutomationProperties.Name="{x:Bind ViewModel.PlaybackButtonText,
+                                                   Mode=OneWay}"
+                Click="PlayPauseButton_Click"
+                CornerRadius="36"
+                Opacity="0.96"
+                Style="{StaticResource AccentButtonStyle}"
+                Visibility="Collapsed">
+                <FontIcon FontSize="30" Glyph="{x:Bind ViewModel.PlaybackButtonGlyph, Mode=OneWay}" />
+            </Button>
+        </Grid>
     </Grid>
 </ex:WindowEx>
