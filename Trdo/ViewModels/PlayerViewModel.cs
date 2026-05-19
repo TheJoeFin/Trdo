@@ -32,6 +32,9 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     {
         Debug.WriteLine("=== PlayerViewModel Constructor START ===");
 
+        _player.NextStationRequested += (_, _) => SelectNextStation();
+        _player.PreviousStationRequested += (_, _) => SelectPreviousStation();
+
         _player.PlaybackStateChanged += (_, _) =>
         {
             Debug.WriteLine($"[PlayerViewModel] PlaybackStateChanged event fired. IsPlaying={IsPlaying}");
@@ -94,6 +97,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         Stations.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(CanPlay));
+            OnPropertyChanged(nameof(CanCycleStations));
+            SyncStationCyclingAvailability();
         };
 
         // Load the previously selected station
@@ -114,6 +119,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine("[PlayerViewModel] No stations available");
         }
+
+        SyncStationCyclingAvailability();
 
         // Initialize with selected station's URL if available
         if (_selectedStation != null)
@@ -154,8 +161,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 return;
             }
 
-            bool wasPlaying = IsPlaying;
-            Debug.WriteLine($"[PlayerViewModel] Was playing before station change: {wasPlaying}");
+            bool shouldResumePlayback = IsPlaying || IsBuffering;
+            Debug.WriteLine($"[PlayerViewModel] Should resume playback after station change: {shouldResumePlayback}");
 
             _selectedStation = value;
             OnPropertyChanged();
@@ -163,6 +170,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(SelectedStationFallbackIconVisibility));
             OnPropertyChanged(nameof(SelectedStationFaviconImageSource));
             OnPropertyChanged(nameof(SelectedStationDisplayName));
+            SyncStationCyclingAvailability();
 
             if (_selectedStation != null)
             {
@@ -184,7 +192,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     _lastError = $"Invalid stream URL for {_selectedStation.Name}";
                     Debug.WriteLine($"[PlayerViewModel] ERROR: {_lastError}");
                     PlaybackError?.Invoke(this, _lastError);
-                    if (wasPlaying)
+                    if (shouldResumePlayback)
                     {
                         Debug.WriteLine("[PlayerViewModel] Pausing player due to invalid URL");
                         _player.Pause();
@@ -196,7 +204,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 try
                 {
                     // Stop current playback
-                    if (wasPlaying)
+                    if (shouldResumePlayback)
                     {
                         Debug.WriteLine("[PlayerViewModel] Pausing current playback before switching...");
                         _player.Pause();
@@ -218,7 +226,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     Debug.WriteLine("[PlayerViewModel] Station favicon set successfully");
 
                     // Resume playback if we were playing before
-                    if (wasPlaying)
+                    if (shouldResumePlayback)
                     {
                         Debug.WriteLine("[PlayerViewModel] Resuming playback with new station...");
                         _player.Play();
@@ -355,6 +363,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
     public bool CanPlay => Stations.Count > 0 && SelectedStation != null;
 
+    public bool CanCycleStations => Stations.Count > 1;
+
     /// <summary>
     /// Gets the current stream metadata (now playing information).
     /// </summary>
@@ -490,6 +500,16 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         Debug.WriteLine("=== RestoreSelectedStationPlaybackTarget END ===");
     }
 
+    public bool SelectNextStation()
+    {
+        return TryCycleStation(1, "next");
+    }
+
+    public bool SelectPreviousStation()
+    {
+        return TryCycleStation(-1, "previous");
+    }
+
     /// <summary>
     /// Add a new station and save to settings
     /// </summary>
@@ -544,7 +564,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             {
                 // Last station - stop playback and clear selection
                 Debug.WriteLine("[PlayerViewModel] Removing last station, stopping playback");
-                if (IsPlaying)
+                if (IsPlaying || IsBuffering)
                 {
                     _player.Pause();
                 }
@@ -647,6 +667,43 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine($"[PlayerViewModel] Invalid URL, skipping initialization: {streamUrl}");
         }
+    }
+
+    private bool TryCycleStation(int direction, string directionName)
+    {
+        Debug.WriteLine($"=== TryCycleStation START ({directionName}) ===");
+
+        if (Stations.Count == 0)
+        {
+            Debug.WriteLine("[PlayerViewModel] No stations available to cycle");
+            Debug.WriteLine($"=== TryCycleStation END ({directionName}, no stations) ===");
+            return false;
+        }
+
+        if (Stations.Count == 1)
+        {
+            Debug.WriteLine("[PlayerViewModel] Station cycling skipped because only one station is available");
+            Debug.WriteLine($"=== TryCycleStation END ({directionName}, single station) ===");
+            return false;
+        }
+
+        int currentIndex = _selectedStation is null ? -1 : Stations.IndexOf(_selectedStation);
+        int newIndex = currentIndex >= 0
+            ? (currentIndex + direction + Stations.Count) % Stations.Count
+            : direction > 0
+                ? 0
+                : Stations.Count - 1;
+
+        Debug.WriteLine($"[PlayerViewModel] Cycling {directionName} from index {currentIndex} to {newIndex}");
+        SelectedStation = Stations[newIndex];
+        Debug.WriteLine($"=== TryCycleStation END ({directionName}) ===");
+        return true;
+    }
+
+    private void SyncStationCyclingAvailability()
+    {
+        Debug.WriteLine($"[PlayerViewModel] Syncing station cycling availability: {CanCycleStations}");
+        _player.SetStationCyclingEnabled(CanCycleStations);
     }
 
     private void PrepareSelectedStationForPlayback()
