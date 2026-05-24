@@ -150,7 +150,8 @@
                                 Margin="10"
                                 Source="ms-appx:///Assets/Radio.png"
                                 Stretch="Uniform"
-                                Visibility="{x:Bind ViewModel.SelectedStationFallbackIconVisibility, Mode=OneWay}" />
+                                Visibility="{x:Bind ViewModel.SelectedStationFallbackIconVisibility,
+                                                    Mode=OneWay}" />
                             <Border CornerRadius="{StaticResource OverlayCornerRadius}">
                                 <Image Source="{x:Bind ViewModel.SelectedStationFaviconImageSource, Mode=OneWay}" Stretch="UniformToFill" />
                             </Border>

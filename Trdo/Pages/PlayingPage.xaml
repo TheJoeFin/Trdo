@@ -379,10 +379,11 @@
             </HyperlinkButton>
 
             <HyperlinkButton
-                Grid.Column="2" ToolTipService.ToolTip="Quit Trdo"
+                Grid.Column="2"
                 VerticalAlignment="Center"
                 Click="CloseButton_Click"
-                Content="Quit" />
+                Content="Quit"
+                ToolTipService.ToolTip="Quit Trdo" />
         </Grid>
     </Grid>
 </Page>
