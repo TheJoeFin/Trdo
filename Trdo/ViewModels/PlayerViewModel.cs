@@ -18,15 +18,28 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 {
     private readonly RadioPlayerService _player = RadioPlayerService.Instance;
     private readonly RadioStationService _stationService = RadioStationService.Instance;
+    private readonly FavoritesService _favoritesService = FavoritesService.Instance;
     private string _watchdogStatus = string.Empty;
     private RadioStation? _selectedStation;
     private string? _lastError;
+    private bool _isCurrentTrackFavorited;
 
     private static readonly Lazy<PlayerViewModel> _instance = new(() => new PlayerViewModel());
     public static PlayerViewModel Shared => _instance.Value;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler<string>? PlaybackError;
+
+    public bool IsCurrentTrackFavorited
+    {
+        get => _isCurrentTrackFavorited;
+        private set
+        {
+            if (_isCurrentTrackFavorited == value) return;
+            _isCurrentTrackFavorited = value;
+            OnPropertyChanged();
+        }
+    }
 
     public PlayerViewModel()
     {
@@ -39,18 +52,27 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine($"[PlayerViewModel] PlaybackStateChanged event fired. IsPlaying={IsPlaying}");
             OnPropertyChanged(nameof(IsPlaying));
+            OnPropertyChanged(nameof(IsPlaybackActive));
             OnPropertyChanged(nameof(PlaybackButtonGlyph));
             OnPropertyChanged(nameof(PlaybackButtonText));
             OnPropertyChanged(nameof(MiniPlayerCloseButtonText));
+            OnPropertyChanged(nameof(MiniPlayerCloseButtonVisibility));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonVisibility));
+            OnPropertyChanged(nameof(MiniPlayerActiveContentVisibility));
+            OnPropertyChanged(nameof(MiniPlayerIdleContentVisibility));
         };
-
         _player.BufferingStateChanged += (_, _) =>
         {
-            Debug.WriteLine($"[PlayerViewModel] BufferingStateChanged event fired. IsBuffering={IsBuffering}");
+            Debug.WriteLine($"[PlayerViewModel] BufferingStateChanged event fired. IsBuffering={IsBuffering}");        
             OnPropertyChanged(nameof(IsBuffering));
+            OnPropertyChanged(nameof(IsPlaybackActive));
             OnPropertyChanged(nameof(PlaybackButtonGlyph));
             OnPropertyChanged(nameof(PlaybackButtonText));
             OnPropertyChanged(nameof(MiniPlayerCloseButtonText));
+            OnPropertyChanged(nameof(MiniPlayerCloseButtonVisibility));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonVisibility));
+            OnPropertyChanged(nameof(MiniPlayerActiveContentVisibility));
+            OnPropertyChanged(nameof(MiniPlayerIdleContentVisibility));
         };
 
         _player.VolumeChanged += (_, _) =>
@@ -84,6 +106,30 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(CurrentAlbumArtImageSource));
             OnPropertyChanged(nameof(CurrentTrackDisplay));
             OnPropertyChanged(nameof(CurrentTrackSupportingText));
+            OnPropertyChanged(nameof(MiniPlayerPrimaryText));
+            OnPropertyChanged(nameof(MiniPlayerSecondaryText));
+            OnPropertyChanged(nameof(HasMiniPlayerSecondaryText));
+            OnPropertyChanged(nameof(ShowMiniPlayerSearchLinks));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonVisibility));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonText));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonGlyph));
+            UpdateCurrentTrackFavoriteStatus();
+        };
+
+        _favoritesService.FavoritesChanged += (_, _) =>
+        {
+            UpdateCurrentTrackFavoriteStatus();
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonText));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonGlyph));
+        };
+        SettingsService.MusicSearchServicesChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(IsSpotifyEnabled));
+            OnPropertyChanged(nameof(IsDiscogsEnabled));
+            OnPropertyChanged(nameof(IsAppleMusicEnabled));
+            OnPropertyChanged(nameof(IsYouTubeMusicEnabled));
+            OnPropertyChanged(nameof(HasEnabledMusicServices));
+            OnPropertyChanged(nameof(ShowMiniPlayerSearchLinks));
         };
 
         // Load stations from settings
@@ -141,6 +187,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         }
 
         Debug.WriteLine("=== PlayerViewModel Constructor END ===");
+        UpdateCurrentTrackFavoriteStatus();
     }
 
     public ObservableCollection<RadioStation> Stations { get; }
@@ -272,6 +319,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool IsPlaybackActive => IsPlaying || IsBuffering;
+
     public string StreamUrl
     {
         get
@@ -396,13 +445,55 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         ? "Pause & close"
         : "";
 
-    public string CurrentTrackDisplay => HasNowPlaying
-        ? NowPlaying
-        : "No track information";
+    public Visibility MiniPlayerCloseButtonVisibility => IsPlaying
+        ? Visibility.Visible
+        : Visibility.Collapsed;
 
-    public string CurrentTrackSupportingText => HasNowPlaying
-        ? "Live now playing"
-        : "Track info appears here when the station broadcasts it";
+    public string MiniPlayerFavoriteButtonText => IsCurrentTrackFavorited
+        ? "Remove favorite"
+        : "Favorite track";
+
+    public string MiniPlayerFavoriteButtonGlyph => IsCurrentTrackFavorited
+        ? "\uE735"
+        : "\uE734";
+
+    public Visibility MiniPlayerFavoriteButtonVisibility => IsPlaybackActive && CurrentMetadata?.HasMetadata == true
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility MiniPlayerActiveContentVisibility => IsPlaybackActive
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility MiniPlayerIdleContentVisibility => IsPlaybackActive
+        ? Visibility.Collapsed
+        : Visibility.Visible;
+
+    public string MiniPlayerPrimaryText => !string.IsNullOrWhiteSpace(CurrentMetadata?.Title)
+        ? CurrentMetadata.Title
+        : HasNowPlaying
+            ? NowPlaying
+            : "No track information";
+
+    public string MiniPlayerSecondaryText => !string.IsNullOrWhiteSpace(CurrentMetadata?.Artist)
+        ? CurrentMetadata.Artist
+        : HasNowPlaying
+            ? "Live now playing"
+            : "Track info appears here when the station broadcasts it";
+
+    public bool HasMiniPlayerSecondaryText => !string.IsNullOrWhiteSpace(MiniPlayerSecondaryText);
+
+    public string CurrentTrackDisplay => !string.IsNullOrWhiteSpace(CurrentMetadata?.Title)
+        ? CurrentMetadata.Title
+        : HasNowPlaying
+            ? NowPlaying
+            : "No track information";
+
+    public string CurrentTrackSupportingText => !string.IsNullOrWhiteSpace(CurrentMetadata?.Artist)
+        ? CurrentMetadata.Artist
+        : HasNowPlaying
+            ? "Live now playing"
+            : "Track info appears here when the station broadcasts it";
 
     public ImageSource? CurrentAlbumArtImageSource => CreateImageSource(CurrentMetadata?.AlbumArtUrl);
 
@@ -413,6 +504,22 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         : Visibility.Collapsed;
 
     public string SelectedStationDisplayName => SelectedStation?.Name ?? "No station selected";
+
+    public bool IsSpotifyEnabled => SettingsService.IsSpotifyEnabled;
+
+    public bool IsDiscogsEnabled => SettingsService.IsDiscogsEnabled;
+
+    public bool IsAppleMusicEnabled => SettingsService.IsAppleMusicEnabled;
+
+    public bool IsYouTubeMusicEnabled => SettingsService.IsYouTubeMusicEnabled;
+
+    public bool HasEnabledMusicServices =>
+        IsSpotifyEnabled ||
+        IsDiscogsEnabled ||
+        IsAppleMusicEnabled ||
+        IsYouTubeMusicEnabled;
+
+    public bool ShowMiniPlayerSearchLinks => HasNowPlaying && HasEnabledMusicServices;
 
     public double Volume
     {
@@ -479,6 +586,64 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         Debug.WriteLine("=== Pause END ===");
     }
 
+    public void ToggleCurrentTrackFavorite()
+    {
+        if (CurrentMetadata?.HasMetadata != true)
+            return;
+
+        string stationName = SelectedStation?.Name ?? "Unknown Station";
+        IsCurrentTrackFavorited = _favoritesService.ToggleFavorite(CurrentMetadata, stationName);
+    }
+
+    public async Task SearchOnDiscogs()
+    {
+        if (!HasNowPlaying)
+            return;
+
+        string url = $"https://www.discogs.com/search?q={Uri.EscapeDataString(NowPlaying)}";
+        await Launcher.LaunchUriAsync(new Uri(url));
+    }
+
+    public async Task SearchOnSpotify()
+    {
+        if (!HasNowPlaying)
+            return;
+
+        string query = Uri.EscapeDataString(NowPlaying);
+        string spotifyAppUri = $"spotify:search:{query}";
+
+        try
+        {
+            bool success = await Launcher.LaunchUriAsync(new Uri(spotifyAppUri));
+
+            if (!success)
+            {
+                await Launcher.LaunchUriAsync(new Uri($"https://open.spotify.com/search/{query}"));
+            }
+        }
+        catch
+        {
+            await Launcher.LaunchUriAsync(new Uri($"https://open.spotify.com/search/{query}"));
+        }
+    }
+
+    public async Task SearchOnAppleMusic()
+    {
+        if (!HasNowPlaying)
+            return;
+
+        await MusicSearchLinkService.LaunchAppleMusicWebSearchAsync(NowPlaying);
+    }
+
+    public async Task SearchOnYouTubeMusic()
+    {
+        if (!HasNowPlaying)
+            return;
+
+        string query = Uri.EscapeDataString(NowPlaying);
+        await Launcher.LaunchUriAsync(new Uri($"https://music.youtube.com/search?q={query}"));
+    }
+
     public void RestoreSelectedStationPlaybackTarget()
     {
         Debug.WriteLine("=== RestoreSelectedStationPlaybackTarget START ===");
@@ -508,6 +673,11 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     public bool SelectPreviousStation()
     {
         return TryCycleStation(-1, "previous");
+    }
+
+    private void UpdateCurrentTrackFavoriteStatus()
+    {
+        IsCurrentTrackFavorited = _favoritesService.IsFavorited(CurrentMetadata);
     }
 
     /// <summary>
