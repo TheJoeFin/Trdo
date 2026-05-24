@@ -24,6 +24,7 @@
     <None Remove="Assets\ytmusic.svg" />
     <None Remove="Assets\Tutorial.gif" />
     <None Remove="Controls\MiniPlayerWindow.xaml" />
+    <None Remove="Controls\SpectrumVisualizerControl.xaml" />
     <None Remove="Controls\ManualStationWindow.xaml" />
     <None Remove="Controls\TutorialWindow.xaml" />
     <None Remove="Pages\AddStation.xaml" />
@@ -130,6 +131,11 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\ShellPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\SpectrumVisualizerControl.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
