@@ -145,6 +145,7 @@ public partial class App : Application
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
         _trayIcon.IsVisible = true;
+        WindowPlacementService.SetTrayIconSource(_trayIcon);
 
         // Only show tutorial window on first run
         if (SettingsService.IsFirstRun)
