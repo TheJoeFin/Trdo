@@ -3,12 +3,14 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Dispatching;
 using System;
 using System.Diagnostics;
 using Trdo.Controls;
 using Trdo.Models;
 using Trdo.Services;
 using Trdo.ViewModels;
+using Windows.Foundation;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -20,10 +22,12 @@ namespace Trdo.Pages;
 public sealed partial class PlayingPage : Page
 {
     private const int MinIndexForScrolling = 3;
+    private static readonly TimeSpan NowPlayingMarqueeDelay = TimeSpan.FromSeconds(2);
     private const string FilledStar = "\uE735";
     private const string OutlineStar = "\uE734";
 
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;
+    private readonly DispatcherQueueTimer _nowPlayingMarqueeDelayTimer;
 
     public PlayerViewModel ViewModel { get; }
     private ShellViewModel? _shellViewModel;
@@ -37,6 +41,7 @@ public sealed partial class PlayingPage : Page
         ViewModel = PlayerViewModel.Shared;
         DataContext = ViewModel;
         Debug.WriteLine("[PlayingPage] ViewModel assigned and DataContext set");
+        NowPlayingMarqueeText.MarqueeCompleted += (_, _) => RestartNowPlayingMarqueeAfterDelay();
 
         // Subscribe to property changes to update UI
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -49,6 +54,12 @@ public sealed partial class PlayingPage : Page
 
         // Wait for loaded to access named elements
         Loaded += PlayingPage_Loaded;
+        Unloaded += PlayingPage_Unloaded;
+
+        _nowPlayingMarqueeDelayTimer = DispatcherQueue.CreateTimer();
+        _nowPlayingMarqueeDelayTimer.Interval = NowPlayingMarqueeDelay;
+        _nowPlayingMarqueeDelayTimer.IsRepeating = false;
+        _nowPlayingMarqueeDelayTimer.Tick += NowPlayingMarqueeDelayTimer_Tick;
 
         Debug.WriteLine("=== PlayingPage Constructor END ===");
     }
@@ -60,7 +71,6 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] Current SelectedStation: {ViewModel.SelectedStation?.Name ?? "null"}");
         Debug.WriteLine($"[PlayingPage] Current StreamUrl: {ViewModel.StreamUrl}");
 
-        UpdatePlayButtonState();
         UpdateStationSelection();
         UpdateFavoriteButtonState();
 
@@ -74,6 +84,8 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] ShellViewModel found: {_shellViewModel != null}");
 
         Debug.WriteLine("=== PlayingPage_Loaded END ===");
+
+        UpdateNowPlayingMarqueeState();
 
         // scroll to selected station
         if (ViewModel.SelectedStation is not null)
@@ -95,6 +107,12 @@ public sealed partial class PlayingPage : Page
         }
     }
 
+    private void PlayingPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        _nowPlayingMarqueeDelayTimer.Stop();
+        SetNowPlayingScrolling(false);
+    }
+
     private ShellViewModel? FindShellViewModel()
     {
         // Walk up the visual tree to find ShellPage
@@ -113,13 +131,18 @@ public sealed partial class PlayingPage : Page
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         Debug.WriteLine($"[PlayingPage] ViewModel PropertyChanged: {e.PropertyName}");
-        UpdatePlayButtonState();
         UpdateStationSelection();
 
         if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata) ||
                  e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
         {
             UpdateFavoriteButtonState();
+        }
+
+        if (e.PropertyName == nameof(PlayerViewModel.NowPlaying) ||
+            e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
+        {
+            UpdateNowPlayingMarqueeState();
         }
     }
 
@@ -154,30 +177,6 @@ public sealed partial class PlayingPage : Page
         {
             Debug.WriteLine($"[PlayingPage] EXCEPTION showing error dialog: {ex.Message}");
             // If dialog fails, silently ignore
-        }
-    }
-
-    private void UpdatePlayButtonState()
-    {
-        if (ViewModel.IsBuffering)
-        {
-            PlayIcon.Glyph = "\uF16A"; // Progress ring
-            PlayText.Text = "Buffering";
-            Debug.WriteLine("[PlayingPage] Play button updated to 'Buffering'");
-            return;
-        }
-
-        if (ViewModel.IsPlaying)
-        {
-            PlayIcon.Glyph = "\uE769"; // Pause icon
-            PlayText.Text = "Pause";
-            Debug.WriteLine("[PlayingPage] Play button updated to 'Pause'");
-        }
-        else
-        {
-            PlayIcon.Glyph = "\uE768"; // Play icon
-            PlayText.Text = "Play";
-            Debug.WriteLine("[PlayingPage] Play button updated to 'Play'");
         }
     }
 
@@ -259,9 +258,19 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine("=== PlayButton_Click END ===");
     }
 
-    private void QuitButton_Click(object sender, RoutedEventArgs e)
+    private void PopOutButton_Click(object sender, RoutedEventArgs e)
     {
-        Debug.WriteLine("[PlayingPage] Quit button clicked");
+        Debug.WriteLine("[PlayingPage] Pop-out button clicked");
+
+        if (Application.Current is App app)
+        {
+            app.ShowMiniPlayerWindow();
+        }
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[PlayingPage] Close button clicked");
         Application.Current.Exit();
     }
 
@@ -356,7 +365,6 @@ public sealed partial class PlayingPage : Page
         {
             Debug.WriteLine($"[PlayingPage] Edit station clicked: {station.Name}");
             // Open a pop-out window for editing so the flyout closing doesn't clear the fields
-            WindowPlacementService.CapturePointerAnchor();
             ManualStationWindow editWindow = new();
             WindowHelper.Track(editWindow);
             editWindow.LoadStationForEdit(station);
@@ -431,6 +439,101 @@ public sealed partial class PlayingPage : Page
         if (VolumeControlGrid.Visibility == Visibility.Visible)
         {
             ((MenuFlyout)sender).Hide();
+        }
+    }
+
+    private void NowPlayingTextHost_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateNowPlayingMarqueeState();
+    }
+
+    private void NowPlayingMarqueeDelayTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        sender.Stop();
+
+        if (!ShouldUseNowPlayingMarquee())
+        {
+            SetNowPlayingScrolling(false);
+            return;
+        }
+
+        SetNowPlayingScrolling(true);
+    }
+
+    private void UpdateNowPlayingMarqueeState()
+    {
+        _nowPlayingMarqueeDelayTimer.Stop();
+        SetNowPlayingScrolling(false);
+
+        if (!ShouldUseNowPlayingMarquee())
+        {
+            return;
+        }
+
+        _nowPlayingMarqueeDelayTimer.Start();
+    }
+
+    private void RestartNowPlayingMarqueeAfterDelay()
+    {
+        if (!ShouldUseNowPlayingMarquee())
+        {
+            return;
+        }
+
+        _nowPlayingMarqueeDelayTimer.Stop();
+        _nowPlayingMarqueeDelayTimer.Start();
+    }
+
+    private bool ShouldUseNowPlayingMarquee()
+    {
+        return IsLoaded &&
+               ViewModel.HasNowPlaying &&
+               !string.IsNullOrWhiteSpace(ViewModel.NowPlaying) &&
+               DoesNowPlayingOverflow();
+    }
+
+    private bool DoesNowPlayingOverflow()
+    {
+        if (NowPlayingTextHost.ActualWidth <= 0)
+        {
+            return false;
+        }
+
+        TextBlock measurementTextBlock = new()
+        {
+            CharacterSpacing = NowPlayingText.CharacterSpacing,
+            FontFamily = NowPlayingText.FontFamily,
+            FontSize = NowPlayingText.FontSize,
+            FontStretch = NowPlayingText.FontStretch,
+            FontStyle = NowPlayingText.FontStyle,
+            FontWeight = NowPlayingText.FontWeight,
+            Text = ViewModel.NowPlaying,
+            TextWrapping = TextWrapping.NoWrap
+        };
+
+        measurementTextBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        return measurementTextBlock.DesiredSize.Width > NowPlayingTextHost.ActualWidth;
+    }
+
+    private void SetNowPlayingScrolling(bool isScrolling)
+    {
+        if (isScrolling)
+        {
+            NowPlayingText.Visibility = Visibility.Collapsed;
+            NowPlayingMarqueeText.Visibility = Visibility.Visible;
+            if (IsLoaded)
+            {
+                NowPlayingMarqueeText.StartMarquee();
+            }
+            return;
+        }
+
+        NowPlayingMarqueeText.Visibility = Visibility.Collapsed;
+        NowPlayingText.Visibility = Visibility.Visible;
+        if (IsLoaded)
+        {
+            NowPlayingMarqueeText.StopMarquee();
         }
     }
 }

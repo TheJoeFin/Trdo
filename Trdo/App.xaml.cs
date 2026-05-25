@@ -1,9 +1,10 @@
-﻿using Microsoft.UI.Dispatching;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,11 +23,12 @@ namespace Trdo;
 public partial class App : Application
 {
     private TrayIcon? _trayIcon;
+    private MiniPlayerWindow? _miniPlayerWindow;
     private readonly PlayerViewModel _playerVm = PlayerViewModel.Shared;
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
     private EventWaitHandle? _trayIconRestoreEvent;
-    private DispatcherQueueTimer? _trayIconWatchdogTimer;
+    private TaskbarCreatedMonitor? _taskbarCreatedMonitor;
     private DispatcherQueueTimer? _restoreEventMonitorTimer;
 
     /// <summary>
@@ -52,6 +54,21 @@ public partial class App : Application
             return;
 
         // TODO: find a way to programmatically show the flyout on the Icon
+    }
+
+    public void ShowMiniPlayerWindow()
+    {
+        WindowPlacementService.CapturePointerAnchor();
+
+        if (_miniPlayerWindow is null)
+        {
+            _miniPlayerWindow = new MiniPlayerWindow();
+            WindowHelper.Track(_miniPlayerWindow);
+            _miniPlayerWindow.Closed += (_, _) => _miniPlayerWindow = null;
+        }
+
+        _miniPlayerWindow.Activate();
+        WindowPlacementService.PositionWindowNearAnchor(_miniPlayerWindow, 320, 220);
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
@@ -101,6 +118,16 @@ public partial class App : Application
             // The watchdog timer will still provide periodic restoration
         }
 
+        try
+        {
+            _taskbarCreatedMonitor = new TaskbarCreatedMonitor();
+            _taskbarCreatedMonitor.TaskbarCreated += OnTaskbarCreated;
+        }
+        catch (Win32Exception ex)
+        {
+            Debug.WriteLine($"[App] Failed to register TaskbarCreated monitor: {ex.Message}");
+        }
+
         InitializeTrayIcon();
         await UpdateTrayIconAsync();
         UpdatePlayPauseCommandText();
@@ -140,11 +167,14 @@ public partial class App : Application
 
     private void InitializeTrayIcon()
     {
-        _trayIcon = null;
+        if (_trayIcon is not null)
+            return;
+
         _trayIcon = new(0, "Assets/Radio.ico", "Trdo");
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
         _trayIcon.IsVisible = true;
+        WindowPlacementService.SetTrayIconSource(_trayIcon);
 
         // Only show tutorial window on first run
         if (SettingsService.IsFirstRun)
@@ -354,17 +384,32 @@ public partial class App : Application
         _restoreEventMonitorTimer.Start();
     }
 
+    private async void OnTaskbarCreated(object? sender, EventArgs e)
+    {
+        await EnsureTrayIconVisibleAsync();
+    }
+
     private async Task EnsureTrayIconVisibleAsync()
     {
         try
         {
-            InitializeTrayIcon();
+            if (_trayIcon is null)
+            {
+                InitializeTrayIcon();
+            }
+            else
+            {
+                _trayIcon.CloseFlyout();
+                _trayIcon.IsVisible = false;
+                _trayIcon.IsVisible = true;
+            }
+
             await UpdateTrayIconAsync();
             UpdatePlayPauseCommandText();
         }
-        catch
+        catch (Exception ex)
         {
-            // Silent failure
+            Debug.WriteLine($"[App] Failed to recreate tray icon: {ex}");
         }
     }
 

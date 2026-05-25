@@ -13,28 +13,34 @@
   </a>
 </p>
 
-![Trdo flyout](Images/Screenshot-1-1.png)
+![Trdo flyout](Images/Screenshot-1-10.png)
 
 ### Overview
 Trdo is a modern internet radio player built for Windows with a focus on simplicity and elegance. Stream your favorite radio stations with a beautiful, intuitive interface designed for Windows 11.
 
 Built with .NET 9, WinUI 3, and the Windows App SDK, Trdo provides a native Windows experience with smooth animations and responsive controls.
 
+## 📰 In the Press
+
+- **[Wired](https://www.wired.com/story/trdo-is-a-great-free-radio-app-for-windows/)** — *"Trdo Is a Great Free Radio App for Windows"* — Justin Pot
+- **[MakeUseOf](https://www.makeuseof.com/trdo-tiny-windows-app-brought-back-my-love-for-internet-radio-its-open-source/)** — *"Trdo: This Tiny Windows App Brought Back My Love for Internet Radio (And It's Open Source)"* — Tashreef Shareef, January 2026
+- **[WinFuture](https://winfuture.de/download/product/4193/)** *(German)* — Trdo featured as a modern, minimalist internet radio player for Windows 11
+
 ## How to Build
 Get the code:
 - Install git: https://git-scm.com/download/win
 - git clone https://github.com/TheJoeFin/Trdo.git
 
-### With Visual Studio 2022
-- Install Visual Studio 2022 (the free community edition is sufficient).
+### With Visual Studio 2026
+- Install Visual Studio 2026 (the free community edition is sufficient).
     - Install the ".NET desktop development" workload.
     - Install "Windows application development" workload with Windows App SDK
-- Open `\Trdo\Trdo.sln` in Visual Studio.
+- Open `\Trdo\Trdo.slnx` in Visual Studio.
 - Key F5 or Press "▶ Local Machine"
 
 ### With Visual Studio Code (VS Code)
 - Install Visual Studio Code https://code.visualstudio.com/
-- Install .NET 9.0 SDK https://dotnet.microsoft.com/download/dotnet/9.0
+- Install .NET 9.0 SDK https://dotnet.microsoft.com/download/dotnet/10.0
 - Open `\Trdo\` Folder in VS Code (Same folder as .sln file)
 - Key F5 to launch with debugger
 
@@ -50,8 +56,8 @@ Get the code:
 
 ## 🛠️ Built With
 
-- .NET 9
-- WinUI 3
+- .NET 10
+- WinUI
 - Windows App SDK
 - WinUIEx
 

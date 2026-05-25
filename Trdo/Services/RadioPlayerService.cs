@@ -38,6 +38,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private DateTime _lastExternalPauseRecovery = DateTime.MinValue;
     private bool _hasPlayedOnce;
     private bool _isManuallyBuffering;
+    private bool _isStationCyclingEnabled;
 
     public static RadioPlayerService Instance { get; } = new();
 
@@ -45,6 +46,8 @@ public sealed partial class RadioPlayerService : IDisposable
     public event EventHandler<double>? VolumeChanged;
     public event EventHandler<bool>? BufferingStateChanged;
     public event EventHandler<StreamMetadata>? StreamMetadataChanged;
+    public event EventHandler? NextStationRequested;
+    public event EventHandler? PreviousStationRequested;
 
     public bool IsPlaying
     {
@@ -224,6 +227,18 @@ public sealed partial class RadioPlayerService : IDisposable
             }
             catch { }
         }
+    }
+
+    public void SetStationCyclingEnabled(bool isEnabled)
+    {
+        if (_isStationCyclingEnabled == isEnabled)
+        {
+            return;
+        }
+
+        _isStationCyclingEnabled = isEnabled;
+        Debug.WriteLine($"[RadioPlayerService] Station cycling enabled: {_isStationCyclingEnabled}");
+        ScheduleSystemMediaTransportControlsUpdate();
     }
 
     private RadioPlayerService()
@@ -493,6 +508,39 @@ public sealed partial class RadioPlayerService : IDisposable
         Debug.WriteLine($"[RadioPlayerService] Setting station favicon to: {faviconUrl}");
         _currentStationFaviconUrl = faviconUrl;
         ScheduleSystemMediaTransportControlsUpdate();
+    }
+
+    public void ClearPlaybackTarget()
+    {
+        Debug.WriteLine("=== ClearPlaybackTarget START ===");
+
+        if (!string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            Pause();
+        }
+        else
+        {
+            SetManualBuffering(false);
+            _metadataService.StopPolling();
+        }
+
+        if (_player.Source is MediaSource oldMedia)
+        {
+            Debug.WriteLine("[RadioPlayerService] Disposing MediaSource while clearing playback target");
+            oldMedia.Reset();
+            oldMedia.Dispose();
+        }
+
+        _player.Source = null;
+        _streamUrl = null;
+        _currentStationName = null;
+        _currentStationFaviconUrl = null;
+        _currentAlbumArtUrl = null;
+        _hasPlayedOnce = false;
+        _wasExternalPause = false;
+
+        ScheduleSystemMediaTransportControlsUpdate();
+        Debug.WriteLine("=== ClearPlaybackTarget END ===");
     }
 
     /// <summary>
@@ -1076,6 +1124,14 @@ public sealed partial class RadioPlayerService : IDisposable
                     Debug.WriteLine("[RadioPlayerService] Pause button pressed from system controls");
                     Pause();
                     break;
+                case SystemMediaTransportControlsButton.Next:
+                    Debug.WriteLine("[RadioPlayerService] Next button pressed from system controls");
+                    NextStationRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+                case SystemMediaTransportControlsButton.Previous:
+                    Debug.WriteLine("[RadioPlayerService] Previous button pressed from system controls");
+                    PreviousStationRequested?.Invoke(this, EventArgs.Empty);
+                    break;
                 default:
                     Debug.WriteLine($"[RadioPlayerService] Unhandled button: {args.Button}");
                     break;
@@ -1175,6 +1231,9 @@ public sealed partial class RadioPlayerService : IDisposable
 
         try
         {
+            _systemMediaControls.IsNextEnabled = _isStationCyclingEnabled;
+            _systemMediaControls.IsPreviousEnabled = _isStationCyclingEnabled;
+
             // Get the display updater
             SystemMediaTransportControlsDisplayUpdater updater = _systemMediaControls.DisplayUpdater;
 
@@ -1375,6 +1434,11 @@ public sealed partial class RadioPlayerService : IDisposable
     public void Dispose()
     {
         Debug.WriteLine("[RadioPlayerService] Dispose called");
+
+        if (_systemMediaControls != null)
+        {
+            _systemMediaControls.ButtonPressed -= OnSystemMediaButtonPressed;
+        }
 
         // Dispose the debounce timer
         _smtcUpdateTimer?.Dispose();

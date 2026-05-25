@@ -1,3 +1,6 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -15,9 +18,11 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 {
     private readonly RadioPlayerService _player = RadioPlayerService.Instance;
     private readonly RadioStationService _stationService = RadioStationService.Instance;
+    private readonly FavoritesService _favoritesService = FavoritesService.Instance;
     private string _watchdogStatus = string.Empty;
     private RadioStation? _selectedStation;
     private string? _lastError;
+    private bool _isCurrentTrackFavorited;
 
     private static readonly Lazy<PlayerViewModel> _instance = new(() => new PlayerViewModel());
     public static PlayerViewModel Shared => _instance.Value;
@@ -25,20 +30,49 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     public event EventHandler<string>? PlaybackError;
 
+    public bool IsCurrentTrackFavorited
+    {
+        get => _isCurrentTrackFavorited;
+        private set
+        {
+            if (_isCurrentTrackFavorited == value) return;
+            _isCurrentTrackFavorited = value;
+            OnPropertyChanged();
+        }
+    }
+
     public PlayerViewModel()
     {
         Debug.WriteLine("=== PlayerViewModel Constructor START ===");
+
+        _player.NextStationRequested += (_, _) => SelectNextStation();
+        _player.PreviousStationRequested += (_, _) => SelectPreviousStation();
 
         _player.PlaybackStateChanged += (_, _) =>
         {
             Debug.WriteLine($"[PlayerViewModel] PlaybackStateChanged event fired. IsPlaying={IsPlaying}");
             OnPropertyChanged(nameof(IsPlaying));
+            OnPropertyChanged(nameof(IsPlaybackActive));
+            OnPropertyChanged(nameof(PlaybackButtonGlyph));
+            OnPropertyChanged(nameof(PlaybackButtonText));
+            OnPropertyChanged(nameof(MiniPlayerCloseButtonText));
+            OnPropertyChanged(nameof(MiniPlayerCloseButtonVisibility));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonVisibility));
+            OnPropertyChanged(nameof(MiniPlayerActiveContentVisibility));
+            OnPropertyChanged(nameof(MiniPlayerIdleContentVisibility));
         };
-
         _player.BufferingStateChanged += (_, _) =>
         {
-            Debug.WriteLine($"[PlayerViewModel] BufferingStateChanged event fired. IsBuffering={IsBuffering}");
+            Debug.WriteLine($"[PlayerViewModel] BufferingStateChanged event fired. IsBuffering={IsBuffering}");        
             OnPropertyChanged(nameof(IsBuffering));
+            OnPropertyChanged(nameof(IsPlaybackActive));
+            OnPropertyChanged(nameof(PlaybackButtonGlyph));
+            OnPropertyChanged(nameof(PlaybackButtonText));
+            OnPropertyChanged(nameof(MiniPlayerCloseButtonText));
+            OnPropertyChanged(nameof(MiniPlayerCloseButtonVisibility));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonVisibility));
+            OnPropertyChanged(nameof(MiniPlayerActiveContentVisibility));
+            OnPropertyChanged(nameof(MiniPlayerIdleContentVisibility));
         };
 
         _player.VolumeChanged += (_, _) =>
@@ -69,6 +103,33 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(CurrentMetadata));
             OnPropertyChanged(nameof(NowPlaying));
             OnPropertyChanged(nameof(HasNowPlaying));
+            OnPropertyChanged(nameof(CurrentAlbumArtImageSource));
+            OnPropertyChanged(nameof(CurrentTrackDisplay));
+            OnPropertyChanged(nameof(CurrentTrackSupportingText));
+            OnPropertyChanged(nameof(MiniPlayerPrimaryText));
+            OnPropertyChanged(nameof(MiniPlayerSecondaryText));
+            OnPropertyChanged(nameof(HasMiniPlayerSecondaryText));
+            OnPropertyChanged(nameof(ShowMiniPlayerSearchLinks));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonVisibility));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonText));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonGlyph));
+            UpdateCurrentTrackFavoriteStatus();
+        };
+
+        _favoritesService.FavoritesChanged += (_, _) =>
+        {
+            UpdateCurrentTrackFavoriteStatus();
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonText));
+            OnPropertyChanged(nameof(MiniPlayerFavoriteButtonGlyph));
+        };
+        SettingsService.MusicSearchServicesChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(IsSpotifyEnabled));
+            OnPropertyChanged(nameof(IsDiscogsEnabled));
+            OnPropertyChanged(nameof(IsAppleMusicEnabled));
+            OnPropertyChanged(nameof(IsYouTubeMusicEnabled));
+            OnPropertyChanged(nameof(HasEnabledMusicServices));
+            OnPropertyChanged(nameof(ShowMiniPlayerSearchLinks));
         };
 
         // Load stations from settings
@@ -76,12 +137,14 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         List<RadioStation> loadedStations = _stationService.LoadStations();
         Debug.WriteLine($"[PlayerViewModel] Loaded {loadedStations.Count} stations");
         Stations = new ObservableCollection<RadioStation>(loadedStations);
-        
+
         // Subscribe to collection changes to update CanPlay
         // We notify on all changes since CanPlay depends on Stations.Count > 0
         Stations.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(CanPlay));
+            OnPropertyChanged(nameof(CanCycleStations));
+            SyncStationCyclingAvailability();
         };
 
         // Load the previously selected station
@@ -103,6 +166,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine("[PlayerViewModel] No stations available");
         }
 
+        SyncStationCyclingAvailability();
+
         // Initialize with selected station's URL if available
         if (_selectedStation != null)
         {
@@ -122,6 +187,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         }
 
         Debug.WriteLine("=== PlayerViewModel Constructor END ===");
+        UpdateCurrentTrackFavoriteStatus();
     }
 
     public ObservableCollection<RadioStation> Stations { get; }
@@ -142,12 +208,16 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 return;
             }
 
-            bool wasPlaying = IsPlaying;
-            Debug.WriteLine($"[PlayerViewModel] Was playing before station change: {wasPlaying}");
+            bool shouldResumePlayback = IsPlaying || IsBuffering;
+            Debug.WriteLine($"[PlayerViewModel] Should resume playback after station change: {shouldResumePlayback}");
 
             _selectedStation = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanPlay));
+            OnPropertyChanged(nameof(SelectedStationFallbackIconVisibility));
+            OnPropertyChanged(nameof(SelectedStationFaviconImageSource));
+            OnPropertyChanged(nameof(SelectedStationDisplayName));
+            SyncStationCyclingAvailability();
 
             if (_selectedStation != null)
             {
@@ -169,7 +239,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     _lastError = $"Invalid stream URL for {_selectedStation.Name}";
                     Debug.WriteLine($"[PlayerViewModel] ERROR: {_lastError}");
                     PlaybackError?.Invoke(this, _lastError);
-                    if (wasPlaying)
+                    if (shouldResumePlayback)
                     {
                         Debug.WriteLine("[PlayerViewModel] Pausing player due to invalid URL");
                         _player.Pause();
@@ -181,7 +251,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 try
                 {
                     // Stop current playback
-                    if (wasPlaying)
+                    if (shouldResumePlayback)
                     {
                         Debug.WriteLine("[PlayerViewModel] Pausing current playback before switching...");
                         _player.Pause();
@@ -203,7 +273,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     Debug.WriteLine("[PlayerViewModel] Station favicon set successfully");
 
                     // Resume playback if we were playing before
-                    if (wasPlaying)
+                    if (shouldResumePlayback)
                     {
                         Debug.WriteLine("[PlayerViewModel] Resuming playback with new station...");
                         _player.Play();
@@ -248,6 +318,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             return isBuffering;
         }
     }
+
+    public bool IsPlaybackActive => IsPlaying || IsBuffering;
 
     public string StreamUrl
     {
@@ -340,6 +412,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
     public bool CanPlay => Stations.Count > 0 && SelectedStation != null;
 
+    public bool CanCycleStations => Stations.Count > 1;
+
     /// <summary>
     /// Gets the current stream metadata (now playing information).
     /// </summary>
@@ -354,6 +428,98 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     /// Indicates whether there is now playing information to display.
     /// </summary>
     public bool HasNowPlaying => CurrentMetadata?.HasMetadata ?? false;
+
+    public string PlaybackButtonGlyph => IsBuffering
+        ? "\uF16A"
+        : IsPlaying
+            ? "\uE769"
+            : "\uE768";
+
+    public string PlaybackButtonText => IsBuffering
+        ? "Buffering"
+        : IsPlaying
+            ? "Pause"
+            : "Play";
+
+    public string MiniPlayerCloseButtonText => IsPlaying
+        ? "Pause & close"
+        : "";
+
+    public Visibility MiniPlayerCloseButtonVisibility => IsPlaying
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string MiniPlayerFavoriteButtonText => IsCurrentTrackFavorited
+        ? "Remove favorite"
+        : "Favorite track";
+
+    public string MiniPlayerFavoriteButtonGlyph => IsCurrentTrackFavorited
+        ? "\uE735"
+        : "\uE734";
+
+    public Visibility MiniPlayerFavoriteButtonVisibility => IsPlaybackActive && CurrentMetadata?.HasMetadata == true
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility MiniPlayerActiveContentVisibility => IsPlaybackActive
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public Visibility MiniPlayerIdleContentVisibility => IsPlaybackActive
+        ? Visibility.Collapsed
+        : Visibility.Visible;
+
+    public string MiniPlayerPrimaryText => !string.IsNullOrWhiteSpace(CurrentMetadata?.Title)
+        ? CurrentMetadata.Title
+        : HasNowPlaying
+            ? NowPlaying
+            : "No track information";
+
+    public string MiniPlayerSecondaryText => !string.IsNullOrWhiteSpace(CurrentMetadata?.Artist)
+        ? CurrentMetadata.Artist
+        : HasNowPlaying
+            ? "Live now playing"
+            : "Track info appears here when the station broadcasts it";
+
+    public bool HasMiniPlayerSecondaryText => !string.IsNullOrWhiteSpace(MiniPlayerSecondaryText);
+
+    public string CurrentTrackDisplay => !string.IsNullOrWhiteSpace(CurrentMetadata?.Title)
+        ? CurrentMetadata.Title
+        : HasNowPlaying
+            ? NowPlaying
+            : "No track information";
+
+    public string CurrentTrackSupportingText => !string.IsNullOrWhiteSpace(CurrentMetadata?.Artist)
+        ? CurrentMetadata.Artist
+        : HasNowPlaying
+            ? "Live now playing"
+            : "Track info appears here when the station broadcasts it";
+
+    public ImageSource? CurrentAlbumArtImageSource => CreateImageSource(CurrentMetadata?.AlbumArtUrl);
+
+    public ImageSource? SelectedStationFaviconImageSource => CreateImageSource(SelectedStation?.FaviconUrl);
+
+    public Visibility SelectedStationFallbackIconVisibility => SelectedStationFaviconImageSource is null
+        ? Visibility.Visible
+        : Visibility.Collapsed;
+
+    public string SelectedStationDisplayName => SelectedStation?.Name ?? "No station selected";
+
+    public bool IsSpotifyEnabled => SettingsService.IsSpotifyEnabled;
+
+    public bool IsDiscogsEnabled => SettingsService.IsDiscogsEnabled;
+
+    public bool IsAppleMusicEnabled => SettingsService.IsAppleMusicEnabled;
+
+    public bool IsYouTubeMusicEnabled => SettingsService.IsYouTubeMusicEnabled;
+
+    public bool HasEnabledMusicServices =>
+        IsSpotifyEnabled ||
+        IsDiscogsEnabled ||
+        IsAppleMusicEnabled ||
+        IsYouTubeMusicEnabled;
+
+    public bool ShowMiniPlayerSearchLinks => HasNowPlaying && HasEnabledMusicServices;
 
     public double Volume
     {
@@ -389,6 +555,129 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         }
 
         Debug.WriteLine("=== Toggle END ===");
+    }
+
+    public void Pause()
+    {
+        Debug.WriteLine("=== Pause START ===");
+        Debug.WriteLine($"[PlayerViewModel] Current IsPlaying: {IsPlaying}");
+
+        if (!IsPlaying && !IsBuffering)
+        {
+            Debug.WriteLine("[PlayerViewModel] Pause skipped because playback is already idle");
+            Debug.WriteLine("=== Pause END (idle) ===");
+            return;
+        }
+
+        try
+        {
+            _player.Pause();
+            _lastError = null;
+        }
+        catch (Exception ex)
+        {
+            string stationName = _selectedStation?.Name ?? "Unknown";
+            _lastError = $"Failed to pause {stationName}: {ex.Message}";
+            Debug.WriteLine($"[PlayerViewModel] EXCEPTION in Pause: {_lastError}");
+            Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
+            PlaybackError?.Invoke(this, _lastError);
+        }
+
+        Debug.WriteLine("=== Pause END ===");
+    }
+
+    public void ToggleCurrentTrackFavorite()
+    {
+        if (CurrentMetadata?.HasMetadata != true)
+            return;
+
+        string stationName = SelectedStation?.Name ?? "Unknown Station";
+        IsCurrentTrackFavorited = _favoritesService.ToggleFavorite(CurrentMetadata, stationName);
+    }
+
+    public async Task SearchOnDiscogs()
+    {
+        if (!HasNowPlaying)
+            return;
+
+        string url = $"https://www.discogs.com/search?q={Uri.EscapeDataString(NowPlaying)}";
+        await Launcher.LaunchUriAsync(new Uri(url));
+    }
+
+    public async Task SearchOnSpotify()
+    {
+        if (!HasNowPlaying)
+            return;
+
+        string query = Uri.EscapeDataString(NowPlaying);
+        string spotifyAppUri = $"spotify:search:{query}";
+
+        try
+        {
+            bool success = await Launcher.LaunchUriAsync(new Uri(spotifyAppUri));
+
+            if (!success)
+            {
+                await Launcher.LaunchUriAsync(new Uri($"https://open.spotify.com/search/{query}"));
+            }
+        }
+        catch
+        {
+            await Launcher.LaunchUriAsync(new Uri($"https://open.spotify.com/search/{query}"));
+        }
+    }
+
+    public async Task SearchOnAppleMusic()
+    {
+        if (!HasNowPlaying)
+            return;
+
+        await MusicSearchLinkService.LaunchAppleMusicWebSearchAsync(NowPlaying);
+    }
+
+    public async Task SearchOnYouTubeMusic()
+    {
+        if (!HasNowPlaying)
+            return;
+
+        string query = Uri.EscapeDataString(NowPlaying);
+        await Launcher.LaunchUriAsync(new Uri($"https://music.youtube.com/search?q={query}"));
+    }
+
+    public void RestoreSelectedStationPlaybackTarget()
+    {
+        Debug.WriteLine("=== RestoreSelectedStationPlaybackTarget START ===");
+
+        try
+        {
+            PrepareSelectedStationForPlayback();
+            _lastError = null;
+        }
+        catch (Exception ex)
+        {
+            string stationName = _selectedStation?.Name ?? "Unknown";
+            _lastError = $"Failed to restore {stationName}: {ex.Message}";
+            Debug.WriteLine($"[PlayerViewModel] EXCEPTION in RestoreSelectedStationPlaybackTarget: {_lastError}");
+            Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
+            PlaybackError?.Invoke(this, _lastError);
+        }
+
+        Debug.WriteLine("=== RestoreSelectedStationPlaybackTarget END ===");
+    }
+
+    public bool SelectNextStation()
+    {
+        return TryCycleStation(1, "next");
+    }
+
+    public bool SelectPreviousStation()
+    {
+        return TryCycleStation(-1, "previous");
+    }
+
+    private void UpdateCurrentTrackFavoriteStatus()
+    {
+        IsCurrentTrackFavorited = _favoritesService.IsFavorited(CurrentMetadata);
     }
 
     /// <summary>
@@ -445,7 +734,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             {
                 // Last station - stop playback and clear selection
                 Debug.WriteLine("[PlayerViewModel] Removing last station, stopping playback");
-                if (IsPlaying)
+                if (IsPlaying || IsBuffering)
                 {
                     _player.Pause();
                 }
@@ -550,11 +839,85 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         }
     }
 
+    private bool TryCycleStation(int direction, string directionName)
+    {
+        Debug.WriteLine($"=== TryCycleStation START ({directionName}) ===");
+
+        if (Stations.Count == 0)
+        {
+            Debug.WriteLine("[PlayerViewModel] No stations available to cycle");
+            Debug.WriteLine($"=== TryCycleStation END ({directionName}, no stations) ===");
+            return false;
+        }
+
+        if (Stations.Count == 1)
+        {
+            Debug.WriteLine("[PlayerViewModel] Station cycling skipped because only one station is available");
+            Debug.WriteLine($"=== TryCycleStation END ({directionName}, single station) ===");
+            return false;
+        }
+
+        int currentIndex = _selectedStation is null ? -1 : Stations.IndexOf(_selectedStation);
+        int newIndex = currentIndex >= 0
+            ? (currentIndex + direction + Stations.Count) % Stations.Count
+            : direction > 0
+                ? 0
+                : Stations.Count - 1;
+
+        Debug.WriteLine($"[PlayerViewModel] Cycling {directionName} from index {currentIndex} to {newIndex}");
+        SelectedStation = Stations[newIndex];
+        Debug.WriteLine($"=== TryCycleStation END ({directionName}) ===");
+        return true;
+    }
+
+    private void SyncStationCyclingAvailability()
+    {
+        Debug.WriteLine($"[PlayerViewModel] Syncing station cycling availability: {CanCycleStations}");
+        _player.SetStationCyclingEnabled(CanCycleStations);
+    }
+
+    private void PrepareSelectedStationForPlayback()
+    {
+        if (_selectedStation == null)
+        {
+            Debug.WriteLine("[PlayerViewModel] Clearing playback target because no station is selected");
+            _player.ClearPlaybackTarget();
+            return;
+        }
+
+        if (!IsValidUrl(_selectedStation.StreamUrl))
+        {
+            throw new InvalidOperationException($"Invalid stream URL for {_selectedStation.Name}");
+        }
+
+        bool streamChanged = !string.Equals(_player.StreamUrl, _selectedStation.StreamUrl, StringComparison.Ordinal);
+
+        if (streamChanged)
+        {
+            Debug.WriteLine($"[PlayerViewModel] Preparing selected station stream: {_selectedStation.StreamUrl}");
+            _player.SetStreamUrl(_selectedStation.StreamUrl);
+        }
+
+        Debug.WriteLine($"[PlayerViewModel] Preparing selected station metadata: {_selectedStation.Name}");
+        _player.SetStationName(_selectedStation.Name);
+        _player.SetStationFavicon(_selectedStation.FaviconUrl);
+    }
+
     private static bool IsValidUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return false;
         if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri)) return false;
         return uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps;
+    }
+
+    private static ImageSource? CreateImageSource(string? url)
+    {
+        if (!IsValidUrl(url))
+        {
+            return null;
+        }
+
+        return new BitmapImage(new Uri(url!, UriKind.Absolute));
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? name = null)

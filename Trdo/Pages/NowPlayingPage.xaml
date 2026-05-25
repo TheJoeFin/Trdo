@@ -31,7 +31,10 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="12"
-                Visibility="{x:Bind ViewModel.HasMetadata, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=Invert}">
+                Visibility="{x:Bind ViewModel.HasMetadata,
+                                    Mode=OneWay,
+                                    Converter={StaticResource BooleanToVisibilityConverter},
+                                    ConverterParameter=Invert}">
                 <FontIcon
                     HorizontalAlignment="Center"
                     FontSize="48"
@@ -89,27 +92,36 @@
                                     FontSize="14"
                                     FontWeight="SemiBold"
                                     IsTextSelectionEnabled="True"
-                                    Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                                    Text="{x:Bind ViewModel.Title,
+                                                  Mode=OneWay}"
                                     TextWrapping="WrapWholeWords"
-                                    Visibility="{x:Bind ViewModel.HasTitle, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    Visibility="{x:Bind ViewModel.HasTitle,
+                                                        Mode=OneWay,
+                                                        Converter={StaticResource BooleanToVisibilityConverter}}" />
 
                                 <!--  Artist (if available)  -->
                                 <TextBlock
                                     FontSize="12"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                     IsTextSelectionEnabled="True"
-                                    Text="{x:Bind ViewModel.Artist, Mode=OneWay}"
+                                    Text="{x:Bind ViewModel.Artist,
+                                                  Mode=OneWay}"
                                     TextWrapping="WrapWholeWords"
-                                    Visibility="{x:Bind ViewModel.HasArtist, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    Visibility="{x:Bind ViewModel.HasArtist,
+                                                        Mode=OneWay,
+                                                        Converter={StaticResource BooleanToVisibilityConverter}}" />
 
                                 <!--  Stream Title Only (shown when we don't have parsed artist/title)  -->
                                 <TextBlock
                                     FontSize="14"
                                     FontWeight="SemiBold"
                                     IsTextSelectionEnabled="True"
-                                    Text="{x:Bind ViewModel.StreamTitle, Mode=OneWay}"
+                                    Text="{x:Bind ViewModel.StreamTitle,
+                                                  Mode=OneWay}"
                                     TextWrapping="WrapWholeWords"
-                                    Visibility="{x:Bind ViewModel.ShowStreamTitleOnly, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                    Visibility="{x:Bind ViewModel.ShowStreamTitleOnly,
+                                                        Mode=OneWay,
+                                                        Converter={StaticResource BooleanToVisibilityConverter}}" />
                             </StackPanel>
 
                             <!--  Favorite Button - aligned with music icon  -->
@@ -125,7 +137,9 @@
                                 <FontIcon
                                     FontSize="20"
                                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                                    Glyph="{x:Bind ViewModel.IsCurrentTrackFavorited, Mode=OneWay, Converter={StaticResource BooleanToFavoriteGlyphConverter}}" />
+                                    Glyph="{x:Bind ViewModel.IsCurrentTrackFavorited,
+                                                   Mode=OneWay,
+                                                   Converter={StaticResource BooleanToFavoriteGlyphConverter}}" />
                             </Button>
                         </Grid>
 
@@ -134,7 +148,9 @@
                             Margin="36,4,0,0"
                             ColumnDefinitions="*,Auto"
                             ColumnSpacing="8"
-                            Visibility="{x:Bind ViewModel.HasEnabledMusicServices, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            Visibility="{x:Bind ViewModel.HasEnabledMusicServices,
+                                                Mode=OneWay,
+                                                Converter={StaticResource BooleanToVisibilityConverter}}">
                             <Border
                                 Grid.Column="0"
                                 Padding="4,0"
@@ -152,7 +168,9 @@
                                         <HyperlinkButton
                                             Padding="6,4"
                                             Click="SpotifyLink_Click"
-                                            Visibility="{x:Bind ViewModel.IsSpotifyEnabled, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            Visibility="{x:Bind ViewModel.IsSpotifyEnabled,
+                                                                Mode=OneWay,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                 <Image Width="16" Height="16">
                                                     <Image.Source>
@@ -167,7 +185,9 @@
                                         <HyperlinkButton
                                             Padding="6,4"
                                             Click="DiscogsLink_Click"
-                                            Visibility="{x:Bind ViewModel.IsDiscogsEnabled, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            Visibility="{x:Bind ViewModel.IsDiscogsEnabled,
+                                                                Mode=OneWay,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                 <Image Width="16" Height="16">
                                                     <Image.Source>
@@ -182,7 +202,9 @@
                                         <HyperlinkButton
                                             Padding="6,4"
                                             Click="AppleMusicLink_Click"
-                                            Visibility="{x:Bind ViewModel.IsAppleMusicEnabled, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            Visibility="{x:Bind ViewModel.IsAppleMusicEnabled,
+                                                                Mode=OneWay,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                 <Image Width="16" Height="16">
                                                     <Image.Source>
@@ -197,7 +219,9 @@
                                         <HyperlinkButton
                                             Padding="6,4"
                                             Click="YouTubeMusicLink_Click"
-                                            Visibility="{x:Bind ViewModel.IsYouTubeMusicEnabled, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            Visibility="{x:Bind ViewModel.IsYouTubeMusicEnabled,
+                                                                Mode=OneWay,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}">
                                             <StackPanel Orientation="Horizontal" Spacing="6">
                                                 <Image Width="16" Height="16">
                                                     <Image.Source>
@@ -243,15 +267,20 @@
                 FontWeight="SemiBold"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                 Text="Recent Tracks"
-                Visibility="{x:Bind ViewModel.PlaylistHistory.Count, Mode=OneWay, Converter={StaticResource CountToHasItemsVisibilityConverter}}" />
+                Visibility="{x:Bind ViewModel.PlaylistHistory.Count,
+                                    Mode=OneWay,
+                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}" />
 
             <!--  History List  -->
             <ListView
                 Grid.Row="1"
                 Padding="0,0,12,0"
-                ItemsSource="{x:Bind ViewModel.PlaylistHistory, Mode=OneWay}"
+                ItemsSource="{x:Bind ViewModel.PlaylistHistory,
+                                     Mode=OneWay}"
                 SelectionMode="None"
-                Visibility="{x:Bind ViewModel.PlaylistHistory.Count, Mode=OneWay, Converter={StaticResource CountToHasItemsVisibilityConverter}}">
+                Visibility="{x:Bind ViewModel.PlaylistHistory.Count,
+                                    Mode=OneWay,
+                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -308,7 +337,9 @@
                                 <FontIcon
                                     FontSize="14"
                                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                                    Glyph="{x:Bind IsFavorited, Mode=OneWay, Converter={StaticResource BooleanToFavoriteGlyphConverter}}" />
+                                    Glyph="{x:Bind IsFavorited,
+                                                   Mode=OneWay,
+                                                   Converter={StaticResource BooleanToFavoriteGlyphConverter}}" />
                             </Button>
                         </Grid>
                     </DataTemplate>
