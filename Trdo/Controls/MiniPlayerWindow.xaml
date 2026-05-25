@@ -38,6 +38,15 @@
             Margin="8,4,8,8"
             PointerEntered="WindowLayout_PointerEntered"
             PointerExited="WindowLayout_PointerExited">
+            <Grid.ContextFlyout>
+                <MenuFlyout>
+                    <ToggleMenuFlyoutItem
+                        x:Name="VisualizerToggleMenuItem"
+                        Click="VisualizerToggleMenuItem_Click"
+                        IsChecked="True"
+                        Text="Show Visualizer" />
+                </MenuFlyout>
+            </Grid.ContextFlyout>
             <Border
                 Padding="16"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -140,7 +149,7 @@
                                 TextWrapping="NoWrap" />
                         </Grid>
 
-                        <controls:SpectrumVisualizerControl Grid.Row="3" VerticalAlignment="Bottom" />
+                        <controls:SpectrumVisualizerControl x:Name="SpectrumVisualizer" Grid.Row="3" VerticalAlignment="Bottom" />
                     </Grid>
 
                     <Grid x:Name="IdleContentGrid" Opacity="0">

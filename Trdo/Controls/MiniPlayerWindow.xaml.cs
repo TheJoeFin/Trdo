@@ -174,6 +174,13 @@ public sealed partial class MiniPlayerWindow : WindowEx
         sb.Begin();
     }
 
+    private void VisualizerToggleMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        SpectrumVisualizer.Visibility = VisualizerToggleMenuItem.IsChecked
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
     private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.Toggle();
