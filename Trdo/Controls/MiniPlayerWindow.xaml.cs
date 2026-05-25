@@ -8,10 +8,11 @@ using System;
 using System.ComponentModel;
 using Trdo.ViewModels;
 using Windows.Foundation;
+using WinUIEx;
 
 namespace Trdo.Controls;
 
-public sealed partial class MiniPlayerWindow : Window
+public sealed partial class MiniPlayerWindow : WindowEx
 {
     private static readonly Duration OverlayFadeDuration = new(TimeSpan.FromMilliseconds(180));
     private static readonly Duration MorphDuration = new(TimeSpan.FromMilliseconds(280));
@@ -36,9 +37,7 @@ public sealed partial class MiniPlayerWindow : Window
         AppWindow.SetIcon("Assets\\Radio.ico");
         AppWindow.TitleBar.PreferredTheme = TitleBarTheme.UseDefaultAppMode;
 
-        CompactOverlayPresenter presenter = CompactOverlayPresenter.Create();
-        presenter.InitialSize = CompactOverlaySize.Small;
-        AppWindow.SetPresenter(presenter);
+        AppWindow.IsShownInSwitchers = false;
 
         _touchOverlayTimer = DispatcherQueue.CreateTimer();
         _touchOverlayTimer.Interval = TouchOverlayDuration;

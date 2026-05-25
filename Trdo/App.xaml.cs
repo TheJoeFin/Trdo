@@ -68,8 +68,7 @@ public partial class App : Application
         }
 
         _miniPlayerWindow.Activate();
-        // SizeInt32 overlaySize = _miniPlayerWindow.AppWindow.Size;
-        // WindowPlacementService.PositionWindowNearAnchor(_miniPlayerWindow, 320, 180);
+        WindowPlacementService.PositionWindowNearAnchor(_miniPlayerWindow, 320, 220);
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
