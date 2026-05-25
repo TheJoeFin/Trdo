@@ -365,7 +365,6 @@ public sealed partial class PlayingPage : Page
         {
             Debug.WriteLine($"[PlayingPage] Edit station clicked: {station.Name}");
             // Open a pop-out window for editing so the flyout closing doesn't clear the fields
-            WindowPlacementService.CapturePointerAnchor();
             ManualStationWindow editWindow = new();
             WindowHelper.Track(editWindow);
             editWindow.LoadStationForEdit(station);

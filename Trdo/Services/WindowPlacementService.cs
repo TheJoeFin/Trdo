@@ -19,23 +19,31 @@ internal static partial class WindowPlacementService
 
     public static void PositionWindowNearAnchor(Window window, int width, int height)
     {
+        // Win32 and WinUI positioning APIs all use physical pixels. Scale the
+        // caller's logical width/height so placement and clamping are correct
+        // at any DPI (125%, 150%, 200%, etc.).
+        nint hwnd = window.GetWindowHandle();
+        uint dpi = GetDpiForWindow(hwnd);
+        if (dpi == 0) dpi = 96;
+        int physWidth = (int)(width * dpi / 96.0);
+        int physHeight = (int)(height * dpi / 96.0);
+
         PointInt32 anchor = GetAnchorPoint();
         DisplayArea? displayArea = DisplayArea.GetFromPoint(anchor, DisplayAreaFallback.Nearest);
         RectInt32 workArea = displayArea?.WorkArea ?? DisplayArea.Primary.WorkArea;
 
-        bool placeLeft = anchor.X >= workArea.X + (workArea.Width / 2);
         bool placeAbove = anchor.Y >= workArea.Y + (workArea.Height / 2);
 
-        int x = placeLeft ? anchor.X - width - WindowMargin : anchor.X + WindowMargin;
-        int y = placeAbove ? anchor.Y - height - WindowMargin : anchor.Y + WindowMargin;
+        int x = anchor.X - (physWidth / 2);
+        int y = placeAbove ? anchor.Y - physHeight - WindowMargin : anchor.Y + WindowMargin;
 
-        int maxX = System.Math.Max(workArea.X, workArea.X + workArea.Width - width);
-        int maxY = System.Math.Max(workArea.Y, workArea.Y + workArea.Height - height);
+        int maxX = System.Math.Max(workArea.X, workArea.X + workArea.Width - physWidth);
+        int maxY = System.Math.Max(workArea.Y, workArea.Y + workArea.Height - physHeight);
 
         x = System.Math.Clamp(x, workArea.X, maxX);
         y = System.Math.Clamp(y, workArea.Y, maxY);
 
-        window.MoveAndResize(x, y, width, height);
+        window.AppWindow.MoveAndResize(new RectInt32(x, y, physWidth, physHeight));
     }
 
     private static PointInt32 GetAnchorPoint()
@@ -111,6 +119,9 @@ internal static partial class WindowPlacementService
     [LibraryImport("user32.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     private static partial bool GetCursorPos(out POINT point);
+
+    [LibraryImport("user32.dll")]
+    private static partial uint GetDpiForWindow(nint hwnd);
 
     [LibraryImport("shell32.dll")]
     private static partial uint SHAppBarMessage(uint dwMessage, ref APPBARDATA pData);

@@ -145,7 +145,6 @@ public sealed partial class SearchStation : Page
     {
         StopPreview();
         // Open a pop-out window for manual station entry so the flyout closing doesn't clear the fields
-        WindowPlacementService.CapturePointerAnchor();
         ManualStationWindow addWindow = new();
         WindowHelper.Track(addWindow);
         addWindow.Activate();
