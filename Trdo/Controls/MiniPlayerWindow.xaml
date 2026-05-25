@@ -78,38 +78,55 @@
                             <StackPanel Grid.Column="1" Spacing="4">
                                 <TextBlock
                                     Style="{StaticResource BodyStrongTextBlockStyle}"
-                                    Text="{x:Bind ViewModel.CurrentTrackDisplay,
+                                    Text="{x:Bind ViewModel.MetadataTitleDisplay,
                                                   Mode=OneWay}"
                                     TextWrapping="WrapWholeWords" />
                                 <TextBlock
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                     Style="{StaticResource CaptionTextBlockStyle}"
-                                    Text="{x:Bind ViewModel.CurrentTrackSupportingText,
+                                    Text="{x:Bind ViewModel.MetadataArtistDisplay,
                                                   Mode=OneWay}"
                                     TextWrapping="WrapWholeWords" />
                             </StackPanel>
 
-                            <Button
-                                Grid.Column="2"
-                                Width="32"
-                                Height="32"
-                                Padding="0"
-                                VerticalAlignment="Top"
-                                AutomationProperties.Name="{x:Bind ViewModel.MiniPlayerFavoriteButtonText,
-                                                                   Mode=OneWay}"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Click="FavoriteTrackButton_Click"
-                                ToolTipService.ToolTip="{x:Bind ViewModel.MiniPlayerFavoriteButtonText,
-                                                                Mode=OneWay}"
-                                Visibility="{x:Bind ViewModel.MiniPlayerFavoriteButtonVisibility,
-                                                    Mode=OneWay}">
-                                <FontIcon
-                                    FontSize="18"
-                                    Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                                    Glyph="{x:Bind ViewModel.MiniPlayerFavoriteButtonGlyph,
-                                                   Mode=OneWay}" />
-                            </Button>
+                            <StackPanel Grid.Column="2" Spacing="4">
+                                <Button
+                                    Width="32"
+                                    Height="32"
+                                    Padding="0"
+                                    VerticalAlignment="Top"
+                                    AutomationProperties.Name="Refresh track info"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Click="RefreshMetadataButton_Click"
+                                    IsEnabled="{x:Bind ViewModel.CanRefreshMetadata, Mode=OneWay}"
+                                    ToolTipService.ToolTip="Refresh track info">
+                                    <FontIcon
+                                        FontSize="16"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Glyph="&#xE72C;" />
+                                </Button>
+                                <Button
+                                    Width="32"
+                                    Height="32"
+                                    Padding="0"
+                                    VerticalAlignment="Top"
+                                    AutomationProperties.Name="{x:Bind ViewModel.MiniPlayerFavoriteButtonText,
+                                                                       Mode=OneWay}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Click="FavoriteTrackButton_Click"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.MiniPlayerFavoriteButtonText,
+                                                                    Mode=OneWay}"
+                                    Visibility="{x:Bind ViewModel.MiniPlayerFavoriteButtonVisibility,
+                                                        Mode=OneWay}">
+                                    <FontIcon
+                                        FontSize="18"
+                                        Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                        Glyph="{x:Bind ViewModel.MiniPlayerFavoriteButtonGlyph,
+                                                       Mode=OneWay}" />
+                                </Button>
+                            </StackPanel>
                         </Grid>
 
                         <Border

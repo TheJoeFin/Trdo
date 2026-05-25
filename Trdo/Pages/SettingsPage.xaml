@@ -243,6 +243,26 @@
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Playback engine" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose how Trdo plays streams. Auto uses Windows first and falls back to LibVLC when needed for HLS and other formats." />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <ComboBox
+                                Grid.Column="0"
+                                SelectedIndex="{x:Bind ViewModel.PlaybackEngineModeIndex, Mode=TwoWay}">
+                                <ComboBoxItem Content="Auto (recommended)" />
+                                <ComboBoxItem Content="Native only" />
+                                <ComboBoxItem Content="LibVLC preferred" />
+                            </ComboBox>
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.PlaybackEngineModeDescription, Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Auto-recover" />
                         <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Monitor playback and automatically try to recover when a stream stalls, drops out, or goes silent." />
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">

@@ -3,14 +3,12 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Dispatching;
 using System;
 using System.Diagnostics;
 using Trdo.Controls;
 using Trdo.Models;
 using Trdo.Services;
 using Trdo.ViewModels;
-using Windows.Foundation;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -22,12 +20,10 @@ namespace Trdo.Pages;
 public sealed partial class PlayingPage : Page
 {
     private const int MinIndexForScrolling = 3;
-    private static readonly TimeSpan NowPlayingMarqueeDelay = TimeSpan.FromSeconds(2);
     private const string FilledStar = "\uE735";
     private const string OutlineStar = "\uE734";
 
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;
-    private readonly DispatcherQueueTimer _nowPlayingMarqueeDelayTimer;
 
     public PlayerViewModel ViewModel { get; }
     private ShellViewModel? _shellViewModel;
@@ -41,7 +37,6 @@ public sealed partial class PlayingPage : Page
         ViewModel = PlayerViewModel.Shared;
         DataContext = ViewModel;
         Debug.WriteLine("[PlayingPage] ViewModel assigned and DataContext set");
-        NowPlayingMarqueeText.MarqueeCompleted += (_, _) => RestartNowPlayingMarqueeAfterDelay();
 
         // Subscribe to property changes to update UI
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -54,12 +49,6 @@ public sealed partial class PlayingPage : Page
 
         // Wait for loaded to access named elements
         Loaded += PlayingPage_Loaded;
-        Unloaded += PlayingPage_Unloaded;
-
-        _nowPlayingMarqueeDelayTimer = DispatcherQueue.CreateTimer();
-        _nowPlayingMarqueeDelayTimer.Interval = NowPlayingMarqueeDelay;
-        _nowPlayingMarqueeDelayTimer.IsRepeating = false;
-        _nowPlayingMarqueeDelayTimer.Tick += NowPlayingMarqueeDelayTimer_Tick;
 
         Debug.WriteLine("=== PlayingPage Constructor END ===");
     }
@@ -85,8 +74,6 @@ public sealed partial class PlayingPage : Page
 
         Debug.WriteLine("=== PlayingPage_Loaded END ===");
 
-        UpdateNowPlayingMarqueeState();
-
         // scroll to selected station
         if (ViewModel.SelectedStation is not null)
         {
@@ -105,12 +92,6 @@ public sealed partial class PlayingPage : Page
         {
             Debug.WriteLine("[PlayingPage] No SelectedStation to scroll to");
         }
-    }
-
-    private void PlayingPage_Unloaded(object sender, RoutedEventArgs e)
-    {
-        _nowPlayingMarqueeDelayTimer.Stop();
-        SetNowPlayingScrolling(false);
     }
 
     private ShellViewModel? FindShellViewModel()
@@ -137,12 +118,6 @@ public sealed partial class PlayingPage : Page
                  e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
         {
             UpdateFavoriteButtonState();
-        }
-
-        if (e.PropertyName == nameof(PlayerViewModel.NowPlaying) ||
-            e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
-        {
-            UpdateNowPlayingMarqueeState();
         }
     }
 
@@ -319,11 +294,38 @@ public sealed partial class PlayingPage : Page
         _shellViewModel?.NavigateToAboutPage();
     }
 
-    private void NowPlayingInfo_Click(object sender, RoutedEventArgs e)
+    private void NowPlayingInfo_Tapped(object sender, TappedRoutedEventArgs e)
     {
-        Debug.WriteLine("[PlayingPage] Now Playing info clicked");
-        // Navigate to Now Playing details page
+        if (e.OriginalSource is FrameworkElement source &&
+            FindAncestorButton(source) is not null)
+        {
+            return;
+        }
+
+        Debug.WriteLine("[PlayingPage] Now Playing info tapped");
         _shellViewModel?.NavigateToNowPlayingPage();
+    }
+
+    private async void RefreshMetadata_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[PlayingPage] Refresh metadata clicked");
+        await ViewModel.RefreshMetadataAsync();
+    }
+
+    private static Button? FindAncestorButton(FrameworkElement element)
+    {
+        DependencyObject? current = element;
+        while (current is not null)
+        {
+            if (current is Button button)
+            {
+                return button;
+            }
+
+            current = VisualTreeHelper.GetParent(current);
+        }
+
+        return null;
     }
 
     private void FavoriteButton_Click(object sender, RoutedEventArgs e)
@@ -439,101 +441,6 @@ public sealed partial class PlayingPage : Page
         if (VolumeControlGrid.Visibility == Visibility.Visible)
         {
             ((MenuFlyout)sender).Hide();
-        }
-    }
-
-    private void NowPlayingTextHost_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        UpdateNowPlayingMarqueeState();
-    }
-
-    private void NowPlayingMarqueeDelayTimer_Tick(DispatcherQueueTimer sender, object args)
-    {
-        sender.Stop();
-
-        if (!ShouldUseNowPlayingMarquee())
-        {
-            SetNowPlayingScrolling(false);
-            return;
-        }
-
-        SetNowPlayingScrolling(true);
-    }
-
-    private void UpdateNowPlayingMarqueeState()
-    {
-        _nowPlayingMarqueeDelayTimer.Stop();
-        SetNowPlayingScrolling(false);
-
-        if (!ShouldUseNowPlayingMarquee())
-        {
-            return;
-        }
-
-        _nowPlayingMarqueeDelayTimer.Start();
-    }
-
-    private void RestartNowPlayingMarqueeAfterDelay()
-    {
-        if (!ShouldUseNowPlayingMarquee())
-        {
-            return;
-        }
-
-        _nowPlayingMarqueeDelayTimer.Stop();
-        _nowPlayingMarqueeDelayTimer.Start();
-    }
-
-    private bool ShouldUseNowPlayingMarquee()
-    {
-        return IsLoaded &&
-               ViewModel.HasNowPlaying &&
-               !string.IsNullOrWhiteSpace(ViewModel.NowPlaying) &&
-               DoesNowPlayingOverflow();
-    }
-
-    private bool DoesNowPlayingOverflow()
-    {
-        if (NowPlayingTextHost.ActualWidth <= 0)
-        {
-            return false;
-        }
-
-        TextBlock measurementTextBlock = new()
-        {
-            CharacterSpacing = NowPlayingText.CharacterSpacing,
-            FontFamily = NowPlayingText.FontFamily,
-            FontSize = NowPlayingText.FontSize,
-            FontStretch = NowPlayingText.FontStretch,
-            FontStyle = NowPlayingText.FontStyle,
-            FontWeight = NowPlayingText.FontWeight,
-            Text = ViewModel.NowPlaying,
-            TextWrapping = TextWrapping.NoWrap
-        };
-
-        measurementTextBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-
-        return measurementTextBlock.DesiredSize.Width > NowPlayingTextHost.ActualWidth;
-    }
-
-    private void SetNowPlayingScrolling(bool isScrolling)
-    {
-        if (isScrolling)
-        {
-            NowPlayingText.Visibility = Visibility.Collapsed;
-            NowPlayingMarqueeText.Visibility = Visibility.Visible;
-            if (IsLoaded)
-            {
-                NowPlayingMarqueeText.StartMarquee();
-            }
-            return;
-        }
-
-        NowPlayingMarqueeText.Visibility = Visibility.Collapsed;
-        NowPlayingText.Visibility = Visibility.Visible;
-        if (IsLoaded)
-        {
-            NowPlayingMarqueeText.StopMarquee();
         }
     }
 }

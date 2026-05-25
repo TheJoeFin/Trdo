@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Trdo.Models;
 using Trdo.Services;
+using Trdo.Services.Playback;
 using Windows.ApplicationModel;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -256,6 +257,35 @@ public partial class SettingsViewModel : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
+
+    /// <summary>
+    /// Playback engine mode: 0 = Auto, 1 = Native only, 2 = LibVLC preferred.
+    /// </summary>
+    public int PlaybackEngineModeIndex
+    {
+        get => (int)SettingsService.PlaybackEngineMode;
+        set
+        {
+            int clamped = Math.Clamp(value, 0, 2);
+            var mode = (PlaybackEngineMode)clamped;
+            if (mode == SettingsService.PlaybackEngineMode)
+            {
+                return;
+            }
+
+            SettingsService.PlaybackEngineMode = mode;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PlaybackEngineModeDescription));
+        }
+    }
+
+    public string PlaybackEngineModeDescription =>
+        SettingsService.PlaybackEngineMode switch
+        {
+            PlaybackEngineMode.NativeOnly => "Windows Media Foundation only",
+            PlaybackEngineMode.LibVlcPreferred => "LibVLC preferred",
+            _ => "Native first, LibVLC fallback"
+        };
 
     public bool IsWatchdogEnabled
     {

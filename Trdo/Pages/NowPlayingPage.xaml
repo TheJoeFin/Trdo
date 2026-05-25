@@ -7,6 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:Trdo.Models"
+    xmlns:vm="using:Trdo.ViewModels"
     mc:Ignorable="d">
 
     <Page.Resources>
@@ -26,12 +27,12 @@
         <!--  Current Track Card  -->
         <Grid Grid.Row="1" Padding="0,0,0,0">
 
-            <!--  No Metadata Message  -->
+            <!--  Idle Message  -->
             <StackPanel
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="12"
-                Visibility="{x:Bind ViewModel.HasMetadata,
+                Visibility="{x:Bind ViewModel.IsPlaybackActive,
                                     Mode=OneWay,
                                     Converter={StaticResource BooleanToVisibilityConverter},
                                     ConverterParameter=Invert}">
@@ -44,19 +45,19 @@
                     HorizontalAlignment="Center"
                     FontSize="16"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="No track information available"
+                    Text="No station playing"
                     TextAlignment="Center" />
                 <TextBlock
                     HorizontalAlignment="Center"
                     FontSize="12"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                    Text="Track info will appear here when the station broadcasts it"
+                    Text="Start playback to see title and artist information"
                     TextAlignment="Center"
                     TextWrapping="Wrap" />
             </StackPanel>
 
             <!--  Track Info Display  -->
-            <Grid VerticalAlignment="Top" Visibility="{x:Bind ViewModel.HasMetadata, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid VerticalAlignment="Top" Visibility="{x:Bind ViewModel.IsPlaybackActive, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
                 <Grid
                     Padding="16"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -73,6 +74,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
 
                             <FontIcon
@@ -86,47 +88,51 @@
                             <StackPanel
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
-                                Spacing="2">
-                                <!--  Title (if available)  -->
-                                <TextBlock
-                                    FontSize="14"
-                                    FontWeight="SemiBold"
-                                    IsTextSelectionEnabled="True"
-                                    Text="{x:Bind ViewModel.Title,
-                                                  Mode=OneWay}"
-                                    TextWrapping="WrapWholeWords"
-                                    Visibility="{x:Bind ViewModel.HasTitle,
-                                                        Mode=OneWay,
-                                                        Converter={StaticResource BooleanToVisibilityConverter}}" />
-
-                                <!--  Artist (if available)  -->
-                                <TextBlock
-                                    FontSize="12"
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    IsTextSelectionEnabled="True"
-                                    Text="{x:Bind ViewModel.Artist,
-                                                  Mode=OneWay}"
-                                    TextWrapping="WrapWholeWords"
-                                    Visibility="{x:Bind ViewModel.HasArtist,
-                                                        Mode=OneWay,
-                                                        Converter={StaticResource BooleanToVisibilityConverter}}" />
-
-                                <!--  Stream Title Only (shown when we don't have parsed artist/title)  -->
-                                <TextBlock
-                                    FontSize="14"
-                                    FontWeight="SemiBold"
-                                    IsTextSelectionEnabled="True"
-                                    Text="{x:Bind ViewModel.StreamTitle,
-                                                  Mode=OneWay}"
-                                    TextWrapping="WrapWholeWords"
-                                    Visibility="{x:Bind ViewModel.ShowStreamTitleOnly,
-                                                        Mode=OneWay,
-                                                        Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                Spacing="4">
+                                <StackPanel Spacing="2">
+                                    <TextBlock
+                                        FontSize="10"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Text="Title" />
+                                    <TextBlock
+                                        FontSize="14"
+                                        FontWeight="SemiBold"
+                                        IsTextSelectionEnabled="True"
+                                        Text="{x:Bind ViewModel.TitleDisplay,
+                                                      Mode=OneWay}"
+                                        TextWrapping="WrapWholeWords" />
+                                </StackPanel>
+                                <StackPanel Spacing="2">
+                                    <TextBlock
+                                        FontSize="10"
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                        Text="Artist" />
+                                    <TextBlock
+                                        FontSize="12"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        IsTextSelectionEnabled="True"
+                                        Text="{x:Bind ViewModel.ArtistDisplay,
+                                                      Mode=OneWay}"
+                                        TextWrapping="WrapWholeWords" />
+                                </StackPanel>
                             </StackPanel>
 
-                            <!--  Favorite Button - aligned with music icon  -->
                             <Button
                                 Grid.Column="2"
+                                Margin="8,0,0,0"
+                                Padding="8"
+                                VerticalAlignment="Center"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Click="RefreshMetadata_Click"
+                                IsEnabled="{x:Bind ViewModel.CanRefreshMetadata, Mode=OneWay}"
+                                ToolTipService.ToolTip="Refresh track info">
+                                <FontIcon FontSize="16" Glyph="&#xE72C;" />
+                            </Button>
+
+                            <!--  Favorite Button  -->
+                            <Button
+                                Grid.Column="3"
                                 Margin="8,0,0,0"
                                 Padding="8"
                                 VerticalAlignment="Center"

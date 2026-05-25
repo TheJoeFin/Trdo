@@ -7,7 +7,9 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
+using Trdo.Helpers;
 using Trdo.Models;
 using Trdo.Services;
 using Windows.System;
@@ -23,6 +25,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     private RadioStation? _selectedStation;
     private string? _lastError;
     private bool _isCurrentTrackFavorited;
+    private bool _isRefreshingMetadata;
 
     private static readonly Lazy<PlayerViewModel> _instance = new(() => new PlayerViewModel());
     public static PlayerViewModel Shared => _instance.Value;
@@ -53,6 +56,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine($"[PlayerViewModel] PlaybackStateChanged event fired. IsPlaying={IsPlaying}");
             OnPropertyChanged(nameof(IsPlaying));
             OnPropertyChanged(nameof(IsPlaybackActive));
+            OnPropertyChanged(nameof(CanRefreshMetadata));
             OnPropertyChanged(nameof(PlaybackButtonGlyph));
             OnPropertyChanged(nameof(PlaybackButtonText));
             OnPropertyChanged(nameof(MiniPlayerCloseButtonText));
@@ -60,12 +64,19 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(MiniPlayerFavoriteButtonVisibility));
             OnPropertyChanged(nameof(MiniPlayerActiveContentVisibility));
             OnPropertyChanged(nameof(MiniPlayerIdleContentVisibility));
+            OnPropertyChanged(nameof(CurrentTrackDisplay));
+            OnPropertyChanged(nameof(CurrentTrackSupportingText));
+            OnPropertyChanged(nameof(MiniPlayerPrimaryText));
+            OnPropertyChanged(nameof(MiniPlayerSecondaryText));
+            OnPropertyChanged(nameof(HasMiniPlayerSecondaryText));
         };
         _player.BufferingStateChanged += (_, _) =>
         {
             Debug.WriteLine($"[PlayerViewModel] BufferingStateChanged event fired. IsBuffering={IsBuffering}");        
             OnPropertyChanged(nameof(IsBuffering));
             OnPropertyChanged(nameof(IsPlaybackActive));
+            OnPropertyChanged(nameof(CanRefreshMetadata));
+            OnPropertyChanged(nameof(HasMiniPlayerSecondaryText));
             OnPropertyChanged(nameof(PlaybackButtonGlyph));
             OnPropertyChanged(nameof(PlaybackButtonText));
             OnPropertyChanged(nameof(MiniPlayerCloseButtonText));
@@ -73,6 +84,11 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(MiniPlayerFavoriteButtonVisibility));
             OnPropertyChanged(nameof(MiniPlayerActiveContentVisibility));
             OnPropertyChanged(nameof(MiniPlayerIdleContentVisibility));
+            OnPropertyChanged(nameof(CurrentTrackDisplay));
+            OnPropertyChanged(nameof(CurrentTrackSupportingText));
+            OnPropertyChanged(nameof(MiniPlayerPrimaryText));
+            OnPropertyChanged(nameof(MiniPlayerSecondaryText));
+            OnPropertyChanged(nameof(HasMiniPlayerSecondaryText));
         };
 
         _player.VolumeChanged += (_, _) =>
@@ -103,6 +119,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(CurrentMetadata));
             OnPropertyChanged(nameof(NowPlaying));
             OnPropertyChanged(nameof(HasNowPlaying));
+            OnPropertyChanged(nameof(MetadataArtistDisplay));
+            OnPropertyChanged(nameof(MetadataTitleDisplay));
             OnPropertyChanged(nameof(CurrentAlbumArtImageSource));
             OnPropertyChanged(nameof(CurrentTrackDisplay));
             OnPropertyChanged(nameof(CurrentTrackSupportingText));
@@ -429,6 +447,50 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     /// </summary>
     public bool HasNowPlaying => CurrentMetadata?.HasMetadata ?? false;
 
+    public string MetadataArtistDisplay => StreamMetadataFormatting.FormatArtist(CurrentMetadata);
+
+    public string MetadataTitleDisplay => StreamMetadataFormatting.FormatTitle(CurrentMetadata);
+
+    public bool IsRefreshingMetadata
+    {
+        get => _isRefreshingMetadata;
+        private set
+        {
+            if (_isRefreshingMetadata == value)
+            {
+                return;
+            }
+
+            _isRefreshingMetadata = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanRefreshMetadata));
+        }
+    }
+
+    public bool CanRefreshMetadata => IsPlaybackActive && !IsRefreshingMetadata;
+
+    public async Task RefreshMetadataAsync(CancellationToken cancellationToken = default)
+    {
+        if (!CanRefreshMetadata)
+        {
+            return;
+        }
+
+        try
+        {
+            IsRefreshingMetadata = true;
+            await _player.RefreshMetadataAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[PlayerViewModel] RefreshMetadataAsync failed: {ex.Message}");
+        }
+        finally
+        {
+            IsRefreshingMetadata = false;
+        }
+    }
+
     public string PlaybackButtonGlyph => IsBuffering
         ? "\uF16A"
         : IsPlaying
@@ -469,31 +531,15 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         ? Visibility.Collapsed
         : Visibility.Visible;
 
-    public string MiniPlayerPrimaryText => !string.IsNullOrWhiteSpace(CurrentMetadata?.Title)
-        ? CurrentMetadata.Title
-        : HasNowPlaying
-            ? NowPlaying
-            : "No track information";
+    public string MiniPlayerPrimaryText => MetadataTitleDisplay;
 
-    public string MiniPlayerSecondaryText => !string.IsNullOrWhiteSpace(CurrentMetadata?.Artist)
-        ? CurrentMetadata.Artist
-        : HasNowPlaying
-            ? "Live now playing"
-            : "Track info appears here when the station broadcasts it";
+    public string MiniPlayerSecondaryText => MetadataArtistDisplay;
 
-    public bool HasMiniPlayerSecondaryText => !string.IsNullOrWhiteSpace(MiniPlayerSecondaryText);
+    public bool HasMiniPlayerSecondaryText => IsPlaybackActive;
 
-    public string CurrentTrackDisplay => !string.IsNullOrWhiteSpace(CurrentMetadata?.Title)
-        ? CurrentMetadata.Title
-        : HasNowPlaying
-            ? NowPlaying
-            : "No track information";
+    public string CurrentTrackDisplay => MetadataTitleDisplay;
 
-    public string CurrentTrackSupportingText => !string.IsNullOrWhiteSpace(CurrentMetadata?.Artist)
-        ? CurrentMetadata.Artist
-        : HasNowPlaying
-            ? "Live now playing"
-            : "Track info appears here when the station broadcasts it";
+    public string CurrentTrackSupportingText => MetadataArtistDisplay;
 
     public ImageSource? CurrentAlbumArtImageSource => CreateImageSource(CurrentMetadata?.AlbumArtUrl);
 

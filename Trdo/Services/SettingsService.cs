@@ -1,4 +1,5 @@
 using System;
+using Trdo.Services.Playback;
 using Windows.Storage;
 
 namespace Trdo.Services;
@@ -16,6 +17,7 @@ public static class SettingsService
     private const string IsAppleMusicEnabledKey = "IsAppleMusicEnabled";
     private const string IsYouTubeMusicEnabledKey = "IsYouTubeMusicEnabled";
     private const string TrayClickBehaviorKey = "TrayClickBehavior";
+    private const string PlaybackEngineModeKey = "PlaybackEngineMode";
 
     public static event EventHandler? MusicSearchServicesChanged;
 
@@ -135,6 +137,47 @@ public static class SettingsService
     {
         get => GetBoolSetting(IsYouTubeMusicEnabledKey, defaultValue: false);
         set => SetBoolSetting(IsYouTubeMusicEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the preferred playback engine mode.
+    /// 0 = Auto, 1 = Native only, 2 = LibVLC preferred.
+    /// </summary>
+    public static PlaybackEngineMode PlaybackEngineMode
+    {
+        get
+        {
+            try
+            {
+                if (ApplicationData.Current.LocalSettings.Values.TryGetValue(PlaybackEngineModeKey, out object? value))
+                {
+                    return value switch
+                    {
+                        int i when Enum.IsDefined(typeof(PlaybackEngineMode), i) => (PlaybackEngineMode)i,
+                        string s when int.TryParse(s, out int parsed) && Enum.IsDefined(typeof(PlaybackEngineMode), parsed)
+                            => (PlaybackEngineMode)parsed,
+                        _ => PlaybackEngineMode.Auto
+                    };
+                }
+
+                return PlaybackEngineMode.Auto;
+            }
+            catch
+            {
+                return PlaybackEngineMode.Auto;
+            }
+        }
+        set
+        {
+            try
+            {
+                ApplicationData.Current.LocalSettings.Values[PlaybackEngineModeKey] = (int)value;
+            }
+            catch
+            {
+                // Silently fail if unable to save
+            }
+        }
     }
 
     /// <summary>
