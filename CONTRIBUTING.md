@@ -43,8 +43,8 @@ Feature requests are welcome! Please create an issue with:
 See the [README.md](README.md) for build instructions.
 
 ### Prerequisites
-- Visual Studio 2022 or VS Code
-- .NET 9.0 SDK
+- Visual Studio 2022, Visual Studio 2026, or VS Code
+- .NET 10.0 SDK
 - Windows App SDK
 
 ## Code of Conduct
