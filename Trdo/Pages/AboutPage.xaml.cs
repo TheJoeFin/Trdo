@@ -90,4 +90,9 @@ public sealed partial class AboutPage : Page
         {
             ViewModel.OpenCommunityToolkit();
         }
+
+        private void BuyMeACoffeeButton_Click(object sender, RoutedEventArgs e)
+        {
+            _ = ViewModel.OpenBuyMeACoffee();
+        }
     }
