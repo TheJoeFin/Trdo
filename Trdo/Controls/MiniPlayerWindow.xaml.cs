@@ -19,7 +19,9 @@ public sealed partial class MiniPlayerWindow : WindowEx
     private static readonly TimeSpan TouchOverlayDuration = TimeSpan.FromSeconds(1);
     private readonly DispatcherQueueTimer _touchOverlayTimer;
     private Storyboard? _hoverControlsStoryboard;
+    private Storyboard? _morphStoryboard;
     private bool? _lastContentState;
+    private bool _isClosed;
 
     private const double LargeLogoSize = 72.0;
     private const double SmallIconSize = 24.0;
@@ -47,12 +49,29 @@ public sealed partial class MiniPlayerWindow : WindowEx
         // Set initial content state and subscribe to future changes.
         ApplyContentState(ViewModel.IsPlaybackActive, animate: false);
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+
+        Closed += OnWindowClosed;
+    }
+
+    private void OnWindowClosed(object sender, WindowEventArgs args)
+    {
+        _isClosed = true;
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        _touchOverlayTimer.Stop();
+        _touchOverlayTimer.Tick -= TouchOverlayTimer_Tick;
+        _morphStoryboard?.Stop();
+        _morphStoryboard = null;
+        _hoverControlsStoryboard?.Stop();
+        _hoverControlsStoryboard = null;
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(PlayerViewModel.MiniPlayerActiveContentVisibility)) return;
-        DispatcherQueue.TryEnqueue(() => ApplyContentState(ViewModel.IsPlaybackActive));
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!_isClosed) ApplyContentState(ViewModel.IsPlaybackActive);
+        });
     }
 
     private void ApplyContentState(bool isActive, bool animate = true)
@@ -76,6 +95,8 @@ public sealed partial class MiniPlayerWindow : WindowEx
         double offsetX = (activePt.X + SmallIconSize / 2) - (idlePt.X + LargeLogoSize / 2);
         double offsetY = (activePt.Y + SmallIconSize / 2) - (idlePt.Y + LargeLogoSize / 2);
 
+        _morphStoryboard?.Stop();
+
         if (isActive)
         {
             // Idle → Active: large logo shrinks and flies to station row icon.
@@ -83,7 +104,7 @@ public sealed partial class MiniPlayerWindow : WindowEx
             ActiveContentGrid.IsHitTestVisible = true;
             IdleContentGrid.IsHitTestVisible = false;
 
-            var transform = new CompositeTransform { CenterX = LargeLogoSize / 2, CenterY = LargeLogoSize / 2 };
+            CompositeTransform transform = new() { CenterX = LargeLogoSize / 2, CenterY = LargeLogoSize / 2 };
             IdleStationLogoGrid.RenderTransform = transform;
 
             Storyboard sb = BuildMorphStoryboard(transform,
@@ -93,15 +114,17 @@ public sealed partial class MiniPlayerWindow : WindowEx
                 easeMode: EasingMode.EaseIn);
             sb.Completed += (_, _) =>
             {
+                if (_isClosed) return;
                 IdleContentGrid.Opacity = 0;
                 IdleStationLogoGrid.RenderTransform = null;
             };
+            _morphStoryboard = sb;
             sb.Begin();
         }
         else
         {
             // Active → Idle: station row icon grows and expands to center logo.
-            var transform = new CompositeTransform
+            CompositeTransform transform = new()
             {
                 CenterX = LargeLogoSize / 2,
                 CenterY = LargeLogoSize / 2,
@@ -116,18 +139,24 @@ public sealed partial class MiniPlayerWindow : WindowEx
             IdleContentGrid.IsHitTestVisible = true;
             ActiveContentGrid.IsHitTestVisible = false;
 
-            FadeOut(ActiveContentGrid, MorphDuration);
-
             Storyboard sb = BuildMorphStoryboard(transform,
                 fromScale: SmallToLargeScale, toScale: 1.0,
                 fromTx: offsetX, toTx: 0,
                 fromTy: offsetY, toTy: 0,
                 easeMode: EasingMode.EaseOut);
+
+            // Fold the active-content fade into the same storyboard so Stop() cancels both atomically.
+            DoubleAnimation fadeAnim = new() { To = 0, Duration = MorphDuration, EnableDependentAnimation = true };
+            sb.Children.Add(fadeAnim);
+            Storyboard.SetTarget(fadeAnim, ActiveContentGrid);
+            Storyboard.SetTargetProperty(fadeAnim, "Opacity");
             sb.Completed += (_, _) =>
             {
+                if (_isClosed) return;
                 IdleStationLogoGrid.RenderTransform = null;
                 ActiveContentGrid.Opacity = 0;
             };
+            _morphStoryboard = sb;
             sb.Begin();
         }
     }
@@ -139,12 +168,12 @@ public sealed partial class MiniPlayerWindow : WindowEx
         double fromTy, double toTy,
         EasingMode easeMode)
     {
-        var easing = new CubicEase { EasingMode = easeMode };
-        var sb = new Storyboard();
+        CubicEase easing = new() { EasingMode = easeMode };
+        Storyboard sb = new();
 
         void Anim(string prop, double from, double to)
         {
-            var da = new DoubleAnimation
+            DoubleAnimation da = new()
             {
                 From = from,
                 To = to,
@@ -162,16 +191,6 @@ public sealed partial class MiniPlayerWindow : WindowEx
         Anim("TranslateX", fromTx, toTx);
         Anim("TranslateY", fromTy, toTy);
         return sb;
-    }
-
-    private static void FadeOut(UIElement element, Duration duration)
-    {
-        var da = new DoubleAnimation { To = 0, Duration = duration, EnableDependentAnimation = true };
-        var sb = new Storyboard();
-        sb.Children.Add(da);
-        Storyboard.SetTarget(da, element);
-        Storyboard.SetTargetProperty(da, "Opacity");
-        sb.Begin();
     }
 
     private void VisualizerToggleMenuItem_Click(object sender, RoutedEventArgs e)
@@ -199,6 +218,7 @@ public sealed partial class MiniPlayerWindow : WindowEx
 
     private void WindowLayout_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
+        if (_isClosed) return;
         if (e.Pointer.PointerDeviceType is Microsoft.UI.Input.PointerDeviceType.Mouse)
         {
             ShowOverlayControls();
@@ -207,6 +227,7 @@ public sealed partial class MiniPlayerWindow : WindowEx
 
     private void WindowLayout_PointerExited(object sender, PointerRoutedEventArgs e)
     {
+        if (_isClosed) return;
         if (e.Pointer.PointerDeviceType == Microsoft.UI.Input.PointerDeviceType.Mouse)
         {
             HideOverlayControls();
@@ -215,6 +236,7 @@ public sealed partial class MiniPlayerWindow : WindowEx
 
     private void WindowLayout_Tapped(object sender, TappedRoutedEventArgs e)
     {
+        if (_isClosed) return;
         if (e.PointerDeviceType != Microsoft.UI.Input.PointerDeviceType.Mouse)
         {
             ShowOverlayControls();
@@ -225,6 +247,7 @@ public sealed partial class MiniPlayerWindow : WindowEx
 
     private void TouchOverlayTimer_Tick(DispatcherQueueTimer sender, object args)
     {
+        if (_isClosed) return;
         _touchOverlayTimer.Stop();
         HideOverlayControls();
     }
@@ -258,6 +281,7 @@ public sealed partial class MiniPlayerWindow : WindowEx
         Storyboard.SetTargetProperty(animation, "Opacity");
         storyboard.Completed += (_, _) =>
         {
+            if (_isClosed) return;
             if (targetOpacity == 0)
             {
                 HoverControlsOverlay.IsHitTestVisible = false;
