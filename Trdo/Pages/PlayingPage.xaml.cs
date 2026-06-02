@@ -1,9 +1,9 @@
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Dispatching;
 using System;
 using System.Diagnostics;
 using Trdo.Controls;
@@ -41,7 +41,7 @@ public sealed partial class PlayingPage : Page
         ViewModel = PlayerViewModel.Shared;
         DataContext = ViewModel;
         Debug.WriteLine("[PlayingPage] ViewModel assigned and DataContext set");
-        NowPlayingMarqueeText.MarqueeCompleted += (_, _) => RestartNowPlayingMarqueeAfterDelay();
+        NowPlayingMarqueeText.MarqueeCompleted += NowPlayingMarqueeText_MarqueeCompleted;
 
         // Subscribe to property changes to update UI
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -50,7 +50,7 @@ public sealed partial class PlayingPage : Page
         ViewModel.PlaybackError += ViewModel_PlaybackError;
 
         // Subscribe to favorites changes
-        _favoritesService.FavoritesChanged += (_, _) => UpdateFavoriteButtonState();
+        _favoritesService.FavoritesChanged += FavoritesService_FavoritesChanged;
 
         // Wait for loaded to access named elements
         Loaded += PlayingPage_Loaded;
@@ -110,6 +110,11 @@ public sealed partial class PlayingPage : Page
     private void PlayingPage_Unloaded(object sender, RoutedEventArgs e)
     {
         _nowPlayingMarqueeDelayTimer.Stop();
+        _nowPlayingMarqueeDelayTimer.Tick -= NowPlayingMarqueeDelayTimer_Tick;
+        NowPlayingMarqueeText.MarqueeCompleted -= NowPlayingMarqueeText_MarqueeCompleted;
+        ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        ViewModel.PlaybackError -= ViewModel_PlaybackError;
+        _favoritesService.FavoritesChanged -= FavoritesService_FavoritesChanged;
         SetNowPlayingScrolling(false);
     }
 
@@ -133,14 +138,14 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] ViewModel PropertyChanged: {e.PropertyName}");
         UpdateStationSelection();
 
-        if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata) ||
-                 e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
+        if (e.PropertyName is (nameof(PlayerViewModel.CurrentMetadata)) or
+                 (nameof(PlayerViewModel.HasNowPlaying)))
         {
             UpdateFavoriteButtonState();
         }
 
-        if (e.PropertyName == nameof(PlayerViewModel.NowPlaying) ||
-            e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
+        if (e.PropertyName is (nameof(PlayerViewModel.NowPlaying)) or
+            (nameof(PlayerViewModel.HasNowPlaying)))
         {
             UpdateNowPlayingMarqueeState();
         }
@@ -446,6 +451,12 @@ public sealed partial class PlayingPage : Page
     {
         UpdateNowPlayingMarqueeState();
     }
+
+    private void NowPlayingMarqueeText_MarqueeCompleted(object? sender, object args) =>
+        RestartNowPlayingMarqueeAfterDelay();
+
+    private void FavoritesService_FavoritesChanged(object? sender, EventArgs args) =>
+        UpdateFavoriteButtonState();
 
     private void NowPlayingMarqueeDelayTimer_Tick(DispatcherQueueTimer sender, object args)
     {

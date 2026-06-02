@@ -1,4 +1,4 @@
-using Microsoft.UI.Dispatching;
+﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32;
@@ -29,12 +29,18 @@ public partial class App : Application
     private Mutex? _singleInstanceMutex;
     private EventWaitHandle? _trayIconRestoreEvent;
     private TaskbarCreatedMonitor? _taskbarCreatedMonitor;
+    private DispatcherQueue? _uiDispatcherQueue;
     private DispatcherQueueTimer? _restoreEventMonitorTimer;
 
     /// <summary>
     /// Maximum length for the now playing text in the tooltip before truncation.
     /// </summary>
     private const int MaxTooltipNowPlayingLength = 60;
+
+    /// <summary>
+    /// Maximum length for the full tray icon tooltip (NOTIFYICONDATA limit).
+    /// </summary>
+    private const int MaxTrayTooltipLength = 128;
 
     public App()
     {
@@ -128,9 +134,11 @@ public partial class App : Application
             Debug.WriteLine($"[App] Failed to register TaskbarCreated monitor: {ex.Message}");
         }
 
+        _uiDispatcherQueue = DispatcherQueue.GetForCurrentThread();
+
         InitializeTrayIcon();
         await UpdateTrayIconAsync();
-        UpdatePlayPauseCommandText();
+        UpdatePlayPauseCommandText(forceTooltip: true);
         StartRestoreEventMonitor();
     }
 
@@ -290,6 +298,9 @@ public partial class App : Application
             _trayIcon.SetIcon("Assets/Radio.ico");
         }
 
+        // SetIcon can clear the native tooltip even when the text is unchanged.
+        UpdatePlayPauseCommandText(forceTooltip: true);
+
         await Task.CompletedTask;
     }
 
@@ -314,7 +325,7 @@ public partial class App : Application
         }
     }
 
-    private void UpdatePlayPauseCommandText()
+    private void UpdatePlayPauseCommandText(bool forceTooltip = false)
     {
         if (_trayIcon is null)
             return;
@@ -322,33 +333,65 @@ public partial class App : Application
         string station = _playerVm.SelectedStation?.Name ?? string.Empty;
         station = station.Split(" ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
 
+        string tooltip;
         if (!_playerVm.CanPlay)
         {
-            _trayIcon.Tooltip = "Trdo - Add a station to start listening";
+            tooltip = "Trdo - Add a station to start listening";
         }
         else if (_playerVm.IsPlaying)
         {
-
-            // Include now playing info if available
             if (_playerVm.HasNowPlaying)
             {
-                // Truncate long now playing text to keep tooltip readable
                 string nowPlaying = _playerVm.NowPlaying;
                 if (nowPlaying.Length > MaxTooltipNowPlayingLength)
                 {
                     nowPlaying = string.Concat(nowPlaying.AsSpan(0, MaxTooltipNowPlayingLength - 3), "...");
                 }
-                _trayIcon.Tooltip = $"Trdo {station} (Playing)\n{nowPlaying}";
+
+                tooltip = $"Trdo {station} (Playing)\n{nowPlaying}";
             }
             else
             {
-                _trayIcon.Tooltip = $"Trdo {station} (Playing)";
+                tooltip = $"Trdo {station} (Playing)";
             }
         }
         else
         {
-            _trayIcon.Tooltip = $"Trdo {station} (Paused)";
+            tooltip = $"Trdo {station} (Paused)";
         }
+
+        SetTrayTooltip(tooltip, forceTooltip);
+    }
+
+    private void SetTrayTooltip(string? text, bool force = false)
+    {
+        if (_trayIcon is null)
+            return;
+
+        string tooltip = string.IsNullOrWhiteSpace(text) ? "Trdo" : text.Trim();
+        if (tooltip.Length > MaxTrayTooltipLength)
+        {
+            tooltip = string.Concat(tooltip.AsSpan(0, MaxTrayTooltipLength - 3), "...");
+        }
+
+        void Apply()
+        {
+            if (force)
+            {
+                // WinUIEx only sends a native tooltip update when the value changes.
+                _trayIcon.Tooltip = "\u200B";
+            }
+
+            _trayIcon.Tooltip = tooltip;
+        }
+
+        if (_uiDispatcherQueue is not null && !_uiDispatcherQueue.HasThreadAccess)
+        {
+            _uiDispatcherQueue.TryEnqueue(Apply);
+            return;
+        }
+
+        Apply();
     }
 
     private void StartRestoreEventMonitor()
@@ -405,7 +448,7 @@ public partial class App : Application
             }
 
             await UpdateTrayIconAsync();
-            UpdatePlayPauseCommandText();
+            UpdatePlayPauseCommandText(forceTooltip: true);
         }
         catch (Exception ex)
         {

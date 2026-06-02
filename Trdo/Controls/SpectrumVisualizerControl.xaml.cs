@@ -59,7 +59,7 @@ public sealed partial class SpectrumVisualizerControl : UserControl
 
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
-        _animTimer?.Stop();
+        StopAnimationTimer();
         StopCapture();
     }
 
@@ -74,7 +74,7 @@ public sealed partial class SpectrumVisualizerControl : UserControl
 
         for (int i = 0; i < BandCount; i++)
         {
-            var rect = new Rectangle
+            Rectangle rect = new()
             {
                 RadiusX = 2,
                 RadiusY = 2,
@@ -105,12 +105,21 @@ public sealed partial class SpectrumVisualizerControl : UserControl
 
     private void StartAnimationTimer()
     {
+        StopAnimationTimer();
         _animTimer = DispatcherQueue.CreateTimer();
         _animTimer.Interval = TimeSpan.FromMilliseconds(16);
         _animTimer.IsRepeating = true;
         _animTimer.Tick += OnAnimationTick;
         _animTimer.Start();
         _lastFrameTime = DateTime.UtcNow;
+    }
+
+    private void StopAnimationTimer()
+    {
+        if (_animTimer is null) return;
+        _animTimer.Stop();
+        _animTimer.Tick -= OnAnimationTick;
+        _animTimer = null;
     }
 
     private void OnAnimationTick(DispatcherQueueTimer sender, object args)

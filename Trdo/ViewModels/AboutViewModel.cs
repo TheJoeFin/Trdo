@@ -56,6 +56,9 @@ public partial class AboutViewModel : INotifyPropertyChanged
     public string CommunityToolkitUrl => "https://github.com/CommunityToolkit/dotnet";
     public string CommunityToolkitDisplayText => "CommunityToolkit.Mvvm";
 
+    public string BuyMeACoffeeUrl => "https://buymeacoffee.com/thejoefin";
+    public string BuyMeACoffeeDisplayText => "buymeacoffee.com/thejoefin";
+
     public async Task OpenGitHub()
     {
         await Launcher.LaunchUriAsync(new Uri(GitHubUrl));
@@ -91,6 +94,11 @@ public partial class AboutViewModel : INotifyPropertyChanged
     public async Task OpenCommunityToolkit()
     {
         await Launcher.LaunchUriAsync(new Uri(CommunityToolkitUrl));
+    }
+
+    public async Task OpenBuyMeACoffee()
+    {
+        await Launcher.LaunchUriAsync(new Uri(BuyMeACoffeeUrl));
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
