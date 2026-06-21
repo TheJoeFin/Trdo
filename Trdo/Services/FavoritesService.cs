@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using Trdo.Models;
@@ -14,6 +15,9 @@ public class FavoritesService
 {
     private const string FavoritesKey = "FavoriteTracks";
 
+    private static readonly string _favoritesFilePath =
+        Path.Combine(ApplicationData.Current.LocalFolder.Path, "favorites.json");
+
     private static readonly Lazy<FavoritesService> _instance = new(() => new FavoritesService());
     public static FavoritesService Instance => _instance.Value;
 
@@ -22,7 +26,7 @@ public class FavoritesService
         TypeInfoResolver = FavoritesJsonContext.Default
     };
 
-    private List<FavoriteTrack> _cachedFavorites = [];
+    private readonly List<FavoriteTrack> _cachedFavorites = [];
 
     public event EventHandler? FavoritesChanged;
 
@@ -147,7 +151,7 @@ public class FavoritesService
         try
         {
             string json = JsonSerializer.Serialize(_cachedFavorites, _jsonOptions);
-            ApplicationData.Current.LocalSettings.Values[FavoritesKey] = json;
+            File.WriteAllText(_favoritesFilePath, json);
         }
         catch (Exception ex)
         {
@@ -159,14 +163,22 @@ public class FavoritesService
     {
         try
         {
-            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(FavoritesKey, out object? value) &&
-                value is string json)
+            if (File.Exists(_favoritesFilePath))
             {
-                List<FavoriteTrack>? favorites = JsonSerializer.Deserialize<List<FavoriteTrack>>(json, _jsonOptions);
-                if (favorites != null)
-                {
-                    return favorites;
-                }
+                string json = File.ReadAllText(_favoritesFilePath);
+                return JsonSerializer.Deserialize<List<FavoriteTrack>>(json, _jsonOptions) ?? [];
+            }
+
+            // One-time migration from LocalSettings
+            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(FavoritesKey, out object? value) &&
+                value is string legacyJson)
+            {
+                List<FavoriteTrack> migrated =
+                    JsonSerializer.Deserialize<List<FavoriteTrack>>(legacyJson, _jsonOptions) ?? [];
+                File.WriteAllText(_favoritesFilePath, JsonSerializer.Serialize(migrated, _jsonOptions));
+                ApplicationData.Current.LocalSettings.Values.Remove(FavoritesKey);
+                System.Diagnostics.Debug.WriteLine($"[FavoritesService] Migrated {migrated.Count} favorites from LocalSettings to file");
+                return migrated;
             }
         }
         catch (Exception ex)

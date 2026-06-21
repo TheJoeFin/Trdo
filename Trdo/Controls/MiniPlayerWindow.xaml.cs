@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.ComponentModel;
+using Trdo.Services;
 using Trdo.ViewModels;
 using Windows.Foundation;
 using WinUIEx;
@@ -45,6 +46,11 @@ public sealed partial class MiniPlayerWindow : WindowEx
         _touchOverlayTimer.Interval = TouchOverlayDuration;
         _touchOverlayTimer.IsRepeating = false;
         _touchOverlayTimer.Tick += TouchOverlayTimer_Tick;
+
+        // Apply saved visualizer preference.
+        bool visualizerEnabled = SettingsService.IsMiniPlayerVisualizerEnabled;
+        VisualizerToggleMenuItem.IsChecked = visualizerEnabled;
+        SpectrumVisualizer.Visibility = visualizerEnabled ? Visibility.Visible : Visibility.Collapsed;
 
         // Set initial content state and subscribe to future changes.
         ApplyContentState(ViewModel.IsPlaybackActive, animate: false);
@@ -195,9 +201,9 @@ public sealed partial class MiniPlayerWindow : WindowEx
 
     private void VisualizerToggleMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        SpectrumVisualizer.Visibility = VisualizerToggleMenuItem.IsChecked
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        bool enabled = VisualizerToggleMenuItem.IsChecked;
+        SpectrumVisualizer.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+        SettingsService.IsMiniPlayerVisualizerEnabled = enabled;
     }
 
     private void PlayPauseButton_Click(object sender, RoutedEventArgs e)
