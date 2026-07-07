@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Trdo.Services.Playback;
 using Windows.Storage;
 
 namespace Trdo.Services;
@@ -511,6 +512,16 @@ public sealed partial class StreamWatchdogService : IDisposable
             {
                 RaiseStatusChanged($"Recovery failed: {playbackException.Message}", StreamWatchdogStatus.Error);
                 return;
+            }
+
+            if (_consecutiveFailures >= 2 &&
+                _playerService.ActivePlaybackBackend == PlaybackBackendKind.Native)
+            {
+                bool fallbackPrepared = await _playerService.RetryWithPlaybackFallbackAsync(cancellationToken);
+                if (fallbackPrepared)
+                {
+                    Debug.WriteLine("[Watchdog] Prepared LibVLC fallback for recovery");
+                }
             }
 
             // Use PlayWithBufferAsync to wait for sufficient buffer based on GetBufferedRanges

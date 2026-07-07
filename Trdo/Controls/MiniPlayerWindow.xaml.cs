@@ -222,6 +222,11 @@ public sealed partial class MiniPlayerWindow : WindowEx
         ViewModel.ToggleCurrentTrackFavorite();
     }
 
+    private async void RefreshMetadataButton_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.RefreshMetadataAsync();
+    }
+
     private void WindowLayout_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
         if (_isClosed) return;

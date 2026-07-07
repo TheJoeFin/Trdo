@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Trdo.Controls;
 using Trdo.Pages;
 using Trdo.Services;
+using Trdo.Services.Playback;
 using Trdo.ViewModels;
 using Windows.UI.ViewManagement;
 using WinUIEx;
@@ -466,6 +467,7 @@ public partial class App : Application
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();
             _trayIconRestoreEvent?.Dispose();
+            LibVlcHost.Dispose();
         }
         catch
         {

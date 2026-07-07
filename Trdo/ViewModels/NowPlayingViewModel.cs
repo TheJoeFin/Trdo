@@ -3,7 +3,9 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
+using Trdo.Helpers;
 using Trdo.Models;
 using Trdo.Services;
 using Windows.System;
@@ -38,6 +40,8 @@ public class NowPlayingViewModel : INotifyPropertyChanged
 
     public NowPlayingViewModel()
     {
+        PlayerViewModel.Shared.PropertyChanged += OnPlayerViewModelPropertyChanged;
+
         // Subscribe to metadata changes for UI updates
         _player.StreamMetadataChanged += OnStreamMetadataChanged;
         SettingsService.MusicSearchServicesChanged += OnMusicSearchServicesChanged;
@@ -52,6 +56,18 @@ public class NowPlayingViewModel : INotifyPropertyChanged
         UpdateCurrentTrackFavoriteStatus();
 
         Debug.WriteLine($"[NowPlayingViewModel] Initialized with {PlaylistHistory.Count} history items from service");
+    }
+
+    private void OnPlayerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(PlayerViewModel.IsPlaybackActive)
+            or nameof(PlayerViewModel.IsRefreshingMetadata)
+            or nameof(PlayerViewModel.CanRefreshMetadata))
+        {
+            OnPropertyChanged(nameof(IsPlaybackActive));
+            OnPropertyChanged(nameof(IsRefreshingMetadata));
+            OnPropertyChanged(nameof(CanRefreshMetadata));
+        }
     }
 
     private void OnMusicSearchServicesChanged(object? sender, EventArgs e)
@@ -69,6 +85,8 @@ public class NowPlayingViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(StreamTitle));
         OnPropertyChanged(nameof(Artist));
         OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(ArtistDisplay));
+        OnPropertyChanged(nameof(TitleDisplay));
         OnPropertyChanged(nameof(DisplayText));
         OnPropertyChanged(nameof(HasMetadata));
         OnPropertyChanged(nameof(HasArtist));
@@ -136,6 +154,19 @@ public class NowPlayingViewModel : INotifyPropertyChanged
     /// Gets the song/track title if available.
     /// </summary>
     public string Title => CurrentMetadata?.Title ?? string.Empty;
+
+    public string ArtistDisplay => StreamMetadataFormatting.FormatArtist(CurrentMetadata);
+
+    public string TitleDisplay => StreamMetadataFormatting.FormatTitle(CurrentMetadata);
+
+    public bool IsPlaybackActive => PlayerViewModel.Shared.IsPlaybackActive;
+
+    public bool IsRefreshingMetadata => PlayerViewModel.Shared.IsRefreshingMetadata;
+
+    public bool CanRefreshMetadata => PlayerViewModel.Shared.CanRefreshMetadata;
+
+    public Task RefreshMetadataAsync(CancellationToken cancellationToken = default) =>
+        PlayerViewModel.Shared.RefreshMetadataAsync(cancellationToken);
 
     /// <summary>
     /// Gets the display-friendly now playing text.

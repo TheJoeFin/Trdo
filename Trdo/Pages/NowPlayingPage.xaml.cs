@@ -82,6 +82,12 @@ public sealed partial class NowPlayingPage : Page
         ViewModel.ToggleCurrentTrackFavorite();
     }
 
+    private async void RefreshMetadata_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[NowPlayingPage] Refresh metadata clicked");
+        await ViewModel.RefreshMetadataAsync();
+    }
+
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine("[NowPlayingPage] Music service settings button clicked");

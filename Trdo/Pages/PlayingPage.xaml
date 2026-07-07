@@ -5,7 +5,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:converters="using:Trdo.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:labs="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:Trdo.Models"
     mc:Ignorable="d">
@@ -272,24 +271,24 @@
         </Grid>
 
         <!--  Now Playing Info  -->
-        <Button
+        <Border
             x:Name="NowPlayingButton"
             Grid.Row="4"
             Padding="8,4"
-            HorizontalAlignment="Stretch"
-            HorizontalContentAlignment="Stretch"
             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-            BorderThickness="0"
-            Click="NowPlayingInfo_Click"
             CornerRadius="4"
-            ToolTipService.ToolTip="Click for details"
-            Visibility="{x:Bind ViewModel.HasNowPlaying,
+            Tapped="NowPlayingInfo_Tapped"
+            Visibility="{x:Bind ViewModel.IsPlaybackActive,
                                 Mode=OneWay,
                                 Converter={StaticResource BooleanToVisibilityConverter}}">
+            <ToolTipService.ToolTip>
+                <ToolTip Content="Click for details" />
+            </ToolTipService.ToolTip>
             <Grid VerticalAlignment="Center" ColumnSpacing="6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
@@ -299,36 +298,43 @@
                     FontSize="14"
                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                     Glyph="&#xE8D6;" />
-                <Grid
-                    x:Name="NowPlayingTextHost"
+                <StackPanel
                     Grid.Column="1"
-                    SizeChanged="NowPlayingTextHost_SizeChanged">
-                    <labs:MarqueeText
-                        x:Name="NowPlayingMarqueeText"
-                        VerticalAlignment="Center"
-                        Behavior="Looping"
-                        Direction="Left"
-                        FontSize="12"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        RepeatBehavior="1x"
-                        Speed="40"
-                        Text="{x:Bind ViewModel.NowPlaying,
-                                      Mode=OneWay}"
-                        Visibility="Collapsed" />
+                    VerticalAlignment="Center"
+                    Spacing="2">
                     <TextBlock
-                        x:Name="NowPlayingText"
-                        VerticalAlignment="Center"
                         FontSize="12"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="{x:Bind ViewModel.NowPlaying,
+                        FontWeight="SemiBold"
+                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                        Text="{x:Bind ViewModel.MetadataTitleDisplay,
                                       Mode=OneWay}"
-                        TextTrimming="Clip"
+                        TextTrimming="CharacterEllipsis"
                         TextWrapping="NoWrap" />
-                </Grid>
+                    <TextBlock
+                        FontSize="11"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="{x:Bind ViewModel.MetadataArtistDisplay,
+                                      Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis"
+                        TextWrapping="NoWrap" />
+                </StackPanel>
+                <Button
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="RefreshMetadata_Click"
+                    IsEnabled="{x:Bind ViewModel.CanRefreshMetadata, Mode=OneWay}"
+                    ToolTipService.ToolTip="Refresh track info">
+                    <FontIcon
+                        FontSize="14"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Glyph="&#xE72C;" />
+                </Button>
                 <!--  Favorite Button  -->
                 <Button
                     x:Name="FavoriteButton"
-                    Grid.Column="2"
+                    Grid.Column="3"
                     VerticalAlignment="Center"
                     Background="Transparent"
                     BorderThickness="0"
@@ -341,13 +347,13 @@
                         Glyph="&#xE734;" />
                 </Button>
                 <FontIcon
-                    Grid.Column="3"
+                    Grid.Column="4"
                     VerticalAlignment="Center"
                     FontSize="12"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                     Glyph="&#xE76C;" />
             </Grid>
-        </Button>
+        </Border>
 
         <!--  Playback Actions  -->
         <Grid Grid.Row="5" ColumnSpacing="12">
