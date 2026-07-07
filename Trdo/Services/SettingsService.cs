@@ -18,6 +18,7 @@ public static class SettingsService
     private const string IsYouTubeMusicEnabledKey = "IsYouTubeMusicEnabled";
     private const string TrayClickBehaviorKey = "TrayClickBehavior";
     private const string PlaybackEngineModeKey = "PlaybackEngineMode";
+    private const string IsMiniPlayerVisualizerEnabledKey = "IsMiniPlayerVisualizerEnabled";
 
     public static event EventHandler? MusicSearchServicesChanged;
 
@@ -178,6 +179,13 @@ public static class SettingsService
                 // Silently fail if unable to save
             }
         }
+    /// Gets or sets whether the spectrum visualizer is shown in the mini player.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsMiniPlayerVisualizerEnabled
+    {
+        get => GetBoolSetting(IsMiniPlayerVisualizerEnabledKey, defaultValue: true);
+        set => SetBoolSetting(IsMiniPlayerVisualizerEnabledKey, value);
     }
 
     /// <summary>

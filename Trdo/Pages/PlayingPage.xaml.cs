@@ -1,3 +1,4 @@
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -37,6 +38,7 @@ public sealed partial class PlayingPage : Page
         ViewModel = PlayerViewModel.Shared;
         DataContext = ViewModel;
         Debug.WriteLine("[PlayingPage] ViewModel assigned and DataContext set");
+        NowPlayingMarqueeText.MarqueeCompleted += NowPlayingMarqueeText_MarqueeCompleted;
 
         // Subscribe to property changes to update UI
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -45,7 +47,7 @@ public sealed partial class PlayingPage : Page
         ViewModel.PlaybackError += ViewModel_PlaybackError;
 
         // Subscribe to favorites changes
-        _favoritesService.FavoritesChanged += (_, _) => UpdateFavoriteButtonState();
+        _favoritesService.FavoritesChanged += FavoritesService_FavoritesChanged;
 
         // Wait for loaded to access named elements
         Loaded += PlayingPage_Loaded;
@@ -94,6 +96,17 @@ public sealed partial class PlayingPage : Page
         }
     }
 
+    private void PlayingPage_Unloaded(object sender, RoutedEventArgs e)
+    {
+        _nowPlayingMarqueeDelayTimer.Stop();
+        _nowPlayingMarqueeDelayTimer.Tick -= NowPlayingMarqueeDelayTimer_Tick;
+        NowPlayingMarqueeText.MarqueeCompleted -= NowPlayingMarqueeText_MarqueeCompleted;
+        ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        ViewModel.PlaybackError -= ViewModel_PlaybackError;
+        _favoritesService.FavoritesChanged -= FavoritesService_FavoritesChanged;
+        SetNowPlayingScrolling(false);
+    }
+
     private ShellViewModel? FindShellViewModel()
     {
         // Walk up the visual tree to find ShellPage
@@ -114,10 +127,16 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] ViewModel PropertyChanged: {e.PropertyName}");
         UpdateStationSelection();
 
-        if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata) ||
-                 e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
+        if (e.PropertyName is (nameof(PlayerViewModel.CurrentMetadata)) or
+                 (nameof(PlayerViewModel.HasNowPlaying)))
         {
             UpdateFavoriteButtonState();
+        }
+
+        if (e.PropertyName is (nameof(PlayerViewModel.NowPlaying)) or
+            (nameof(PlayerViewModel.HasNowPlaying)))
+        {
+            UpdateNowPlayingMarqueeState();
         }
     }
 
@@ -441,6 +460,107 @@ public sealed partial class PlayingPage : Page
         if (VolumeControlGrid.Visibility == Visibility.Visible)
         {
             ((MenuFlyout)sender).Hide();
+        }
+    }
+
+    private void NowPlayingTextHost_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        UpdateNowPlayingMarqueeState();
+    }
+
+    private void NowPlayingMarqueeText_MarqueeCompleted(object? sender, object args) =>
+        RestartNowPlayingMarqueeAfterDelay();
+
+    private void FavoritesService_FavoritesChanged(object? sender, EventArgs args) =>
+        UpdateFavoriteButtonState();
+
+    private void NowPlayingMarqueeDelayTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        sender.Stop();
+
+        if (!ShouldUseNowPlayingMarquee())
+        {
+            SetNowPlayingScrolling(false);
+            return;
+        }
+
+        SetNowPlayingScrolling(true);
+    }
+
+    private void UpdateNowPlayingMarqueeState()
+    {
+        _nowPlayingMarqueeDelayTimer.Stop();
+        SetNowPlayingScrolling(false);
+
+        if (!ShouldUseNowPlayingMarquee())
+        {
+            return;
+        }
+
+        _nowPlayingMarqueeDelayTimer.Start();
+    }
+
+    private void RestartNowPlayingMarqueeAfterDelay()
+    {
+        if (!ShouldUseNowPlayingMarquee())
+        {
+            return;
+        }
+
+        _nowPlayingMarqueeDelayTimer.Stop();
+        _nowPlayingMarqueeDelayTimer.Start();
+    }
+
+    private bool ShouldUseNowPlayingMarquee()
+    {
+        return IsLoaded &&
+               ViewModel.HasNowPlaying &&
+               !string.IsNullOrWhiteSpace(ViewModel.NowPlaying) &&
+               DoesNowPlayingOverflow();
+    }
+
+    private bool DoesNowPlayingOverflow()
+    {
+        if (NowPlayingTextHost.ActualWidth <= 0)
+        {
+            return false;
+        }
+
+        TextBlock measurementTextBlock = new()
+        {
+            CharacterSpacing = NowPlayingText.CharacterSpacing,
+            FontFamily = NowPlayingText.FontFamily,
+            FontSize = NowPlayingText.FontSize,
+            FontStretch = NowPlayingText.FontStretch,
+            FontStyle = NowPlayingText.FontStyle,
+            FontWeight = NowPlayingText.FontWeight,
+            Text = ViewModel.NowPlaying,
+            TextWrapping = TextWrapping.NoWrap
+        };
+
+        measurementTextBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+
+        return measurementTextBlock.DesiredSize.Width > NowPlayingTextHost.ActualWidth;
+    }
+
+    private void SetNowPlayingScrolling(bool isScrolling)
+    {
+        if (isScrolling)
+        {
+            NowPlayingText.Visibility = Visibility.Collapsed;
+            NowPlayingMarqueeText.Visibility = Visibility.Visible;
+            if (IsLoaded)
+            {
+                NowPlayingMarqueeText.StartMarquee();
+            }
+            return;
+        }
+
+        NowPlayingMarqueeText.Visibility = Visibility.Collapsed;
+        NowPlayingText.Visibility = Visibility.Visible;
+        if (IsLoaded)
+        {
+            NowPlayingMarqueeText.StopMarquee();
         }
     }
 }

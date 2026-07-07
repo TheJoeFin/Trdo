@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using Trdo.Models;
@@ -11,6 +12,9 @@ public class RadioStationService
 {
     private const string StationsKey = "RadioStations";
     private const string SelectedStationIndexKey = "SelectedStationIndex";
+
+    private static readonly string _stationsFilePath =
+        Path.Combine(ApplicationData.Current.LocalFolder.Path, "stations.json");
 
     private static readonly Lazy<RadioStationService> _instance = new(() => new RadioStationService());
     public static RadioStationService Instance => _instance.Value;
@@ -26,47 +30,51 @@ public class RadioStationService
     }
 
     /// <summary>
-    /// Save a list of radio stations to local settings
+    /// Save a list of radio stations to a JSON file in local app data
     /// </summary>
     public void SaveStations(IEnumerable<RadioStation> stations)
     {
         try
         {
-            List<RadioStation> stationList = stations.ToList();
-            string json = JsonSerializer.Serialize(stationList, _jsonOptions);
-            ApplicationData.Current.LocalSettings.Values[StationsKey] = json;
+            string json = JsonSerializer.Serialize(stations.ToList(), _jsonOptions);
+            File.WriteAllText(_stationsFilePath, json);
         }
         catch (Exception ex)
         {
-            // Log error in production
             System.Diagnostics.Debug.WriteLine($"Error saving stations: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Load radio stations from local settings
+    /// Load radio stations from a JSON file, migrating from LocalSettings on first run
     /// </summary>
     public List<RadioStation> LoadStations()
     {
         try
         {
-            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(StationsKey, out object? value) &&
-                value is string json)
+            if (File.Exists(_stationsFilePath))
             {
-                List<RadioStation>? stations = JsonSerializer.Deserialize<List<RadioStation>>(json, _jsonOptions);
-                if (stations != null && stations.Count > 0)
-                {
-                    return stations;
-                }
+                string json = File.ReadAllText(_stationsFilePath);
+                return JsonSerializer.Deserialize<List<RadioStation>>(json, _jsonOptions) ?? [];
+            }
+
+            // One-time migration from LocalSettings
+            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(StationsKey, out object? value) &&
+                value is string legacyJson)
+            {
+                List<RadioStation> migrated =
+                    JsonSerializer.Deserialize<List<RadioStation>>(legacyJson, _jsonOptions) ?? [];
+                SaveStations(migrated);
+                ApplicationData.Current.LocalSettings.Values.Remove(StationsKey);
+                System.Diagnostics.Debug.WriteLine($"[RadioStationService] Migrated {migrated.Count} stations from LocalSettings to file");
+                return migrated;
             }
         }
         catch (Exception ex)
         {
-            // Log error in production
             System.Diagnostics.Debug.WriteLine($"Error loading stations: {ex.Message}");
         }
 
-        // Return default stations if loading fails or no stations exist
         return [];
     }
 

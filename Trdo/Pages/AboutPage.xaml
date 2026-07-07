@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:controls="using:Trdo.Controls"
     xmlns:local="using:Trdo.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
@@ -172,6 +173,27 @@
                             <TextBlock Text="Contact the Developer" TextWrapping="Wrap" />
                         </StackPanel>
                     </Button>
+                </StackPanel>
+
+                <!--  Buy Me a Coffee Section  -->
+                <StackPanel Spacing="8">
+                    <TextBlock
+                        FontSize="16"
+                        FontWeight="SemiBold"
+                        Text="Support the Developer"
+                        TextWrapping="Wrap" />
+
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Text="If you enjoy Trdo, consider buying me a coffee!"
+                        TextWrapping="Wrap" />
+
+                    <HyperlinkButton Margin="0,8,0,0" Click="BuyMeACoffeeButton_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <controls:CoffeeCupIcon />
+                            <TextBlock Text="{x:Bind ViewModel.BuyMeACoffeeDisplayText}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </HyperlinkButton>
                 </StackPanel>
 
                 <!--  GitHub Section  -->
