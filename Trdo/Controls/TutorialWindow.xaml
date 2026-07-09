@@ -7,7 +7,7 @@
     xmlns:ex="using:WinUIEx"
     xmlns:local="using:Trdo.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Trdo First Run Window"
+    Title="Trdo (soon to be Traydio) First Run Window"
     Width="400"
     Height="600"
     IsMaximizable="False"
@@ -24,7 +24,7 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
-        <TitleBar x:Name="ModernTitlebar" Title="Trdo">
+        <TitleBar x:Name="ModernTitlebar" Title="Trdo (soon to be Traydio)">
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="/Assets/Radio.ico" />
             </TitleBar.IconSource>
@@ -49,7 +49,7 @@
                     <TextBlock
                         HorizontalAlignment="Center"
                         Style="{StaticResource TitleLargeTextBlockStyle}"
-                        Text="Welcome to Trdo!" />
+                        Text="Welcome to Trdo (soon to be Traydio)!" />
                     <TextBlock
                         HorizontalAlignment="Center"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
