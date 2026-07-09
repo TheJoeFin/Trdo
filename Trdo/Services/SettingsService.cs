@@ -17,6 +17,7 @@ public static class SettingsService
     private const string IsYouTubeMusicEnabledKey = "IsYouTubeMusicEnabled";
     private const string TrayClickBehaviorKey = "TrayClickBehavior";
     private const string IsMiniPlayerVisualizerEnabledKey = "IsMiniPlayerVisualizerEnabled";
+    private const string IsMiniPlayerTopmostKey = "IsMiniPlayerTopmost";
 
     public static event EventHandler? MusicSearchServicesChanged;
 
@@ -146,6 +147,16 @@ public static class SettingsService
     {
         get => GetBoolSetting(IsMiniPlayerVisualizerEnabledKey, defaultValue: true);
         set => SetBoolSetting(IsMiniPlayerVisualizerEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether the mini player window stays on top of other windows.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsMiniPlayerTopmost
+    {
+        get => GetBoolSetting(IsMiniPlayerTopmostKey, defaultValue: true);
+        set => SetBoolSetting(IsMiniPlayerTopmostKey, value);
     }
 
     /// <summary>
