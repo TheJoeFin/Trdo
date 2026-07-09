@@ -1,9 +1,15 @@
-﻿<p align="center">
+<p align="center">
   <img width="128" align="center" src="Images/Trdo-Icon.png">
 </p>
 <h1 align="center">
   Trdo
 </h1>
+
+<h3 align="center">
+
+  Soon to be Traydio
+
+</h3>
 <p align="center">
   A simple, elegant internet radio player for Windows
 </p>
@@ -13,10 +19,13 @@
   </a>
 </p>
 
+> **📢 Soon to be Traydio:** Trdo will soon be renamed to **Traydio**. Stay tuned for updated branding, releases, and documentation!
+
 ![Trdo flyout](Images/Screenshot-1-10.png)
 
 ### Overview
-Trdo is a modern internet radio player built for Windows with a focus on simplicity and elegance. Stream your favorite radio stations with a beautiful, intuitive interface designed for Windows 11.
+
+Trdo (soon to be Traydio) is a modern internet radio player built for Windows with a focus on simplicity and elegance. Stream your favorite radio stations with a beautiful, intuitive interface designed for Windows 11.
 
 Built with .NET 9, WinUI 3, and the Windows App SDK, Trdo provides a native Windows experience with smooth animations and responsive controls.
 
@@ -27,20 +36,25 @@ Built with .NET 9, WinUI 3, and the Windows App SDK, Trdo provides a native Wind
 - **[WinFuture](https://winfuture.de/download/product/4193/)** *(German)* — Trdo featured as a modern, minimalist internet radio player for Windows 11
 
 ## How to Build
+
 Get the code:
-- Install git: https://git-scm.com/download/win
-- git clone https://github.com/TheJoeFin/Trdo.git
+
+- Install git: [https://git-scm.com/download/win](https://git-scm.com/download/win)
+- git clone [https://github.com/TheJoeFin/Trdo.git](https://github.com/TheJoeFin/Trdo.git)
 
 ### With Visual Studio 2026
+
 - Install Visual Studio 2026 (the free community edition is sufficient).
+  
     - Install the ".NET desktop development" workload.
     - Install "Windows application development" workload with Windows App SDK
 - Open `\Trdo\Trdo.slnx` in Visual Studio.
 - Key F5 or Press "▶ Local Machine"
 
 ### With Visual Studio Code (VS Code)
-- Install Visual Studio Code https://code.visualstudio.com/
-- Install .NET 9.0 SDK https://dotnet.microsoft.com/download/dotnet/10.0
+
+- Install Visual Studio Code [https://code.visualstudio.com/](https://code.visualstudio.com/)
+- Install .NET 9.0 SDK [https://dotnet.microsoft.com/download/dotnet/10.0](https://dotnet.microsoft.com/download/dotnet/10.0)
 - Open `\Trdo\` Folder in VS Code (Same folder as .sln file)
 - Key F5 to launch with debugger
 
@@ -62,13 +76,16 @@ Get the code:
 - WinUIEx
 
 ## Principles
+
 Trdo is designed to be simple and elegant, focusing on what matters most: enjoying your favorite radio stations. By leveraging modern Windows technologies, Trdo provides a smooth, native experience that feels at home on Windows 11. The interface is designed to be intuitive and uncluttered, letting you focus on discovering and listening to great content.
 
 ### Packages Used
+
 Will be updated as development progresses.
 
 ### Thanks for using Trdo
-Hopefully this simple app makes listening to internet radio enjoyable and hassle-free.
+
+Hopefully this simple app makes listening to internet radio enjoyable and hassle-free.  
 If you have any questions or feedback reach out on Twitter [@TheJoeFin](http://www.twitter.com/thejoefin) or through GitHub issues.
 
 ## 📝 License
