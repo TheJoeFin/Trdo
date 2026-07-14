@@ -136,7 +136,27 @@ public sealed partial class SearchStation : Page
         if (sender is Button button && button.Tag is RadioBrowserStation station)
         {
             StopPreview();
-            // Navigate to AddStation page with the selected station
+
+            RadioStation newStation = new()
+            {
+                Name = station.Name,
+                StreamUrl = station.GetStreamUrl(),
+                Homepage = !string.IsNullOrWhiteSpace(station.Homepage) ? station.Homepage : null,
+                FaviconUrl = !string.IsNullOrWhiteSpace(station.Favicon) ? station.Favicon : null
+            };
+            PlayerViewModel.Shared.AddStation(newStation);
+
+            // Save right away and return to the main page
+            _shellViewModel?.NavigateToPlayingPage();
+        }
+    }
+
+    private void EditStationButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is RadioBrowserStation station)
+        {
+            StopPreview();
+            // Navigate to AddStation page pre-filled so details can be edited before saving
             _shellViewModel?.NavigateToAddStationPage(station);
         }
     }
