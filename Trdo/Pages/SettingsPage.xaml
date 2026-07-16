@@ -55,7 +55,7 @@
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Open on startup" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Launch Trdo automatically when you sign in so the player is ready without opening it manually." />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Launch Traydio automatically when you sign in so the player is ready without opening it manually." />
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                             <ToggleSwitch
                                 x:Name="StartupToggle"
@@ -79,13 +79,13 @@
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Play on startup" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Automatically resume the last station as soon as Trdo opens." />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Automatically resume the last station as soon as Traydio opens." />
                         <InfoBar
                             x:Name="AutoPlayWarningInfoBar"
                             Margin="-12"
                             IsClosable="True"
                             IsOpen="False"
-                            Message="This means audio will begin playing when Trdo is launched. It could be disruptive. Are you sure you want to enable this?"
+                            Message="This means audio will begin playing when Traydio is launched. It could be disruptive. Are you sure you want to enable this?"
                             Severity="Warning">
                             <InfoBar.ActionButton>
                                 <Button
@@ -116,10 +116,10 @@
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Tray icon click behavior" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose whether the tray icon prioritizes playback controls or opening the flyout menu." />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose whether the tray icon prioritizes playback controls or opening the player." />
                         <ComboBox SelectedIndex="{x:Bind ViewModel.TrayClickBehavior, Mode=TwoWay}">
-                            <ComboBoxItem Content="Left click: play/pause, right click: open flyout (Default)" />
-                            <ComboBoxItem Content="Left click: open flyout, right click: play/pause" />
+                            <ComboBoxItem Content="Left click: play/pause, right click: open Traydio (Default)" />
+                            <ComboBoxItem Content="Left click: open Traydio, right click: play/pause" />
                         </ComboBox>
                     </StackPanel>
                 </Border>
@@ -244,7 +244,7 @@
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Playback engine" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose how Trdo plays streams. Auto uses LibVLC first and falls back to Windows Media Foundation when needed." />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose how Traydio plays streams. Auto uses LibVLC first and falls back to Windows Media Foundation when needed." />
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <ComboBox
                                 Grid.Column="0"
@@ -286,7 +286,7 @@
                 <Border Style="{StaticResource SettingCardStyle}" Visibility="{x:Bind ViewModel.IsWatchdogEnabled, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Silence detection timeout" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Set how long playback can stay silent before Trdo restarts the stream automatically." />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Set how long playback can stay silent before Traydio restarts the stream automatically." />
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                             <Slider
                                 x:Name="SilenceTimeoutSlider"
@@ -362,7 +362,7 @@
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Auto-increase buffer on stutter" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Let Trdo raise the buffer automatically when the stream is struggling to stay smooth." />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Let Traydio raise the buffer automatically when the stream is struggling to stay smooth." />
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                             <ToggleSwitch
                                 x:Name="AutoBufferToggle"

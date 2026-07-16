@@ -18,11 +18,10 @@
 
         <TitleBar
             x:Name="SimpleTitleBar"
-            Title="Trdo (soon to be Traydio)"
+            Title="Traydio"
             BackRequested="TitleBar_BackRequested"
             IsBackButtonVisible="{x:Bind ViewModel.CanGoBack,
-                                         Mode=OneWay}"
-            Subtitle="beta">
+                                         Mode=OneWay}">
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="ms-appx:///Assets/Radio.png" />
             </TitleBar.IconSource>

@@ -2,12 +2,12 @@
   <img width="128" align="center" src="Images/Trdo-Icon.png">
 </p>
 <h1 align="center">
-  Trdo
+  Traydio
 </h1>
 
 <h3 align="center">
 
-  Soon to be Traydio
+  Formerly Trdo
 
 </h3>
 <p align="center">
@@ -19,15 +19,15 @@
   </a>
 </p>
 
-> **📢 Soon to be Traydio:** Trdo will soon be renamed to **Traydio**. Stay tuned for updated branding, releases, and documentation!
+> **📢 Now Traydio:** As of version 2.0, Trdo is named **Traydio** — same app, clearer name.
 
-![Trdo flyout](Images/Screenshot-1-10.png)
+![Traydio flyout](Images/Screenshot-1-10.png)
 
 ### Overview
 
-Trdo (soon to be Traydio) is a modern internet radio player built for Windows with a focus on simplicity and elegance. Stream your favorite radio stations with a beautiful, intuitive interface designed for Windows 11.
+Traydio (formerly Trdo) is a modern internet radio player built for Windows with a focus on simplicity and elegance. Stream your favorite radio stations with a beautiful, intuitive interface designed for Windows 11.
 
-Built with .NET 9, WinUI 3, and the Windows App SDK, Trdo provides a native Windows experience with smooth animations and responsive controls.
+Built with .NET 9, WinUI 3, and the Windows App SDK, Traydio provides a native Windows experience with smooth animations and responsive controls.
 
 ## 📰 In the Press
 
@@ -77,13 +77,13 @@ Get the code:
 
 ## Principles
 
-Trdo is designed to be simple and elegant, focusing on what matters most: enjoying your favorite radio stations. By leveraging modern Windows technologies, Trdo provides a smooth, native experience that feels at home on Windows 11. The interface is designed to be intuitive and uncluttered, letting you focus on discovering and listening to great content.
+Traydio is designed to be simple and elegant, focusing on what matters most: enjoying your favorite radio stations. By leveraging modern Windows technologies, Traydio provides a smooth, native experience that feels at home on Windows 11. The interface is designed to be intuitive and uncluttered, letting you focus on discovering and listening to great content.
 
 ### Packages Used
 
 Will be updated as development progresses.
 
-### Thanks for using Trdo
+### Thanks for using Traydio
 
 Hopefully this simple app makes listening to internet radio enjoyable and hassle-free.  
 If you have any questions or feedback reach out on Twitter [@TheJoeFin](http://www.twitter.com/thejoefin) or through GitHub issues.

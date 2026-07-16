@@ -21,7 +21,7 @@
 
             <XamlUICommand
                 x:Key="ExitApplicationCommand"
-                Description="Exit Trdo"
+                Description="Exit Traydio"
                 Label="Exit">
                 <XamlUICommand.IconSource>
                     <FontIconSource FontFamily="Segoe Fluent Icons" Glyph="&#xE8BB;" />

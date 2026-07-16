@@ -7,7 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ex="using:WinUIEx"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Trdo Mini Player"
+    Title="Traydio Mini Player"
     Width="320"
     Height="220"
     IsMaximizable="False"
@@ -25,7 +25,7 @@
         Tapped="WindowLayout_Tapped">
         <TitleBar
             x:Name="ModernTitlebar"
-            Title="Trdo"
+            Title="Traydio"
             Subtitle="Mini Player">
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="/Assets/Radio.ico" />

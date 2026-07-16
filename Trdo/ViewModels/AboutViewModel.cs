@@ -28,7 +28,7 @@ public partial class AboutViewModel : INotifyPropertyChanged
 
     public bool ShowContactDeveloper => SelectedRating > 0 && SelectedRating <= 3;
 
-    public string AppName => "Trdo (soon to be Traydio)";
+    public string AppName => "Traydio";
     public string AppDescription => "A simple, elegant internet radio player for Windows";
     public string Version
     {
@@ -76,7 +76,7 @@ public partial class AboutViewModel : INotifyPropertyChanged
 
     public async Task ContactDeveloper()
     {
-        string subject = Uri.EscapeDataString($"Trdo Feedback - {Version}");
+        string subject = Uri.EscapeDataString($"Traydio Feedback - {Version}");
         string mailToUri = $"mailto:joe@joefinapps.com?subject={subject}";
         await Launcher.LaunchUriAsync(new Uri(mailToUri));
     }

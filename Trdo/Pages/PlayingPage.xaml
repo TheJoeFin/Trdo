@@ -71,7 +71,7 @@
                 Background="Transparent"
                 BorderBrush="Transparent"
                 Click="InfoButton_Click"
-                ToolTipService.ToolTip="About Trdo">
+                ToolTipService.ToolTip="About Traydio">
                 <FontIcon FontSize="16" Glyph="&#xE946;" />
             </Button>
 
@@ -383,7 +383,7 @@
                 VerticalAlignment="Center"
                 Click="CloseButton_Click"
                 Content="Quit"
-                ToolTipService.ToolTip="Quit Trdo" />
+                ToolTipService.ToolTip="Quit Traydio" />
         </Grid>
     </Grid>
 </Page>

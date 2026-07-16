@@ -81,6 +81,8 @@ public partial class App : Application
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         // Check for single instance using a named mutex
+        // These keep the legacy "Trdo" names on purpose: an old-version instance
+        // still running across an update must share the same mutex and event.
         const string mutexName = "Global\\Trdo_SingleInstance_Mutex";
         const string restoreEventName = "Global\\Trdo_RestoreTrayIcon_Event";
 
@@ -179,7 +181,7 @@ public partial class App : Application
         if (_trayIcon is not null)
             return;
 
-        _trayIcon = new(0, "Assets/Radio.ico", "Trdo");
+        _trayIcon = new(0, "Assets/Radio.ico", "Traydio");
         _trayIcon.Selected += TrayIcon_Selected;
         _trayIcon.ContextMenu += TrayIcon_ContextMenu;
         _trayIcon.IsVisible = true;
@@ -326,7 +328,7 @@ public partial class App : Application
         string tooltip;
         if (!_playerVm.CanPlay)
         {
-            tooltip = "Trdo - Add a station to start listening";
+            tooltip = "Traydio - Add a station to start listening";
         }
         else if (_playerVm.IsPlaying)
         {
@@ -342,11 +344,11 @@ public partial class App : Application
                     nowPlaying = string.Concat(nowPlaying.AsSpan(0, MaxTooltipNowPlayingLength - 3), "...");
                 }
 
-                tooltip = $"Trdo {station} (Playing)\n{nowPlaying}\n{playPauseClickHint}";
+                tooltip = $"Traydio {station} (Playing)\n{nowPlaying}\n{playPauseClickHint}";
             }
             else
             {
-                tooltip = $"Trdo {station} (Playing)\n{playPauseClickHint}";
+                tooltip = $"Traydio {station} (Playing)\n{playPauseClickHint}";
             }
         }
         else
@@ -355,7 +357,7 @@ public partial class App : Application
                 ? "Right-click to play"
                 : "Left-click to play";
 
-            tooltip = $"Trdo {station} (Paused)\n{playPauseClickHint}";
+            tooltip = $"Traydio {station} (Paused)\n{playPauseClickHint}";
         }
 
         SetTrayTooltip(tooltip, forceTooltip);
@@ -366,7 +368,7 @@ public partial class App : Application
         if (_trayIcon is null)
             return;
 
-        string tooltip = string.IsNullOrWhiteSpace(text) ? "Trdo" : text.Trim();
+        string tooltip = string.IsNullOrWhiteSpace(text) ? "Traydio" : text.Trim();
         if (tooltip.Length > MaxTrayTooltipLength)
         {
             tooltip = string.Concat(tooltip.AsSpan(0, MaxTrayTooltipLength - 3), "...");

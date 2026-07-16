@@ -1,9 +1,20 @@
 # Changelog
 
-All notable changes to Trdo will be documented in this file.
+All notable changes to Traydio (formerly Trdo) will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.0.0] - Unreleased
+
+### Changed
+- **Renamed to Traydio** — same app, clearer name (#53)
+- The tray flyout is now a regular window placed near the click position, fixing DPI and reliability issues with the old flyout (#98, #96, #42)
+- LibVLC is now the default playback engine, with Windows Media Foundation kept as a fallback and as an opt-in "Native" mode (broader codec and stream support)
+
+### Added
+- "Allow PC to sleep" setting so the computer can sleep on its normal schedule while radio is playing (#82)
+- "Native preferred" playback engine mode preserving the pre-2.0 native-first behavior
 
 ## [1.1.0] - 2025
 

@@ -49,8 +49,8 @@
                         FontWeight="SemiBold"
                         TextAlignment="Left"
                         TextWrapping="Wrap">
-                        <Run>Trdo</Run><LineBreak />
-                        <Run FontSize="14" FontWeight="Light">Soon to be Traydio</Run>
+                        <Run>Traydio</Run><LineBreak />
+                        <Run FontSize="14" FontWeight="Light">Formerly Trdo</Run>
                     </TextBlock>
 
                     <TextBlock
@@ -79,7 +79,7 @@
                     <TextBlock
                         FontSize="16"
                         FontWeight="SemiBold"
-                        Text="Enjoying Trdo?"
+                        Text="Enjoying Traydio?"
                         TextWrapping="Wrap" />
 
                     <TextBlock
@@ -190,7 +190,7 @@
 
                     <TextBlock
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="If you enjoy Trdo, consider buying me a coffee!"
+                        Text="If you enjoy Traydio, consider buying me a coffee!"
                         TextWrapping="Wrap" />
 
                     <HyperlinkButton Margin="0,8,0,0" Click="BuyMeACoffeeButton_Click">

@@ -1,6 +1,6 @@
-# Contributing to Trdo
+# Contributing to Traydio
 
-Thank you for your interest in contributing to Trdo! This document provides guidelines for contributing to the project.
+Thank you for your interest in Contributing to Traydio! This document provides guidelines for contributing to the project.
 
 ## How to Contribute
 

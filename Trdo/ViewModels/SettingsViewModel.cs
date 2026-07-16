@@ -547,7 +547,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         FileSavePicker picker = new();
         WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
         picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
-        picker.SuggestedFileName = "Trdo Stations";
+        picker.SuggestedFileName = "Traydio Stations";
         picker.FileTypeChoices.Add("M3U Playlist", [".m3u"]);
         picker.FileTypeChoices.Add("PLS Playlist", [".pls"]);
 
