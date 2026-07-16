@@ -14,6 +14,11 @@
     </ex:WindowEx.SystemBackdrop>
 
     <Grid x:Name="PopupRoot">
+        <Grid.Transitions>
+            <TransitionCollection>
+                <EntranceThemeTransition FromVerticalOffset="40" />
+            </TransitionCollection>
+        </Grid.Transitions>
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="Escape" Invoked="EscapeAccelerator_Invoked" />
         </Grid.KeyboardAccelerators>

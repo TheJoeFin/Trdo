@@ -50,7 +50,7 @@ public sealed partial class TrayPopupWindow : WindowEx
 
         AppWindow.SetIcon("Assets\\Radio.ico");
         ConfigurePresenter();
-        ConfigureToolWindow();
+        // ConfigureToolWindow();
 
         Activated += OnWindowActivated;
 
@@ -129,9 +129,9 @@ public sealed partial class TrayPopupWindow : WindowEx
         OverlappedPresenter presenter = OverlappedPresenter.Create();
         presenter.IsMaximizable = false;
         presenter.IsMinimizable = false;
-        presenter.IsResizable = false;
+        presenter.IsResizable = true;
         presenter.IsAlwaysOnTop = true;
-        presenter.SetBorderAndTitleBar(false, false);
+        presenter.SetBorderAndTitleBar(true, false);
         AppWindow.SetPresenter(presenter);
         AppWindow.IsShownInSwitchers = false;
 
