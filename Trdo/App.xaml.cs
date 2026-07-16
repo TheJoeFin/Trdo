@@ -24,6 +24,7 @@ namespace Trdo;
 public partial class App : Application
 {
     private TrayIcon? _trayIcon;
+    private TrayPopupWindow? _trayPopupWindow;
     private MiniPlayerWindow? _miniPlayerWindow;
     private readonly PlayerViewModel _playerVm = PlayerViewModel.Shared;
     private readonly UISettings _uiSettings = new();
@@ -57,10 +58,8 @@ public partial class App : Application
 
     public void TryShowFlyout()
     {
-        if (_trayIcon is null)
-            return;
-
-        // TODO: find a way to programmatically show the flyout on the Icon
+        WindowPlacementService.CapturePointerAnchor();
+        ShowTrayPopup();
     }
 
     public void ShowMiniPlayerWindow()
@@ -74,8 +73,9 @@ public partial class App : Application
             _miniPlayerWindow.Closed += (_, _) => _miniPlayerWindow = null;
         }
 
-        _miniPlayerWindow.Activate();
+        // Position before activating so the window never flashes at a stale location.
         WindowPlacementService.PositionWindowNearAnchor(_miniPlayerWindow, 320, 220);
+        _miniPlayerWindow.Activate();
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
@@ -236,30 +236,19 @@ public partial class App : Application
     private void ShowFlyout(TrayIconEventArgs args)
     {
         WindowPlacementService.CapturePointerAnchor();
-        args.Flyout = CreateFlyout();
+        ShowTrayPopup();
     }
 
-    private Flyout CreateFlyout()
+    private void ShowTrayPopup()
     {
-        Flyout flyout = new()
+        if (_trayPopupWindow is null)
         {
-            Content = new ShellPage()
-        };
+            _trayPopupWindow = new TrayPopupWindow();
+            WindowHelper.Track(_trayPopupWindow);
+            _trayPopupWindow.Closed += (_, _) => _trayPopupWindow = null;
+        }
 
-        flyout.Closing += (s, e) =>
-        {
-            if (s is Flyout f)
-                f.Content = null;
-        };
-
-        flyout.Opened += (s, e) =>
-        {
-            WindowPlacementService.CapturePointerAnchor();
-            // Clear the back stack when flyout opens to prevent accumulation
-            Services.NavigationService.Instance.ClearBackStack();
-        };
-
-        return flyout;
+        _trayPopupWindow.ToggleNearAnchor();
     }
 
     private async Task UpdateTrayIconAsync()
@@ -451,7 +440,7 @@ public partial class App : Application
             }
             else
             {
-                _trayIcon.CloseFlyout();
+                _trayPopupWindow?.HidePopup();
                 _trayIcon.IsVisible = false;
                 _trayIcon.IsVisible = true;
             }

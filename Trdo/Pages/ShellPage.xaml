@@ -19,7 +19,6 @@
         <TitleBar
             x:Name="SimpleTitleBar"
             Title="Trdo (soon to be Traydio)"
-            Margin="-8,-8,-8,0"
             BackRequested="TitleBar_BackRequested"
             IsBackButtonVisible="{x:Bind ViewModel.CanGoBack,
                                          Mode=OneWay}"
@@ -30,6 +29,9 @@
         </TitleBar>
 
 
-        <Frame x:Name="ContentFrame" Grid.Row="1" />
+        <Frame
+            x:Name="ContentFrame"
+            Grid.Row="1"
+            Margin="8,0,8,8" />
     </Grid>
 </Page>

@@ -35,19 +35,19 @@ internal static partial class WindowPlacementService
 
     public static void PositionWindowNearAnchor(Window window, int width, int height)
     {
-        // Win32 and WinUI positioning APIs all use physical pixels. Scale the
-        // caller's logical width/height so placement and clamping are correct
-        // at any DPI (125%, 150%, 200%, etc.).
-        nint hwnd = window.GetWindowHandle();
-        uint dpi = GetDpiForWindow(hwnd);
-        if (dpi == 0) dpi = 96;
-        int physWidth = (int)(width * dpi / 96.0);
-        int physHeight = (int)(height * dpi / 96.0);
-
         bool usePointerPlacement = _lastAnchorPoint is PointInt32;
         PointInt32 anchor = GetAnchorPoint();
         DisplayArea? displayArea = DisplayArea.GetFromPoint(anchor, DisplayAreaFallback.Nearest);
         RectInt32 workArea = displayArea?.WorkArea ?? DisplayArea.Primary.WorkArea;
+
+        // Win32 and WinUI positioning APIs all use physical pixels. Scale the
+        // caller's logical width/height so placement and clamping are correct
+        // at any DPI (125%, 150%, 200%, etc.). The DPI must come from the
+        // anchor's monitor, not the window: a hidden window keeps the DPI of
+        // wherever it last was, which goes stale across monitor/scale changes.
+        uint dpi = GetDpiForAnchor(anchor, window);
+        int physWidth = (int)(width * dpi / 96.0);
+        int physHeight = (int)(height * dpi / 96.0);
 
         int x;
         int y;
@@ -135,6 +135,21 @@ internal static partial class WindowPlacementService
         y = System.Math.Clamp(y, workArea.Y, maxY);
 
         window.AppWindow.MoveAndResize(new RectInt32(x, y, physWidth, physHeight));
+    }
+
+    private static uint GetDpiForAnchor(PointInt32 anchor, Window window)
+    {
+        POINT point = new() { X = anchor.X, Y = anchor.Y };
+        nint monitor = MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST);
+        if (monitor != 0
+            && GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, out uint dpiX, out _) == 0
+            && dpiX != 0)
+        {
+            return dpiX;
+        }
+
+        uint dpi = GetDpiForWindow(window.GetWindowHandle());
+        return dpi == 0 ? 96u : dpi;
     }
 
     private static PointInt32 GetAnchorPoint()
@@ -262,6 +277,8 @@ internal static partial class WindowPlacementService
     }
 
     private const uint ABM_GETTASKBARPOS = 0x00000005;
+    private const uint MONITOR_DEFAULTTONEAREST = 2;
+    private const uint MDT_EFFECTIVE_DPI = 0;
     private const uint ABE_LEFT = 0;
     private const uint ABE_TOP = 1;
     private const uint ABE_RIGHT = 2;
@@ -309,6 +326,12 @@ internal static partial class WindowPlacementService
 
     [LibraryImport("user32.dll")]
     private static partial uint GetDpiForWindow(nint hwnd);
+
+    [LibraryImport("user32.dll")]
+    private static partial nint MonitorFromPoint(POINT pt, uint dwFlags);
+
+    [LibraryImport("shcore.dll")]
+    private static partial int GetDpiForMonitor(nint hMonitor, uint dpiType, out uint dpiX, out uint dpiY);
 
     [LibraryImport("shell32.dll")]
     private static partial uint SHAppBarMessage(uint dwMessage, ref APPBARDATA pData);
