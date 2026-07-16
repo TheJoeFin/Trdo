@@ -522,7 +522,7 @@ public sealed class StreamMetadataService : IDisposable
     /// <summary>
     /// Attempts to parse Artist and Title from the StreamTitle using common formats.
     /// </summary>
-    private static void ParseArtistAndTitle(StreamMetadata metadata)
+    public static void ParseArtistAndTitle(StreamMetadata metadata)
     {
         if (string.IsNullOrWhiteSpace(metadata.StreamTitle))
         {

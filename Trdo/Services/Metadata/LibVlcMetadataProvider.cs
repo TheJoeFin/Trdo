@@ -14,6 +14,7 @@ public sealed class LibVlcMetadataProvider : IDisposable
     private VlcMediaPlayer? _mediaPlayer;
     private StreamMetadata _currentMetadata = StreamMetadata.Empty;
     private DateTime _lastReadUtc = DateTime.MinValue;
+    private bool _hasSeenNowPlaying;
 
     public event EventHandler<StreamMetadata>? MetadataChanged;
 
@@ -22,6 +23,7 @@ public sealed class LibVlcMetadataProvider : IDisposable
     public void Attach(VlcMediaPlayer mediaPlayer)
     {
         Detach(clearMetadata: false);
+        _hasSeenNowPlaying = false;
         _mediaPlayer = mediaPlayer;
         _mediaPlayer.MediaChanged += OnMediaChanged;
         _mediaPlayer.Playing += OnPlaying;
@@ -48,8 +50,11 @@ public sealed class LibVlcMetadataProvider : IDisposable
 
     private void OnPlaying(object? sender, EventArgs e) => ReadMetadataFromMedia(force: true);
 
-    private void OnMediaChanged(object? sender, MediaPlayerMediaChangedEventArgs e) =>
+    private void OnMediaChanged(object? sender, MediaPlayerMediaChangedEventArgs e)
+    {
+        _hasSeenNowPlaying = false;
         ReadMetadataFromMedia(force: true);
+    }
 
     private void OnTimeChanged(object? sender, MediaPlayerTimeChangedEventArgs e)
     {
@@ -70,23 +75,43 @@ public sealed class LibVlcMetadataProvider : IDisposable
 
         _lastReadUtc = DateTime.UtcNow;
         Media media = _mediaPlayer.Media;
+
+        string nowPlaying = media.Meta(MetadataType.NowPlaying)?.Trim() ?? string.Empty;
+        string artist = media.Meta(MetadataType.Artist)?.Trim() ?? string.Empty;
+        string title = media.Meta(MetadataType.Title)?.Trim() ?? string.Empty;
+
         StreamMetadata metadata = new()
         {
-            Title = media.Meta(MetadataType.Title) ?? string.Empty,
-            Artist = media.Meta(MetadataType.Artist) ?? string.Empty,
-            StreamTitle = media.Meta(MetadataType.NowPlaying) ?? string.Empty,
             AlbumArtUrl = media.Meta(MetadataType.ArtworkURL)
         };
 
-        if (string.IsNullOrWhiteSpace(metadata.StreamTitle))
+        if (!string.IsNullOrWhiteSpace(nowPlaying))
         {
-            metadata.StreamTitle = metadata.DisplayText;
+            // For radio streams NowPlaying carries the ICY StreamTitle ("Artist - Title").
+            _hasSeenNowPlaying = true;
+            metadata.StreamTitle = nowPlaying;
+            StreamMetadataService.ParseArtistAndTitle(metadata);
+        }
+        else if (_hasSeenNowPlaying)
+        {
+            // LibVLC transiently reports NowPlaying as null between meta updates;
+            // keep the current track instead of downgrading to the station name.
+            return;
+        }
+        else if (!string.IsNullOrWhiteSpace(artist) && !string.IsNullOrWhiteSpace(title))
+        {
+            metadata.Artist = artist;
+            metadata.Title = title;
+            metadata.StreamTitle = $"{artist} - {title}";
+        }
+        else
+        {
+            // A lone Title meta is the station name (icy-name) or the stream URL,
+            // not now-playing info — don't publish it as the current track.
+            return;
         }
 
-        if (metadata.HasMetadata)
-        {
-            UpdateMetadata(metadata);
-        }
+        UpdateMetadata(metadata);
     }
 
     private void UpdateMetadata(StreamMetadata metadata)

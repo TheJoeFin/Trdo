@@ -1,6 +1,5 @@
 ﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.Win32;
 using System;
 using System.ComponentModel;
@@ -9,7 +8,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Trdo.Controls;
-using Trdo.Pages;
 using Trdo.Services;
 using Trdo.Services.Playback;
 using Trdo.ViewModels;
@@ -162,8 +160,8 @@ public partial class App : Application
         {
             UpdatePlayPauseCommandText();
         }
-        else if (e.PropertyName == nameof(PlayerViewModel.NowPlaying) ||
-                 e.PropertyName == nameof(PlayerViewModel.HasNowPlaying))
+        else if (e.PropertyName is (nameof(PlayerViewModel.NowPlaying)) or
+                 (nameof(PlayerViewModel.HasNowPlaying)))
         {
             // Update tooltip when now playing info changes
             UpdatePlayPauseCommandText();
