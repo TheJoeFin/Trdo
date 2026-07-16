@@ -18,14 +18,19 @@ namespace Trdo.Controls;
 /// </summary>
 public sealed partial class TrayPopupWindow : WindowEx
 {
-    private const int PopupWidth = 240;
-    private const int PopupHeight = 400;
+    private const int PopupWidth = 320;
+    private const int PopupHeight = 500;
 
+    private const int GWL_STYLE = -16;
     private const int GWL_EXSTYLE = -20;
+    private const int WS_CAPTION = 0x00C00000;
+    private const int WS_THICKFRAME = 0x00040000;
     private const int WS_EX_TOOLWINDOW = 0x00000080;
     private const uint GA_ROOT = 2;
+    private const int DWMWA_BORDER_COLOR = 34;
     private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     private const int DWMWCP_ROUND = 2;
+    private const int DWMWA_COLOR_NONE = unchecked((int)0xFFFFFFFE);
 
     /// <summary>
     /// A tray click that arrives right after a light-dismiss hide is the same
@@ -141,6 +146,15 @@ public sealed partial class TrayPopupWindow : WindowEx
         nint hwnd = WindowNative.GetWindowHandle(this);
         int exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
         _ = SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
+
+        // The presenter's SetBorderAndTitleBar(false, false) can leave the
+        // caption/resize-frame styles behind, which DWM renders as a visible
+        // frame around the popup. Strip them and the 1px DWM border directly.
+        int style = GetWindowLong(hwnd, GWL_STYLE);
+        _ = SetWindowLong(hwnd, GWL_STYLE, style & ~(WS_CAPTION | WS_THICKFRAME));
+
+        int borderColor = DWMWA_COLOR_NONE;
+        _ = DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref borderColor, sizeof(int));
     }
 
     private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
