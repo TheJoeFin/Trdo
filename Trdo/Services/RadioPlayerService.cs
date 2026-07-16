@@ -344,6 +344,11 @@ public sealed partial class RadioPlayerService : IDisposable
         // Initialize SystemMediaTransportControls
         try
         {
+            // Manual SMTC control: without this the auto command manager ignores
+            // the button configuration whenever the MediaPlayer has no source,
+            // which is always the case when LibVLC is the active backend.
+            _player.CommandManager.IsEnabled = false;
+
             _systemMediaControls = _player.SystemMediaTransportControls;
             if (_systemMediaControls != null)
             {
@@ -707,7 +712,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
             // Make sure playback doesn't sneak in after the user asked to stop
             SetInternalStateChange(true);
-            _player.Pause();
+            ActiveBackend.Pause();
             SetManualBuffering(false);
         }
         catch (Exception ex)
@@ -768,7 +773,7 @@ public sealed partial class RadioPlayerService : IDisposable
             {
                 Debug.WriteLine("[RadioPlayerService] Play attempt cancelled during retry (user requested pause/toggle during buffering)");
                 SetInternalStateChange(true);
-                _player.Pause();
+                ActiveBackend.Pause();
                 SetManualBuffering(false);
             }
             catch (Exception retryEx)

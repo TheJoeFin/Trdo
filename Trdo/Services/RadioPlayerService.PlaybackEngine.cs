@@ -69,6 +69,11 @@ public sealed partial class RadioPlayerService
             throw new InvalidOperationException("No stream URL set. Call SetStreamUrl first.");
         }
 
+        if (_libVlcBackend is not null)
+        {
+            _libVlcBackend.NetworkCachingMs = (int)RequiredBufferDuration.TotalMilliseconds;
+        }
+
         PlaybackPrepareResult result = await _playbackEngineSelector.PrepareAsync(_streamUrl, cancellationToken);
         _lastPrepareError = result.Success ? null : result.ErrorMessage;
 
@@ -79,7 +84,7 @@ public sealed partial class RadioPlayerService
 
         if (result.Backend == PlaybackBackendKind.Native &&
             _libVlcBackend is not null &&
-            PlaybackEngineSelector.GetEngineMode() == PlaybackEngineMode.Auto)
+            PlaybackEngineSelector.GetEngineMode() == PlaybackEngineMode.NativePreferred)
         {
             bool opened = await _playbackEngineSelector.WaitForNativeOpenAsync(
                 cancellationToken,
@@ -122,7 +127,10 @@ public sealed partial class RadioPlayerService
 
     private async Task<bool> RetryWithPlaybackFallbackInternalAsync(CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_streamUrl) || _libVlcBackend is null)
+        // Retrying from LibVLC to native needs no LibVLC backend; only the
+        // native-to-LibVLC direction requires one.
+        if (string.IsNullOrWhiteSpace(_streamUrl) ||
+            (_libVlcBackend is null && ActivePlaybackBackend == PlaybackBackendKind.Native))
         {
             return false;
         }
@@ -238,6 +246,13 @@ public sealed partial class RadioPlayerService
     private void OnLibVlcPlaybackFailed(object? sender, PlaybackFailureEventArgs e)
     {
         Debug.WriteLine($"[RadioPlayerService] LibVLC playback failed: {e.Message}");
+
+        if (!e.CanRetryWithFallback)
+        {
+            return;
+        }
+
+        _ = TryFallbackPlaybackAsync();
     }
 
     private void DisposePlaybackEngine()

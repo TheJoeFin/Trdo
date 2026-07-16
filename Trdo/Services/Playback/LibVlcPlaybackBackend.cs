@@ -39,9 +39,15 @@ public sealed class LibVlcPlaybackBackend : IPlaybackBackend
             PlaybackFailed?.Invoke(this, new PlaybackFailureEventArgs(
                 PlaybackBackendKind.LibVlc,
                 "LibVLC playback error",
-                canRetryWithFallback: false));
+                canRetryWithFallback: true));
         };
     }
+
+    /// <summary>
+    /// Network cache duration passed to LibVLC at prepare time, mirroring the
+    /// user's buffer setting. Values of zero or less use the LibVLC default.
+    /// </summary>
+    public int NetworkCachingMs { get; set; }
 
     public PlaybackBackendKind Kind => PlaybackBackendKind.LibVlc;
 
@@ -70,7 +76,8 @@ public sealed class LibVlcPlaybackBackend : IPlaybackBackend
         ClearSource();
 
         _currentMedia = new Media(_libVlc, streamUrl, FromType.FromLocation);
-        _currentMedia.AddOption(":network-caching=3000");
+        int networkCachingMs = NetworkCachingMs > 0 ? NetworkCachingMs : 3000;
+        _currentMedia.AddOption($":network-caching={networkCachingMs}");
         _mediaPlayer.Media = _currentMedia;
 
         Debug.WriteLine($"[LibVlcPlaybackBackend] Prepared source for {streamUrl}");

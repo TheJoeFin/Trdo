@@ -259,15 +259,27 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// Playback engine mode: 0 = Auto, 1 = Native only, 2 = LibVLC preferred.
+    /// ComboBox index for the playback engine mode. UI order (Auto, Native only,
+    /// Native preferred) no longer matches the stored enum values, so the index
+    /// is mapped rather than cast.
     /// </summary>
     public int PlaybackEngineModeIndex
     {
-        get => (int)SettingsService.PlaybackEngineMode;
+        get => SettingsService.PlaybackEngineMode switch
+        {
+            PlaybackEngineMode.NativeOnly => 1,
+            PlaybackEngineMode.NativePreferred => 2,
+            _ => 0
+        };
         set
         {
-            int clamped = Math.Clamp(value, 0, 2);
-            var mode = (PlaybackEngineMode)clamped;
+            PlaybackEngineMode mode = value switch
+            {
+                1 => PlaybackEngineMode.NativeOnly,
+                2 => PlaybackEngineMode.NativePreferred,
+                _ => PlaybackEngineMode.Auto
+            };
+
             if (mode == SettingsService.PlaybackEngineMode)
             {
                 return;
@@ -283,8 +295,8 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         SettingsService.PlaybackEngineMode switch
         {
             PlaybackEngineMode.NativeOnly => "Windows Media Foundation only",
-            PlaybackEngineMode.LibVlcPreferred => "LibVLC preferred",
-            _ => "Native first, LibVLC fallback"
+            PlaybackEngineMode.NativePreferred => "Windows first, LibVLC fallback",
+            _ => "LibVLC first, Windows fallback"
         };
 
     public bool IsWatchdogEnabled

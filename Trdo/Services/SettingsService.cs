@@ -143,7 +143,9 @@ public static class SettingsService
 
     /// <summary>
     /// Gets or sets the preferred playback engine mode.
-    /// 0 = Auto, 1 = Native only, 2 = LibVLC preferred.
+    /// 0 = Auto (LibVLC first), 1 = Native only, 3 = Native preferred.
+    /// The legacy value 2 (LibVLC preferred) reads as Auto, which now has
+    /// the same behavior plus a native fallback.
     /// </summary>
     public static PlaybackEngineMode PlaybackEngineMode
     {
@@ -151,9 +153,10 @@ public static class SettingsService
         {
             try
             {
+                PlaybackEngineMode mode = PlaybackEngineMode.Auto;
                 if (ApplicationData.Current.LocalSettings.Values.TryGetValue(PlaybackEngineModeKey, out object? value))
                 {
-                    return value switch
+                    mode = value switch
                     {
                         int i when Enum.IsDefined(typeof(PlaybackEngineMode), i) => (PlaybackEngineMode)i,
                         string s when int.TryParse(s, out int parsed) && Enum.IsDefined(typeof(PlaybackEngineMode), parsed)
@@ -162,7 +165,7 @@ public static class SettingsService
                     };
                 }
 
-                return PlaybackEngineMode.Auto;
+                return mode == PlaybackEngineMode.LibVlcPreferred ? PlaybackEngineMode.Auto : mode;
             }
             catch
             {

@@ -244,14 +244,14 @@
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Playback engine" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose how Trdo plays streams. Auto uses Windows first and falls back to LibVLC when needed for HLS and other formats." />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose how Trdo plays streams. Auto uses LibVLC first and falls back to Windows Media Foundation when needed." />
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <ComboBox
                                 Grid.Column="0"
                                 SelectedIndex="{x:Bind ViewModel.PlaybackEngineModeIndex, Mode=TwoWay}">
                                 <ComboBoxItem Content="Auto (recommended)" />
                                 <ComboBoxItem Content="Native only" />
-                                <ComboBoxItem Content="LibVLC preferred" />
+                                <ComboBoxItem Content="Native preferred" />
                             </ComboBox>
                             <TextBlock
                                 Grid.Column="1"

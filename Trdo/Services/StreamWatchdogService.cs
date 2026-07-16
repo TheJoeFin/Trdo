@@ -514,13 +514,12 @@ public sealed partial class StreamWatchdogService : IDisposable
                 return;
             }
 
-            if (_consecutiveFailures >= 2 &&
-                _playerService.ActivePlaybackBackend == PlaybackBackendKind.Native)
+            if (_consecutiveFailures >= 2)
             {
                 bool fallbackPrepared = await _playerService.RetryWithPlaybackFallbackAsync(cancellationToken);
                 if (fallbackPrepared)
                 {
-                    Debug.WriteLine("[Watchdog] Prepared LibVLC fallback for recovery");
+                    Debug.WriteLine("[Watchdog] Prepared fallback playback engine for recovery");
                 }
             }
 

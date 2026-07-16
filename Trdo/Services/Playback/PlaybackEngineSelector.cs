@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,18 +13,22 @@ namespace Trdo.Services.Playback;
 
 public sealed class PlaybackEngineSelector : IDisposable
 {
-    private const string BackendPreferencePrefix = "PlaybackBackendPref_";
+    // Pre-2.0 preferences meant "native worked here"; under the LibVLC-first
+    // default they would wrongly force native, so 2.0 uses a new prefix and
+    // deletes keys stored under the old one.
+    private const string LegacyBackendPreferencePrefix = "PlaybackBackendPref_";
+    private const string BackendPreferencePrefix = "PlaybackBackendPref2_";
 
     private readonly NativePlaybackBackend _nativeBackend;
     private readonly LibVlcPlaybackBackend? _libVlcBackend;
     private IPlaybackBackend _activeBackend;
-    private bool _nativeFailedForCurrentUrl;
 
     public PlaybackEngineSelector(NativePlaybackBackend nativeBackend, LibVlcPlaybackBackend? libVlcBackend)
     {
         _nativeBackend = nativeBackend;
         _libVlcBackend = libVlcBackend;
         _activeBackend = nativeBackend;
+        CleanupLegacyPreferences();
     }
 
     public IPlaybackBackend ActiveBackend => _activeBackend;
@@ -38,41 +43,36 @@ public sealed class PlaybackEngineSelector : IDisposable
 
     public async Task<PlaybackPrepareResult> PrepareAsync(string streamUrl, CancellationToken cancellationToken = default)
     {
-        _nativeFailedForCurrentUrl = false;
         PlaybackEngineMode mode = GetEngineMode();
-
-        if (mode == PlaybackEngineMode.LibVlcPreferred)
-        {
-            return await PrepareWithBackendAsync(_libVlcBackend, streamUrl, usedFallback: false, cancellationToken);
-        }
-
-        if (TryGetPreferredBackend(streamUrl, out PlaybackBackendKind preferred) &&
-            preferred == PlaybackBackendKind.LibVlc &&
-            _libVlcBackend is not null &&
-            mode == PlaybackEngineMode.Auto)
-        {
-            Debug.WriteLine($"[PlaybackEngineSelector] Using remembered LibVLC preference for {streamUrl}");
-            return await PrepareWithBackendAsync(_libVlcBackend, streamUrl, usedFallback: true, cancellationToken);
-        }
 
         if (mode == PlaybackEngineMode.NativeOnly || _libVlcBackend is null)
         {
             return await PrepareNativeAsync(streamUrl, cancellationToken);
         }
 
-        PlaybackPrepareResult nativeResult = await PrepareNativeAsync(streamUrl, cancellationToken);
-        if (nativeResult.Success)
+        bool nativeFirst = mode == PlaybackEngineMode.NativePreferred;
+        if (mode == PlaybackEngineMode.Auto &&
+            TryGetPreferredBackend(streamUrl, out PlaybackBackendKind remembered))
         {
-            RememberPreferredBackend(streamUrl, PlaybackBackendKind.Native);
-            return nativeResult;
+            Debug.WriteLine($"[PlaybackEngineSelector] Using remembered {remembered} preference for {streamUrl}");
+            nativeFirst = remembered == PlaybackBackendKind.Native;
         }
 
-        Debug.WriteLine($"[PlaybackEngineSelector] Native prepare failed, falling back to LibVLC: {nativeResult.ErrorMessage}");
-        _nativeFailedForCurrentUrl = true;
-        PlaybackPrepareResult fallbackResult = await PrepareWithBackendAsync(_libVlcBackend, streamUrl, usedFallback: true, cancellationToken);
+        IPlaybackBackend first = nativeFirst ? _nativeBackend : _libVlcBackend;
+        IPlaybackBackend second = nativeFirst ? _libVlcBackend : _nativeBackend;
+
+        PlaybackPrepareResult firstResult = await PrepareWithBackendAsync(first, streamUrl, usedFallback: false, cancellationToken);
+        if (firstResult.Success)
+        {
+            RememberPreferredBackend(streamUrl, first.Kind);
+            return firstResult;
+        }
+
+        Debug.WriteLine($"[PlaybackEngineSelector] {first.Kind} prepare failed, falling back to {second.Kind}: {firstResult.ErrorMessage}");
+        PlaybackPrepareResult fallbackResult = await PrepareWithBackendAsync(second, streamUrl, usedFallback: true, cancellationToken);
         if (fallbackResult.Success)
         {
-            RememberPreferredBackend(streamUrl, PlaybackBackendKind.LibVlc);
+            RememberPreferredBackend(streamUrl, second.Kind);
         }
 
         return fallbackResult;
@@ -80,21 +80,20 @@ public sealed class PlaybackEngineSelector : IDisposable
 
     public async Task<PlaybackPrepareResult> RetryWithFallbackAsync(string streamUrl, CancellationToken cancellationToken = default)
     {
-        if (_libVlcBackend is null || _activeBackend.Kind == PlaybackBackendKind.LibVlc)
+        IPlaybackBackend? other = _activeBackend.Kind == PlaybackBackendKind.LibVlc
+            ? _nativeBackend
+            : _libVlcBackend;
+
+        if (other is null || GetEngineMode() == PlaybackEngineMode.NativeOnly)
         {
             return await PrepareAsync(streamUrl, cancellationToken);
         }
 
-        if (!_nativeFailedForCurrentUrl)
-        {
-            _nativeFailedForCurrentUrl = true;
-        }
-
-        Debug.WriteLine("[PlaybackEngineSelector] Retrying with LibVLC fallback");
-        PlaybackPrepareResult result = await PrepareWithBackendAsync(_libVlcBackend, streamUrl, usedFallback: true, cancellationToken);
+        Debug.WriteLine($"[PlaybackEngineSelector] Retrying with {other.Kind} fallback");
+        PlaybackPrepareResult result = await PrepareWithBackendAsync(other, streamUrl, usedFallback: true, cancellationToken);
         if (result.Success)
         {
-            RememberPreferredBackend(streamUrl, PlaybackBackendKind.LibVlc);
+            RememberPreferredBackend(streamUrl, other.Kind);
         }
 
         return result;
@@ -198,6 +197,36 @@ public sealed class PlaybackEngineSelector : IDisposable
         }
 
         return false;
+    }
+
+    private static void CleanupLegacyPreferences()
+    {
+        try
+        {
+            var settings = ApplicationData.Current.LocalSettings.Values;
+            List<string> legacyKeys = [];
+            foreach (string key in settings.Keys)
+            {
+                if (key.StartsWith(LegacyBackendPreferencePrefix, StringComparison.Ordinal))
+                {
+                    legacyKeys.Add(key);
+                }
+            }
+
+            foreach (string key in legacyKeys)
+            {
+                settings.Remove(key);
+            }
+
+            if (legacyKeys.Count > 0)
+            {
+                Debug.WriteLine($"[PlaybackEngineSelector] Removed {legacyKeys.Count} legacy backend preference(s)");
+            }
+        }
+        catch
+        {
+            // ignore
+        }
     }
 
     private static void RememberPreferredBackend(string streamUrl, PlaybackBackendKind backend)
