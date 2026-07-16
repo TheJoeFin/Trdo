@@ -40,7 +40,6 @@ public sealed partial class MiniPlayerWindow : WindowEx
         AppWindow.SetIcon("Assets\\Radio.ico");
         AppWindow.TitleBar.PreferredTheme = TitleBarTheme.UseDefaultAppMode;
 
-        AppWindow.IsShownInSwitchers = false;
 
         _touchOverlayTimer = DispatcherQueue.CreateTimer();
         _touchOverlayTimer.Interval = TouchOverlayDuration;
@@ -51,6 +50,12 @@ public sealed partial class MiniPlayerWindow : WindowEx
         bool visualizerEnabled = SettingsService.IsMiniPlayerVisualizerEnabled;
         VisualizerToggleMenuItem.IsChecked = visualizerEnabled;
         SpectrumVisualizer.Visibility = visualizerEnabled ? Visibility.Visible : Visibility.Collapsed;
+
+        // Apply saved always-on-top preference.
+        bool topmostEnabled = SettingsService.IsMiniPlayerTopmost;
+        TopmostToggleMenuItem.IsChecked = topmostEnabled;
+        IsAlwaysOnTop = topmostEnabled;
+        AppWindow.IsShownInSwitchers = !topmostEnabled;
 
         // Set initial content state and subscribe to future changes.
         ApplyContentState(ViewModel.IsPlaybackActive, animate: false);
@@ -204,6 +209,14 @@ public sealed partial class MiniPlayerWindow : WindowEx
         bool enabled = VisualizerToggleMenuItem.IsChecked;
         SpectrumVisualizer.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
         SettingsService.IsMiniPlayerVisualizerEnabled = enabled;
+    }
+
+    private void TopmostToggleMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        bool enabled = TopmostToggleMenuItem.IsChecked;
+        IsAlwaysOnTop = enabled;
+        AppWindow.IsShownInSwitchers = !enabled;
+        SettingsService.IsMiniPlayerTopmost = enabled;
     }
 
     private void PlayPauseButton_Click(object sender, RoutedEventArgs e)

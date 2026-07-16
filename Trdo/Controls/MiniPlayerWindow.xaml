@@ -10,7 +10,6 @@
     Title="Trdo Mini Player"
     Width="320"
     Height="220"
-    IsAlwaysOnTop="True"
     IsMaximizable="False"
     IsMinimizable="False"
     mc:Ignorable="d">
@@ -45,6 +44,11 @@
                         Click="VisualizerToggleMenuItem_Click"
                         IsChecked="True"
                         Text="Show Visualizer" />
+                    <ToggleMenuFlyoutItem
+                        x:Name="TopmostToggleMenuItem"
+                        Click="TopmostToggleMenuItem_Click"
+                        IsChecked="True"
+                        Text="Always on Top" />
                 </MenuFlyout>
             </Grid.ContextFlyout>
             <Border

@@ -19,6 +19,7 @@ public static class SettingsService
     private const string TrayClickBehaviorKey = "TrayClickBehavior";
     private const string PlaybackEngineModeKey = "PlaybackEngineMode";
     private const string IsMiniPlayerVisualizerEnabledKey = "IsMiniPlayerVisualizerEnabled";
+    private const string IsMiniPlayerTopmostKey = "IsMiniPlayerTopmost";
 
     public static event EventHandler? MusicSearchServicesChanged;
 
@@ -179,6 +180,9 @@ public static class SettingsService
                 // Silently fail if unable to save
             }
         }
+    }
+
+    /// <summary>
     /// Gets or sets whether the spectrum visualizer is shown in the mini player.
     /// Defaults to true when no saved value exists.
     /// </summary>
@@ -186,6 +190,16 @@ public static class SettingsService
     {
         get => GetBoolSetting(IsMiniPlayerVisualizerEnabledKey, defaultValue: true);
         set => SetBoolSetting(IsMiniPlayerVisualizerEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether the mini player window stays on top of other windows.
+    /// Defaults to true when no saved value exists.
+    /// </summary>
+    public static bool IsMiniPlayerTopmost
+    {
+        get => GetBoolSetting(IsMiniPlayerTopmostKey, defaultValue: true);
+        set => SetBoolSetting(IsMiniPlayerTopmostKey, value);
     }
 
     /// <summary>

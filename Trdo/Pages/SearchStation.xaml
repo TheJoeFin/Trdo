@@ -150,6 +150,12 @@
                                             <FontIcon FontSize="14" Glyph="&#xE768;" />
                                         </Button>
                                         <Button
+                                            Click="EditStationButton_Click"
+                                            Tag="{x:Bind}"
+                                            ToolTipService.ToolTip="Edit station details before adding">
+                                            <FontIcon FontSize="14" Glyph="&#xE70F;" />
+                                        </Button>
+                                        <Button
                                             Click="AddStationButton_Click"
                                             Content="Add Station"
                                             Style="{StaticResource AccentButtonStyle}"

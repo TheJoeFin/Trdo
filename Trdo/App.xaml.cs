@@ -341,6 +341,10 @@ public partial class App : Application
         }
         else if (_playerVm.IsPlaying)
         {
+            string playPauseClickHint = SettingsService.TrayClickBehavior == 1
+                ? "Right-click to pause"
+                : "Left-click to pause";
+
             if (_playerVm.HasNowPlaying)
             {
                 string nowPlaying = _playerVm.NowPlaying;
@@ -349,16 +353,20 @@ public partial class App : Application
                     nowPlaying = string.Concat(nowPlaying.AsSpan(0, MaxTooltipNowPlayingLength - 3), "...");
                 }
 
-                tooltip = $"Trdo {station} (Playing)\n{nowPlaying}";
+                tooltip = $"Trdo {station} (Playing)\n{nowPlaying}\n{playPauseClickHint}";
             }
             else
             {
-                tooltip = $"Trdo {station} (Playing)";
+                tooltip = $"Trdo {station} (Playing)\n{playPauseClickHint}";
             }
         }
         else
         {
-            tooltip = $"Trdo {station} (Paused)";
+            string playPauseClickHint = SettingsService.TrayClickBehavior == 1
+                ? "Right-click to play"
+                : "Left-click to play";
+
+            tooltip = $"Trdo {station} (Paused)\n{playPauseClickHint}";
         }
 
         SetTrayTooltip(tooltip, forceTooltip);

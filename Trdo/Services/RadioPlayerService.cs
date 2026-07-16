@@ -39,6 +39,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private bool _hasPlayedOnce;
     private bool _isManuallyBuffering;
     private bool _isStationCyclingEnabled;
+    private CancellationTokenSource? _playAttemptCts;
 
     public static RadioPlayerService Instance { get; } = new();
 
@@ -549,11 +550,31 @@ public sealed partial class RadioPlayerService : IDisposable
             throw new InvalidOperationException("No stream URL set. Call SetStreamUrl first.");
         }
 
+        // Cancel any in-flight play attempt (e.g. still buffering) before starting a new one
+        CancelPendingPlayAttempt();
+        _playAttemptCts = new CancellationTokenSource();
+
         // Always use buffer-aware playback to apply buffer settings
         // Fire and forget - PlayWithBufferAsync handles everything including buffering
-        _ = PlayWithBufferInternalAsync();
+        _ = PlayWithBufferInternalAsync(_playAttemptCts.Token);
 
         Debug.WriteLine($"=== Play END ===");
+    }
+
+    /// <summary>
+    /// Cancels an in-flight play attempt started by Play(), if one is pending.
+    /// Used so a play/pause toggle received while still buffering aborts the attempt
+    /// instead of letting it resume playback after the user already asked to stop.
+    /// </summary>
+    private void CancelPendingPlayAttempt()
+    {
+        if (_playAttemptCts is null)
+            return;
+
+        Debug.WriteLine("[RadioPlayerService] Cancelling in-flight play attempt");
+        _playAttemptCts.Cancel();
+        _playAttemptCts.Dispose();
+        _playAttemptCts = null;
     }
 
     /// <summary>
@@ -561,7 +582,7 @@ public sealed partial class RadioPlayerService : IDisposable
     /// This is called by Play() to apply buffer settings every time playback starts.
     /// The stream is paused during buffering, then resumed once sufficient buffer is achieved.
     /// </summary>
-    private async Task PlayWithBufferInternalAsync()
+    private async Task PlayWithBufferInternalAsync(CancellationToken cancellationToken)
     {
         try
         {
@@ -619,7 +640,7 @@ public sealed partial class RadioPlayerService : IDisposable
                 ActiveBackend.Play();
 
                 // Small delay to ensure play command is processed before pausing
-                await Task.Delay(100);
+                await Task.Delay(100, cancellationToken);
 
                 // Pause to prevent audio from playing while we buffer
                 Debug.WriteLine("[RadioPlayerService] Pausing for buffering...");
@@ -631,7 +652,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 // Wait for the user-set buffer amount of time
                 Debug.WriteLine($"[RadioPlayerService] Waiting for buffer time: {RequiredBufferDuration.TotalMilliseconds}ms...");
-                await Task.Delay(RequiredBufferDuration);
+                await Task.Delay(RequiredBufferDuration, cancellationToken);
 
                 // Check if buffer is complete using GetBufferedRanges
                 TimeSpan bufferedDuration = TotalBufferedDuration;
@@ -641,8 +662,12 @@ public sealed partial class RadioPlayerService : IDisposable
                 if (bufferedDuration < RequiredBufferDuration)
                 {
                     Debug.WriteLine("[RadioPlayerService] Buffer not yet complete, waiting more...");
-                    await WaitForSufficientBufferAsync();
+                    await WaitForSufficientBufferAsync(cancellationToken);
                 }
+
+                // The wait above can return early on cancellation without throwing; re-check
+                // here so a play/pause toggle during buffering aborts instead of resuming.
+                cancellationToken.ThrowIfCancellationRequested();
 
                 // Now resume playback
                 Debug.WriteLine("[RadioPlayerService] Buffer complete. Calling _player.Play()...");
@@ -675,6 +700,15 @@ public sealed partial class RadioPlayerService : IDisposable
 
             // Log final buffer state
             LogBufferedRanges();
+        }
+        catch (OperationCanceledException)
+        {
+            Debug.WriteLine("[RadioPlayerService] Play attempt cancelled (user requested pause/toggle during buffering)");
+
+            // Make sure playback doesn't sneak in after the user asked to stop
+            SetInternalStateChange(true);
+            _player.Pause();
+            SetManualBuffering(false);
         }
         catch (Exception ex)
         {
@@ -712,7 +746,7 @@ public sealed partial class RadioPlayerService : IDisposable
                     SetManualBuffering(true);
                     Debug.WriteLine("[RadioPlayerService] Started and paused for buffering (retry), manual buffering set");
 
-                    await Task.Delay(RequiredBufferDuration);
+                    await Task.Delay(RequiredBufferDuration, cancellationToken);
 
                     ActiveBackend.Play();
                     SetManualBuffering(false);
@@ -729,6 +763,13 @@ public sealed partial class RadioPlayerService : IDisposable
                 _hasPlayedOnce = true;
                 _watchdog.NotifyUserIntentionToPlay();
                 StartMetadataForActiveBackend();
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.WriteLine("[RadioPlayerService] Play attempt cancelled during retry (user requested pause/toggle during buffering)");
+                SetInternalStateChange(true);
+                _player.Pause();
+                SetManualBuffering(false);
             }
             catch (Exception retryEx)
             {
@@ -1024,6 +1065,9 @@ public sealed partial class RadioPlayerService : IDisposable
             return;
         }
 
+        // Abort a still-buffering play attempt so it doesn't resume playback after this call
+        CancelPendingPlayAttempt();
+
         try
         {
             Debug.WriteLine("[RadioPlayerService] Calling ActiveBackend.Pause()...");
@@ -1066,12 +1110,14 @@ public sealed partial class RadioPlayerService : IDisposable
     public void TogglePlayPause()
     {
         Debug.WriteLine($"=== TogglePlayPause START ===");
-        Debug.WriteLine($"[RadioPlayerService] Current IsPlaying: {IsPlaying}");
+        Debug.WriteLine($"[RadioPlayerService] Current IsPlaying: {IsPlaying}, IsBuffering: {IsBuffering}");
         Debug.WriteLine($"[RadioPlayerService] Current stream URL: {_streamUrl}");
 
-        if (IsPlaying)
+        // Treat buffering as "playing" for toggle purposes so a press during a long
+        // buffering wait cancels the pending play attempt instead of starting another one
+        if (IsPlaying || IsBuffering)
         {
-            Debug.WriteLine("[RadioPlayerService] Is playing, calling Pause()");
+            Debug.WriteLine("[RadioPlayerService] Is playing or buffering, calling Pause()");
             Pause();
         }
         else
@@ -1441,6 +1487,8 @@ public sealed partial class RadioPlayerService : IDisposable
     public void Dispose()
     {
         Debug.WriteLine("[RadioPlayerService] Dispose called");
+
+        CancelPendingPlayAttempt();
 
         if (_systemMediaControls != null)
         {

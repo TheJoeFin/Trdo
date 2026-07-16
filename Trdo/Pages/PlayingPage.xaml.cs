@@ -10,6 +10,7 @@ using Trdo.Controls;
 using Trdo.Models;
 using Trdo.Services;
 using Trdo.ViewModels;
+using Windows.Foundation;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -21,10 +22,12 @@ namespace Trdo.Pages;
 public sealed partial class PlayingPage : Page
 {
     private const int MinIndexForScrolling = 3;
+    private static readonly TimeSpan NowPlayingMarqueeDelay = TimeSpan.FromSeconds(2);
     private const string FilledStar = "\uE735";
     private const string OutlineStar = "\uE734";
 
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;
+    private readonly DispatcherQueueTimer _nowPlayingMarqueeDelayTimer;
 
     public PlayerViewModel ViewModel { get; }
     private ShellViewModel? _shellViewModel;
@@ -51,6 +54,12 @@ public sealed partial class PlayingPage : Page
 
         // Wait for loaded to access named elements
         Loaded += PlayingPage_Loaded;
+        Unloaded += PlayingPage_Unloaded;
+
+        _nowPlayingMarqueeDelayTimer = DispatcherQueue.CreateTimer();
+        _nowPlayingMarqueeDelayTimer.Interval = NowPlayingMarqueeDelay;
+        _nowPlayingMarqueeDelayTimer.IsRepeating = false;
+        _nowPlayingMarqueeDelayTimer.Tick += NowPlayingMarqueeDelayTimer_Tick;
 
         Debug.WriteLine("=== PlayingPage Constructor END ===");
     }
@@ -75,6 +84,8 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] ShellViewModel found: {_shellViewModel != null}");
 
         Debug.WriteLine("=== PlayingPage_Loaded END ===");
+
+        UpdateNowPlayingMarqueeState();
 
         // scroll to selected station
         if (ViewModel.SelectedStation is not null)
@@ -313,38 +324,11 @@ public sealed partial class PlayingPage : Page
         _shellViewModel?.NavigateToAboutPage();
     }
 
-    private void NowPlayingInfo_Tapped(object sender, TappedRoutedEventArgs e)
+    private void NowPlayingInfo_Click(object sender, RoutedEventArgs e)
     {
-        if (e.OriginalSource is FrameworkElement source &&
-            FindAncestorButton(source) is not null)
-        {
-            return;
-        }
-
-        Debug.WriteLine("[PlayingPage] Now Playing info tapped");
+        Debug.WriteLine("[PlayingPage] Now Playing info clicked");
+        // Navigate to Now Playing details page
         _shellViewModel?.NavigateToNowPlayingPage();
-    }
-
-    private async void RefreshMetadata_Click(object sender, RoutedEventArgs e)
-    {
-        Debug.WriteLine("[PlayingPage] Refresh metadata clicked");
-        await ViewModel.RefreshMetadataAsync();
-    }
-
-    private static Button? FindAncestorButton(FrameworkElement element)
-    {
-        DependencyObject? current = element;
-        while (current is not null)
-        {
-            if (current is Button button)
-            {
-                return button;
-            }
-
-            current = VisualTreeHelper.GetParent(current);
-        }
-
-        return null;
     }
 
     private void FavoriteButton_Click(object sender, RoutedEventArgs e)
