@@ -339,6 +339,18 @@ public sealed partial class RadioPlayerService : IDisposable
         _watchdog = new StreamWatchdogService(this);
         Debug.WriteLine("[RadioPlayerService] StreamWatchdogService created");
 
+        // Keep the PC awake while playing (unless the user allows sleep).
+        PlaybackStateChanged += (_, isPlaying) => PowerManagementService.SetPlaybackActive(isPlaying);
+
+        try
+        {
+            Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RadioPlayerService] Failed to subscribe to PowerModeChanged: {ex.Message}");
+        }
+
         InitializePlaybackEngine();
 
         // Initialize SystemMediaTransportControls
@@ -371,6 +383,17 @@ public sealed partial class RadioPlayerService : IDisposable
         LoadSettings();
 
         Debug.WriteLine("=== RadioPlayerService Constructor END ===");
+    }
+
+    private void OnPowerModeChanged(object? sender, Microsoft.Win32.PowerModeChangedEventArgs e)
+    {
+        if (e.Mode != Microsoft.Win32.PowerModes.Suspend || !IsPlaying)
+            return;
+
+        // A live stream position is meaningless after resume; mark it so the
+        // next play (user or watchdog recovery) recreates the source at live.
+        Debug.WriteLine("[RadioPlayerService] System suspending during playback - marking stream for recreation");
+        _wasExternalPause = true;
     }
 
     private void LoadSettings()
@@ -1498,6 +1521,17 @@ public sealed partial class RadioPlayerService : IDisposable
         if (_systemMediaControls != null)
         {
             _systemMediaControls.ButtonPressed -= OnSystemMediaButtonPressed;
+        }
+
+        PowerManagementService.SetPlaybackActive(false);
+
+        try
+        {
+            Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        }
+        catch
+        {
+            // Ignore errors during cleanup
         }
 
         // Dispose the debounce timer

@@ -407,6 +407,28 @@
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Allow PC to sleep" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Let the computer go to sleep on its normal schedule while radio is playing. Note that Windows itself may keep the PC awake while any audio is playing." />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <ToggleSwitch
+                                x:Name="AllowSleepToggle"
+                                Grid.Column="0"
+                                MinWidth="0"
+                                IsOn="{x:Bind ViewModel.AllowSleepWhilePlaying,
+                                              Mode=TwoWay}"
+                                OffContent=""
+                                OnContent="" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.AllowSleepToggleText,
+                                              Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Import / Export stations" />
                         <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Back up your station list or move it to another device with M3U and PLS playlist files." />
                         <StackPanel Orientation="Vertical" Spacing="8">

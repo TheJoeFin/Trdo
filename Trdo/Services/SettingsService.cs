@@ -20,6 +20,7 @@ public static class SettingsService
     private const string PlaybackEngineModeKey = "PlaybackEngineMode";
     private const string IsMiniPlayerVisualizerEnabledKey = "IsMiniPlayerVisualizerEnabled";
     private const string IsMiniPlayerTopmostKey = "IsMiniPlayerTopmost";
+    private const string AllowSleepWhilePlayingKey = "AllowSleepWhilePlaying";
 
     public static event EventHandler? MusicSearchServicesChanged;
 
@@ -246,6 +247,16 @@ public static class SettingsService
                 // Silently fail if unable to save
             }
         }
+    }
+
+    /// <summary>
+    /// Gets or sets whether the PC may go to sleep while radio is playing.
+    /// Defaults to false (keep the PC awake), matching pre-2.0 behavior.
+    /// </summary>
+    public static bool AllowSleepWhilePlaying
+    {
+        get => GetBoolSetting(AllowSleepWhilePlayingKey, defaultValue: false);
+        set => SetBoolSetting(AllowSleepWhilePlayingKey, value);
     }
 
     private static bool GetBoolSetting(string key, bool defaultValue)

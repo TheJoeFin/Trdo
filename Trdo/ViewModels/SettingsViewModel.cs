@@ -299,6 +299,23 @@ public partial class SettingsViewModel : INotifyPropertyChanged
             _ => "LibVLC first, Windows fallback"
         };
 
+    public bool AllowSleepWhilePlaying
+    {
+        get => SettingsService.AllowSleepWhilePlaying;
+        set
+        {
+            if (value == SettingsService.AllowSleepWhilePlaying) return;
+            SettingsService.AllowSleepWhilePlaying = value;
+            PowerManagementService.Refresh();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(AllowSleepToggleText));
+        }
+    }
+
+    public string AllowSleepToggleText => AllowSleepWhilePlaying
+        ? "PC can sleep while playing"
+        : "PC stays awake while playing";
+
     public bool IsWatchdogEnabled
     {
         get => _playerViewModel.WatchdogEnabled;
