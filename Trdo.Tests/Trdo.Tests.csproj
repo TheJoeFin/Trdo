@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Platforms>x64;ARM64</Platforms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.6.1" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.6.1" />
+  </ItemGroup>
+
+  <!--
+    The app project targets net9.0-windows10.0.19041.0 and pulls in WinUI/WinRT, which cannot
+    be loaded by a plain test host. Rather than reference it, link in the individual files that
+    are deliberately free of platform dependencies. Keep this list small: anything that needs
+    ApplicationData, DispatcherQueue or a media player does not belong here.
+  -->
+  <ItemGroup>
+    <Compile Include="..\Trdo\Services\Playback\RecoveryPolicy.cs" Link="Playback\RecoveryPolicy.cs" />
+  </ItemGroup>
+
+</Project>
