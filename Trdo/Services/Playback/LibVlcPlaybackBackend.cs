@@ -15,32 +15,80 @@ namespace Trdo.Services.Playback;
 public sealed class LibVlcPlaybackBackend : IPlaybackBackend
 {
     private readonly LibVLC _libVlc;
-    private readonly VlcMediaPlayer _mediaPlayer;
+    private VlcMediaPlayer _mediaPlayer;
     private Media? _currentMedia;
     private bool _isBuffering;
 
     public LibVlcPlaybackBackend(LibVLC libVlc)
     {
         _libVlc = libVlc;
-        _mediaPlayer = new VlcMediaPlayer(_libVlc);
+        _mediaPlayer = CreateMediaPlayer();
+    }
 
-        _mediaPlayer.Playing += (_, _) => RaiseStateChanged();
-        _mediaPlayer.Paused += (_, _) => RaiseStateChanged();
-        _mediaPlayer.Stopped += (_, _) => RaiseStateChanged();
-        _mediaPlayer.EndReached += (_, _) => RaiseStateChanged();
-        _mediaPlayer.Buffering += (_, e) =>
+    private VlcMediaPlayer CreateMediaPlayer()
+    {
+        VlcMediaPlayer player = new(_libVlc);
+
+        player.Playing += OnPlayerStateChanged;
+        player.Paused += OnPlayerStateChanged;
+        player.Stopped += OnPlayerStateChanged;
+        player.EndReached += OnPlayerStateChanged;
+        player.Buffering += OnPlayerBuffering;
+        player.EncounteredError += OnPlayerEncounteredError;
+
+        return player;
+    }
+
+    private void DetachMediaPlayer(VlcMediaPlayer player)
+    {
+        player.Playing -= OnPlayerStateChanged;
+        player.Paused -= OnPlayerStateChanged;
+        player.Stopped -= OnPlayerStateChanged;
+        player.EndReached -= OnPlayerStateChanged;
+        player.Buffering -= OnPlayerBuffering;
+        player.EncounteredError -= OnPlayerEncounteredError;
+    }
+
+    private void OnPlayerStateChanged(object? sender, EventArgs e) => RaiseStateChanged();
+
+    private void OnPlayerBuffering(object? sender, MediaPlayerBufferingEventArgs e)
+    {
+        _isBuffering = e.Cache < 100f;
+        BufferingStateChanged?.Invoke(this, _isBuffering);
+    }
+
+    private void OnPlayerEncounteredError(object? sender, EventArgs e)
+    {
+        Debug.WriteLine("[LibVlcPlaybackBackend] EncounteredError");
+        PlaybackFailed?.Invoke(this, new PlaybackFailureEventArgs(
+            PlaybackBackendKind.LibVlc,
+            "LibVLC playback error",
+            canRetryWithFallback: true));
+    }
+
+    /// <summary>
+    /// Disposes the current media player and creates a fresh one on the same LibVLC
+    /// instance. Used by the recovery ladder when re-preparing the media alone hasn't
+    /// restored playback and the player's internal pipeline is suspect.
+    /// </summary>
+    public void Recycle()
+    {
+        Debug.WriteLine("[LibVlcPlaybackBackend] Recycling media player");
+
+        VlcMediaPlayer old = _mediaPlayer;
+        ClearSource();
+        DetachMediaPlayer(old);
+
+        _mediaPlayer = CreateMediaPlayer();
+
+        try
         {
-            _isBuffering = e.Cache < 100f;
-            BufferingStateChanged?.Invoke(this, _isBuffering);
-        };
-        _mediaPlayer.EncounteredError += (_, _) =>
+            old.Dispose();
+        }
+        catch (Exception ex)
         {
-            Debug.WriteLine("[LibVlcPlaybackBackend] EncounteredError");
-            PlaybackFailed?.Invoke(this, new PlaybackFailureEventArgs(
-                PlaybackBackendKind.LibVlc,
-                "LibVLC playback error",
-                canRetryWithFallback: true));
-        };
+            Debug.WriteLine($"[LibVlcPlaybackBackend] Error disposing recycled player: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -48,6 +96,17 @@ public sealed class LibVlcPlaybackBackend : IPlaybackBackend
     /// user's buffer setting. Values of zero or less use the LibVLC default.
     /// </summary>
     public int NetworkCachingMs { get; set; }
+
+    /// <summary>LibVLC's own default when <see cref="NetworkCachingMs"/> is unset.</summary>
+    public const int DefaultNetworkCachingMs = 3000;
+
+    /// <summary>
+    /// The network cache value that would actually be handed to LibVLC, after the default
+    /// substitution. Logging <see cref="NetworkCachingMs"/> directly is misleading, because
+    /// a value of zero silently becomes <see cref="DefaultNetworkCachingMs"/>.
+    /// </summary>
+    public int EffectiveNetworkCachingMs =>
+        NetworkCachingMs > 0 ? NetworkCachingMs : DefaultNetworkCachingMs;
 
     public PlaybackBackendKind Kind => PlaybackBackendKind.LibVlc;
 
@@ -77,8 +136,7 @@ public sealed class LibVlcPlaybackBackend : IPlaybackBackend
         ClearSource();
 
         _currentMedia = new Media(_libVlc, streamUrl, FromType.FromLocation);
-        int networkCachingMs = NetworkCachingMs > 0 ? NetworkCachingMs : 3000;
-        _currentMedia.AddOption($":network-caching={networkCachingMs}");
+        _currentMedia.AddOption($":network-caching={EffectiveNetworkCachingMs}");
         _mediaPlayer.Media = _currentMedia;
 
         Debug.WriteLine($"[LibVlcPlaybackBackend] Prepared source for {streamUrl}");

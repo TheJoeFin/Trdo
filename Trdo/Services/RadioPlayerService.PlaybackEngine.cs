@@ -74,7 +74,8 @@ public sealed partial class RadioPlayerService
             _libVlcBackend.NetworkCachingMs = (int)RequiredBufferDuration.TotalMilliseconds;
         }
 
-        int cachingMs = _libVlcBackend?.NetworkCachingMs ?? (int)RequiredBufferDuration.TotalMilliseconds;
+        // Report the value LibVLC will actually use - a configured 0 becomes its own default.
+        int cachingMs = _libVlcBackend?.EffectiveNetworkCachingMs ?? (int)RequiredBufferDuration.TotalMilliseconds;
         LogService.Info("RadioPlayerService",
             $"Preparing stream {LogService.Redact(_streamUrl)} (networkCaching={cachingMs}ms)");
 
@@ -153,6 +154,135 @@ public sealed partial class RadioPlayerService
 
         SyncActiveBackendVolume();
         return true;
+    }
+
+    /// <summary>
+    /// Tears the playback pipeline down and rebuilds it from scratch for the current stream.
+    /// This is the "hard reset" rung of the recovery ladder: unlike a soft retry, it discards
+    /// the backend's player state, not just the media, so a poisoned pipeline can't survive.
+    /// </summary>
+    /// <param name="recycleBackend">
+    /// When true, the active backend's underlying player object is recreated as well.
+    /// </param>
+    /// <returns>True if the rebuilt pipeline reached confirmed playback.</returns>
+    public Task<bool> RebuildPlaybackPipelineAsync(bool recycleBackend, CancellationToken cancellationToken = default)
+    {
+        if (_uiQueue is null || _uiQueue.HasThreadAccess)
+        {
+            return RebuildPlaybackPipelineInternalAsync(recycleBackend, cancellationToken);
+        }
+
+        TaskCompletionSource<bool> tcs = new();
+        _uiQueue.TryEnqueue(async () =>
+        {
+            try
+            {
+                bool result = await RebuildPlaybackPipelineInternalAsync(recycleBackend, cancellationToken);
+                tcs.SetResult(result);
+            }
+            catch (Exception ex)
+            {
+                tcs.SetException(ex);
+            }
+        });
+        return tcs.Task;
+    }
+
+    private async Task<bool> RebuildPlaybackPipelineInternalAsync(bool recycleBackend, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            return false;
+        }
+
+        LogService.Warn("RadioPlayerService",
+            $"Rebuilding playback pipeline for {LogService.Redact(_streamUrl)} " +
+            $"(backend={ActivePlaybackBackend}, recycleBackend={recycleBackend})");
+
+        try
+        {
+            SetInternalStateChange(true);
+            ActiveBackend.Pause();
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RadioPlayerService] Error pausing during rebuild: {ex.Message}");
+        }
+
+        StopMetadata();
+        ClearActiveBackendSource();
+
+        if (recycleBackend)
+        {
+            RecycleActiveBackend();
+        }
+
+        // A rebuilt pipeline has no source and is not resuming from a user pause, so both
+        // flags must return to their first-play values or the prepare below would be skipped.
+        _hasPlayedOnce = false;
+        _wasExternalPause = false;
+
+        PlaybackPrepareResult result = await PrepareStreamAsync(cancellationToken);
+        if (!result.Success)
+        {
+            LogService.Error("RadioPlayerService", $"Rebuild prepare failed: {result.ErrorMessage}");
+            SetManualBuffering(false);
+            return false;
+        }
+
+        SyncActiveBackendVolume();
+
+        bool started = await PlayWithBufferAsync(cancellationToken);
+        LogService.Info("RadioPlayerService",
+            $"Pipeline rebuild {(started ? "succeeded" : "did not reach playback")} on {ActivePlaybackBackend}");
+
+        return started;
+    }
+
+    /// <summary>
+    /// Recreates the underlying player object of the active backend, discarding any
+    /// internal state the previous one accumulated.
+    /// </summary>
+    private void RecycleActiveBackend()
+    {
+        try
+        {
+            if (ActivePlaybackBackend == PlaybackBackendKind.LibVlc && _libVlcBackend is not null)
+            {
+                _libVlcBackend.Recycle();
+            }
+            else
+            {
+                // The native backend rides on the shared WinRT MediaPlayer, which cannot be
+                // recreated without rebuilding SMTC and every subscriber. Dropping the source
+                // is the equivalent teardown for it.
+                _player.Source = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogService.Warn("RadioPlayerService", $"Backend recycle failed: {ex.Message}");
+            Debug.WriteLine($"[RadioPlayerService] Backend recycle failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Marks the active backend as unable to play the current stream, so the next prepare
+    /// starts with the other one, then rebuilds the pipeline.
+    /// </summary>
+    /// <returns>True if the rebuilt pipeline reached confirmed playback.</returns>
+    public async Task<bool> SwitchBackendAndRebuildAsync(CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            return false;
+        }
+
+        LogService.Warn("RadioPlayerService",
+            $"Marking {ActivePlaybackBackend} unhealthy for {LogService.Redact(_streamUrl)} and switching backend");
+        _playbackEngineSelector.MarkBackendUnhealthy(_streamUrl, ActivePlaybackBackend);
+
+        return await RebuildPlaybackPipelineAsync(recycleBackend: true, cancellationToken);
     }
 
     private void StartMetadataForActiveBackend()
