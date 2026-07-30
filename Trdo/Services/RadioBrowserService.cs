@@ -2,12 +2,42 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Trdo.Models;
 
 namespace Trdo.Services;
+
+/// <summary>
+/// Describes a faceted radio station search against the Radio Browser API.
+/// Any property left empty/null is omitted from the request.
+/// </summary>
+public class StationSearchQuery
+{
+    public string? Name { get; set; }
+    public string? Country { get; set; }
+    public string? Language { get; set; }
+    public IReadOnlyList<string>? Tags { get; set; }
+    public string? Codec { get; set; }
+    public int? BitrateMin { get; set; }
+    public string Order { get; set; } = "votes";
+    public bool Reverse { get; set; } = true;
+    public bool HideBroken { get; set; }
+    public int Limit { get; set; } = 50;
+
+    /// <summary>
+    /// True when nothing but the default ordering is set, i.e. there is nothing to search for.
+    /// </summary>
+    public bool IsEmpty =>
+        string.IsNullOrWhiteSpace(Name) &&
+        string.IsNullOrWhiteSpace(Country) &&
+        string.IsNullOrWhiteSpace(Language) &&
+        (Tags is null || Tags.Count == 0) &&
+        string.IsNullOrWhiteSpace(Codec) &&
+        !BitrateMin.HasValue;
+}
 
 /// <summary>
 /// Service for searching radio stations using the Radio Browser API
@@ -22,6 +52,11 @@ public class RadioBrowserService
         PropertyNameCaseInsensitive = true,
         TypeInfoResolver = RadioBrowserJsonContext.Default
     };
+
+    // Lookup lists rarely change, so fetch each one once and reuse it.
+    private static List<RadioBrowserCountry>? _cachedCountries;
+    private static List<RadioBrowserLanguage>? _cachedLanguages;
+    private static List<RadioBrowserTag>? _cachedTags;
 
     private static HttpClient CreateHttpClient()
     {
@@ -48,31 +83,46 @@ public class RadioBrowserService
     }
 
     /// <summary>
-    /// Searches for radio stations by name
+    /// Searches for radio stations using any combination of name and filters
+    /// via the /json/stations/search endpoint.
     /// </summary>
-    /// <param name="searchTerm">The search term (station name)</param>
-    /// <param name="limit">Maximum number of results (default: 50)</param>
+    /// <param name="query">The search criteria</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>List of matching radio stations</returns>
-    public async Task<List<RadioBrowserStation>> SearchByNameAsync(
-        string searchTerm,
-        int limit = 50,
+    public async Task<List<RadioBrowserStation>> SearchAsync(
+        StationSearchQuery query,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(searchTerm))
+            if (query.IsEmpty)
             {
                 return [];
             }
 
-            string encodedSearchTerm = Uri.EscapeDataString(searchTerm);
-            string url = $"json/stations/byname/{encodedSearchTerm}?limit={limit}&order=votes&reverse=true";
+            StringBuilder url = new("json/stations/search?");
+            AppendParam(url, "name", query.Name);
+            AppendParam(url, "country", query.Country);
+            AppendParam(url, "language", query.Language);
+            if (query.Tags is { Count: > 0 })
+            {
+                AppendParam(url, "tagList", string.Join(",", query.Tags));
+            }
+            AppendParam(url, "codec", query.Codec);
+            if (query.BitrateMin.HasValue)
+            {
+                AppendParam(url, "bitrateMin", query.BitrateMin.Value.ToString());
+            }
+            AppendParam(url, "order", query.Order);
+            AppendParam(url, "reverse", query.Reverse ? "true" : "false");
+            AppendParam(url, "hidebroken", query.HideBroken ? "true" : "false");
+            AppendParam(url, "limit", query.Limit.ToString());
 
-            Debug.WriteLine($"[RadioBrowserService] Searching for: {searchTerm}");
-            Debug.WriteLine($"[RadioBrowserService] URL: {_httpClient.BaseAddress}{url}");
+            string requestUrl = url.ToString().TrimEnd('&');
 
-            HttpResponseMessage response = await _httpClient.GetAsync(url, cancellationToken);
+            Debug.WriteLine($"[RadioBrowserService] Search URL: {_httpClient.BaseAddress}{requestUrl}");
+
+            HttpResponseMessage response = await _httpClient.GetAsync(requestUrl, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             string content = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -93,86 +143,83 @@ public class RadioBrowserService
     }
 
     /// <summary>
-    /// Searches for radio stations by tag/genre
+    /// Gets the list of countries (ordered by station count, most first), cached after first fetch.
     /// </summary>
-    /// <param name="tag">The tag/genre to search for</param>
-    /// <param name="limit">Maximum number of results (default: 50)</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>List of matching radio stations</returns>
-    public async Task<List<RadioBrowserStation>> SearchByTagAsync(
-        string tag,
-        int limit = 50,
-        CancellationToken cancellationToken = default)
+    public async Task<List<RadioBrowserCountry>> GetCountriesAsync(CancellationToken cancellationToken = default)
+    {
+        if (_cachedCountries is not null)
+        {
+            return _cachedCountries;
+        }
+
+        _cachedCountries = await GetListAsync<RadioBrowserCountry>(
+            "json/countries?order=stationcount&reverse=true&hidebroken=true",
+            cancellationToken);
+        return _cachedCountries;
+    }
+
+    /// <summary>
+    /// Gets the list of languages (ordered by station count, most first), cached after first fetch.
+    /// </summary>
+    public async Task<List<RadioBrowserLanguage>> GetLanguagesAsync(CancellationToken cancellationToken = default)
+    {
+        if (_cachedLanguages is not null)
+        {
+            return _cachedLanguages;
+        }
+
+        _cachedLanguages = await GetListAsync<RadioBrowserLanguage>(
+            "json/languages?order=stationcount&reverse=true&hidebroken=true",
+            cancellationToken);
+        return _cachedLanguages;
+    }
+
+    /// <summary>
+    /// Gets the most popular tags/genres (ordered by station count, most first), cached after first fetch.
+    /// </summary>
+    /// <param name="limit">Maximum number of tags to return (the full list is very large)</param>
+    public async Task<List<RadioBrowserTag>> GetTagsAsync(int limit = 200, CancellationToken cancellationToken = default)
+    {
+        if (_cachedTags is not null)
+        {
+            return _cachedTags;
+        }
+
+        _cachedTags = await GetListAsync<RadioBrowserTag>(
+            $"json/tags?order=stationcount&reverse=true&hidebroken=true&limit={limit}",
+            cancellationToken);
+        return _cachedTags;
+    }
+
+    private static async Task<List<T>> GetListAsync<T>(string url, CancellationToken cancellationToken)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(tag))
-            {
-                return [];
-            }
-
-            string encodedTag = Uri.EscapeDataString(tag);
-            string url = $"json/stations/bytag/{encodedTag}?limit={limit}&order=votes&reverse=true";
-
-            Debug.WriteLine($"[RadioBrowserService] Searching by tag: {tag}");
+            Debug.WriteLine($"[RadioBrowserService] Fetching list: {_httpClient.BaseAddress}{url}");
 
             HttpResponseMessage response = await _httpClient.GetAsync(url, cancellationToken);
             response.EnsureSuccessStatusCode();
 
             string content = await response.Content.ReadAsStringAsync(cancellationToken);
-            List<RadioBrowserStation>? stations = JsonSerializer.Deserialize<List<RadioBrowserStation>>(content, _jsonOptions);
+            List<T>? items = JsonSerializer.Deserialize<List<T>>(content, _jsonOptions);
 
-            Debug.WriteLine($"[RadioBrowserService] Found {stations?.Count ?? 0} stations");
-
-            return stations ?? [];
+            Debug.WriteLine($"[RadioBrowserService] Fetched {items?.Count ?? 0} items");
+            return items ?? [];
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[RadioBrowserService] Error searching by tag: {ex.Message}");
-            Debug.WriteLine($"[RadioBrowserService] Stack trace: {ex.StackTrace}");
+            Debug.WriteLine($"[RadioBrowserService] Error fetching list: {ex.Message}");
             throw;
         }
     }
 
-    /// <summary>
-    /// Searches for radio stations by country
-    /// </summary>
-    /// <param name="country">The country name or code</param>
-    /// <param name="limit">Maximum number of results (default: 50)</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>List of matching radio stations</returns>
-    public async Task<List<RadioBrowserStation>> SearchByCountryAsync(
-        string country,
-        int limit = 50,
-        CancellationToken cancellationToken = default)
+    private static void AppendParam(StringBuilder url, string key, string? value)
     {
-        try
+        if (string.IsNullOrWhiteSpace(value))
         {
-            if (string.IsNullOrWhiteSpace(country))
-            {
-                return [];
-            }
-
-            string encodedCountry = Uri.EscapeDataString(country);
-            string url = $"json/stations/bycountry/{encodedCountry}?limit={limit}&order=votes&reverse=true";
-
-            Debug.WriteLine($"[RadioBrowserService] Searching by country: {country}");
-
-            HttpResponseMessage response = await _httpClient.GetAsync(url, cancellationToken);
-            response.EnsureSuccessStatusCode();
-
-            string content = await response.Content.ReadAsStringAsync(cancellationToken);
-            List<RadioBrowserStation>? stations = JsonSerializer.Deserialize<List<RadioBrowserStation>>(content, _jsonOptions);
-
-            Debug.WriteLine($"[RadioBrowserService] Found {stations?.Count ?? 0} stations");
-
-            return stations ?? [];
+            return;
         }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[RadioBrowserService] Error searching by country: {ex.Message}");
-            Debug.WriteLine($"[RadioBrowserService] Stack trace: {ex.StackTrace}");
-            throw;
-        }
+
+        url.Append(key).Append('=').Append(Uri.EscapeDataString(value)).Append('&');
     }
 }

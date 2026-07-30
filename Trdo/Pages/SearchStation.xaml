@@ -13,6 +13,7 @@
         <converters:CountToHasItemsVisibilityConverter x:Key="HasItemsVisibilityConverter" />
         <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Page.Resources>
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="12">
@@ -32,13 +33,110 @@
             <TextBox
                 x:Name="SearchTextBox"
                 Grid.Column="0"
-                PlaceholderText="Search by station name..."
+                PlaceholderText="Search by name, or use filters..."
                 Text="{x:Bind ViewModel.SearchTerm, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <ProgressRing
-                Grid.Column="1"
-                Width="20"
-                Height="20"
-                IsActive="{x:Bind ViewModel.IsSearching, Mode=OneWay}" />
+
+            <!--  Filter toggle shares this cell with the search spinner  -->
+            <Grid Grid.Column="1" VerticalAlignment="Center">
+                <DropDownButton
+                    x:Name="FilterButton"
+                    Height="32"
+                    Padding="8,0"
+                    ToolTipService.ToolTip="Filters">
+                    <FontIcon FontSize="16" Glyph="&#xE71C;" />
+                    <DropDownButton.Flyout>
+                        <Flyout Opening="FilterFlyout_Opening">
+                            <StackPanel Width="280" Spacing="12">
+                                <TextBlock
+                                    FontWeight="SemiBold"
+                                    Text="Filters" />
+
+                                <ComboBox
+                                    Header="Country"
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Display"
+                                    ItemsSource="{x:Bind ViewModel.Countries, Mode=OneWay}"
+                                    PlaceholderText="Any country"
+                                    SelectedItem="{x:Bind ViewModel.SelectedCountry, Mode=TwoWay}" />
+
+                                <ComboBox
+                                    Header="Language"
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Display"
+                                    ItemsSource="{x:Bind ViewModel.Languages, Mode=OneWay}"
+                                    PlaceholderText="Any language"
+                                    SelectedItem="{x:Bind ViewModel.SelectedLanguage, Mode=TwoWay}" />
+
+                                <ComboBox
+                                    Header="Genre"
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Display"
+                                    ItemsSource="{x:Bind ViewModel.Genres, Mode=OneWay}"
+                                    PlaceholderText="Any genre"
+                                    SelectedItem="{x:Bind ViewModel.SelectedGenre, Mode=TwoWay}" />
+
+                                <ComboBox
+                                    Header="Codec"
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Display"
+                                    ItemsSource="{x:Bind ViewModel.Codecs}"
+                                    SelectedItem="{x:Bind ViewModel.SelectedCodec, Mode=TwoWay}" />
+
+                                <ComboBox
+                                    Header="Minimum bitrate"
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Display"
+                                    ItemsSource="{x:Bind ViewModel.Bitrates}"
+                                    SelectedItem="{x:Bind ViewModel.SelectedBitrate, Mode=TwoWay}" />
+
+                                <ComboBox
+                                    Header="Sort by"
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Display"
+                                    ItemsSource="{x:Bind ViewModel.SortOptions}"
+                                    SelectedItem="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
+
+                                <CheckBox
+                                    Content="Hide broken stations"
+                                    IsChecked="{x:Bind ViewModel.HideBroken, Mode=TwoWay}" />
+
+                                <Grid ColumnDefinitions="Auto,*">
+                                    <ProgressRing
+                                        Grid.Column="0"
+                                        Width="16"
+                                        Height="16"
+                                        HorizontalAlignment="Left"
+                                        IsActive="{x:Bind ViewModel.IsLoadingFilterOptions, Mode=OneWay}" />
+                                    <Button
+                                        Grid.Column="1"
+                                        HorizontalAlignment="Right"
+                                        Click="ClearFiltersButton_Click"
+                                        Content="Clear filters" />
+                                </Grid>
+                            </StackPanel>
+                        </Flyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+
+                <!--  Dot indicating one or more filters are active  -->
+                <InfoBadge
+                    Width="10"
+                    Height="10"
+                    Margin="0,-2,-2,0"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    IsHitTestVisible="False"
+                    Visibility="{x:Bind ViewModel.HasActiveFilters, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                <!--  Search spinner overlays the filter toggle while a search is running  -->
+                <ProgressRing
+                    Width="20"
+                    Height="20"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    IsActive="{x:Bind ViewModel.IsSearching, Mode=OneWay}"
+                    IsHitTestVisible="False" />
+            </Grid>
         </Grid>
 
         <!--  Error InfoBar  -->

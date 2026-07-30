@@ -161,6 +161,17 @@ public sealed partial class SearchStation : Page
         }
     }
 
+    private async void FilterFlyout_Opening(object sender, object e)
+    {
+        // Populate the country/language/genre dropdowns the first time the panel opens.
+        await ViewModel.LoadFilterOptionsAsync();
+    }
+
+    private void ClearFiltersButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ClearFilters();
+    }
+
     private void ManualEntryButton_Click(object sender, RoutedEventArgs e)
     {
         StopPreview();
