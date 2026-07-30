@@ -193,12 +193,8 @@ public sealed partial class RadioPlayerService
 
     private void OnNativePlaybackFailed(object? sender, PlaybackFailureEventArgs e)
     {
-        if (!e.CanRetryWithFallback || _libVlcBackend is null)
-        {
-            return;
-        }
-
-        _ = TryFallbackPlaybackAsync();
+        Debug.WriteLine($"[RadioPlayerService] Native playback failed: {e.Message}");
+        HandleBackendFailure(e);
     }
 
     private async Task TryFallbackPlaybackAsync()
@@ -214,6 +210,9 @@ public sealed partial class RadioPlayerService
 
         if (!result.Success)
         {
+            Debug.WriteLine($"[RadioPlayerService] Fallback prepare failed: {result.ErrorMessage}");
+            SetManualBuffering(false);
+            ReportPlaybackFailure(result.ErrorMessage, tooManyAttempts: true);
             return;
         }
 
@@ -228,6 +227,12 @@ public sealed partial class RadioPlayerService
 
     private void OnLibVlcPlaybackStateChanged(object? sender, bool isPlaying)
     {
+        // Reaching Playing means the current attempt succeeded - reset failure tracking.
+        if (isPlaying)
+        {
+            ResetPlaybackFailureTracking();
+        }
+
         TryEnqueueOnUi(() =>
         {
             PlaybackStateChanged?.Invoke(this, isPlaying);
@@ -246,13 +251,7 @@ public sealed partial class RadioPlayerService
     private void OnLibVlcPlaybackFailed(object? sender, PlaybackFailureEventArgs e)
     {
         Debug.WriteLine($"[RadioPlayerService] LibVLC playback failed: {e.Message}");
-
-        if (!e.CanRetryWithFallback)
-        {
-            return;
-        }
-
-        _ = TryFallbackPlaybackAsync();
+        HandleBackendFailure(e);
     }
 
     private void DisposePlaybackEngine()

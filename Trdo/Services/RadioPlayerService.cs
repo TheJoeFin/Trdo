@@ -40,6 +40,9 @@ public sealed partial class RadioPlayerService : IDisposable
     private bool _isManuallyBuffering;
     private bool _isStationCyclingEnabled;
     private CancellationTokenSource? _playAttemptCts;
+    private int _consecutivePlaybackFailures;
+    private bool _hasReportedPlaybackFailure;
+    private const int MaxConsecutivePlaybackFailures = 3;
 
     public static RadioPlayerService Instance { get; } = new();
 
@@ -49,6 +52,15 @@ public sealed partial class RadioPlayerService : IDisposable
     public event EventHandler<StreamMetadata>? StreamMetadataChanged;
     public event EventHandler? NextStationRequested;
     public event EventHandler? PreviousStationRequested;
+
+    /// <summary>
+    /// Raised when a play attempt cannot proceed or fails. The string payload is a
+    /// user-facing message describing the failure (e.g. no network connection).
+    /// </summary>
+    public event EventHandler<string>? PlaybackFailed;
+
+    internal const string NoNetworkMessage =
+        "No internet connection. Connect to a network and try again.";
 
     public bool IsPlaying
     {
@@ -281,6 +293,12 @@ public sealed partial class RadioPlayerService : IDisposable
                 isBuffering = currentState is MediaPlaybackState.Opening or MediaPlaybackState.Buffering;
                 Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, IsBuffering={isBuffering}, State={currentState}, IsInternalChange={_isInternalStateChange}");
 
+                // Reaching Playing means the current attempt succeeded - reset failure tracking.
+                if (isPlaying)
+                {
+                    ResetPlaybackFailureTracking();
+                }
+
                 // If state change was not initiated internally (e.g., from hardware buttons),
                 // notify the watchdog of user intention
                 if (!_isInternalStateChange)
@@ -490,6 +508,7 @@ public sealed partial class RadioPlayerService : IDisposable
         if (_streamUrl != streamUrl)
         {
             _hasPlayedOnce = false;
+            ResetPlaybackFailureTracking();
             Debug.WriteLine("[RadioPlayerService] Station changed - reset first play flag");
         }
 
@@ -578,6 +597,19 @@ public sealed partial class RadioPlayerService : IDisposable
             throw new InvalidOperationException("No stream URL set. Call SetStreamUrl first.");
         }
 
+        // Fresh user-initiated attempt: allow failures to be reported and retried again.
+        ResetPlaybackFailureTracking();
+
+        // Don't attempt to open a stream when the machine is offline - it would just
+        // spin through prepare/fallback and fail. Tell the user instead.
+        if (!NetworkStatusService.IsInternetAvailable())
+        {
+            Debug.WriteLine("[RadioPlayerService] No network available, aborting play attempt");
+            ReportPlaybackFailure();
+            Debug.WriteLine($"=== Play END (no network) ===");
+            return;
+        }
+
         // Cancel any in-flight play attempt (e.g. still buffering) before starting a new one
         CancelPendingPlayAttempt();
         _playAttemptCts = new CancellationTokenSource();
@@ -640,6 +672,7 @@ public sealed partial class RadioPlayerService : IDisposable
                 {
                     Debug.WriteLine($"[RadioPlayerService] Prepare failed: {prepareResult.ErrorMessage}");
                     SetManualBuffering(false);
+                    ReportPlaybackFailure(prepareResult.ErrorMessage);
                     return;
                 }
 
@@ -756,6 +789,7 @@ public sealed partial class RadioPlayerService : IDisposable
                 if (!prepareResult.Success)
                 {
                     Debug.WriteLine($"[RadioPlayerService] Retry prepare failed: {prepareResult.ErrorMessage}");
+                    ReportPlaybackFailure(prepareResult.ErrorMessage, tooManyAttempts: true);
                     return;
                 }
 
@@ -808,8 +842,9 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine("[RadioPlayerService] Cleared manual buffering state due to retry exception");
 
                 Debug.WriteLine($"[RadioPlayerService] EXCEPTION on retry: {retryEx.Message}");
-                // Log the error but don't throw - this is a fire-and-forget async method
-                // The user will see the playback failed in the UI
+                // Log the error but don't throw - this is a fire-and-forget async method.
+                // Surface the failure to the user after exhausting the retry.
+                ReportPlaybackFailure(retryEx.Message, tooManyAttempts: true);
             }
         }
     }
@@ -1057,6 +1092,113 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             Debug.WriteLine($"[RadioPlayerService] Error logging buffered ranges: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Raises the <see cref="PlaybackFailed"/> event on the UI thread.
+    /// </summary>
+    private void RaisePlaybackFailed(string message)
+    {
+        Debug.WriteLine($"[RadioPlayerService] Raising PlaybackFailed: {message}");
+        TryEnqueueOnUi(() => PlaybackFailed?.Invoke(this, message));
+    }
+
+    /// <summary>
+    /// Surfaces a user-facing playback failure, at most once per play attempt.
+    /// The message is tailored to the cause: offline, a specific stream error,
+    /// or repeated failures. Call <see cref="ResetPlaybackFailureTracking"/> when
+    /// a fresh attempt begins so the next failure can be reported again.
+    /// </summary>
+    private void ReportPlaybackFailure(string? detail = null, bool tooManyAttempts = false)
+    {
+        if (_hasReportedPlaybackFailure)
+        {
+            Debug.WriteLine("[RadioPlayerService] Playback failure already reported for this attempt, skipping");
+            return;
+        }
+
+        _hasReportedPlaybackFailure = true;
+        RaisePlaybackFailed(BuildPlaybackFailureMessage(detail, tooManyAttempts));
+    }
+
+    /// <summary>
+    /// Clears the per-attempt failure tracking so a new play attempt can report
+    /// failures and retry with fallback again.
+    /// </summary>
+    private void ResetPlaybackFailureTracking()
+    {
+        _consecutivePlaybackFailures = 0;
+        _hasReportedPlaybackFailure = false;
+    }
+
+    /// <summary>
+    /// Builds a friendly, actionable message describing why playback failed.
+    /// Prefers a no-network explanation, then any specific stream error detail.
+    /// </summary>
+    private static string BuildPlaybackFailureMessage(string? detail, bool tooManyAttempts)
+    {
+        if (!NetworkStatusService.IsInternetAvailable())
+        {
+            return NoNetworkMessage;
+        }
+
+        string sanitizedDetail = SanitizeFailureDetail(detail);
+        bool hasDetail = !string.IsNullOrWhiteSpace(sanitizedDetail);
+
+        if (tooManyAttempts)
+        {
+            return hasDetail
+                ? $"Couldn't play this station after several attempts ({sanitizedDetail}). The stream may be offline or the URL may be wrong."
+                : "Couldn't play this station after several attempts. The stream may be offline or the URL may be wrong.";
+        }
+
+        return hasDetail
+            ? $"Couldn't play this station: {sanitizedDetail}"
+            : "Couldn't play this station. The stream may be unavailable or the URL may be wrong.";
+    }
+
+    /// <summary>
+    /// Trims and length-limits a raw backend/stream error message so it reads well in a dialog.
+    /// </summary>
+    private static string SanitizeFailureDetail(string? detail)
+    {
+        if (string.IsNullOrWhiteSpace(detail))
+        {
+            return string.Empty;
+        }
+
+        string trimmed = detail.Trim();
+        const int maxLength = 200;
+        return trimmed.Length > maxLength ? trimmed[..maxLength] + "…" : trimmed;
+    }
+
+    /// <summary>
+    /// Handles a failure reported by a playback backend. Retries with the other
+    /// backend up to a small limit, then reports the error to the user and stops
+    /// retrying so a persistently broken stream can't loop indefinitely.
+    /// </summary>
+    private void HandleBackendFailure(PlaybackFailureEventArgs e)
+    {
+        if (_hasReportedPlaybackFailure)
+        {
+            Debug.WriteLine("[RadioPlayerService] Ignoring backend failure - already reported for this attempt");
+            return;
+        }
+
+        _consecutivePlaybackFailures++;
+        Debug.WriteLine($"[RadioPlayerService] Backend failure #{_consecutivePlaybackFailures} ({e.Backend}): {e.Message}");
+
+        bool canFallback = e.CanRetryWithFallback && _libVlcBackend is not null;
+        bool tooManyAttempts = _consecutivePlaybackFailures >= MaxConsecutivePlaybackFailures;
+
+        if (tooManyAttempts || !canFallback)
+        {
+            SetManualBuffering(false);
+            ReportPlaybackFailure(detail: e.Message, tooManyAttempts: tooManyAttempts);
+            return;
+        }
+
+        _ = TryFallbackPlaybackAsync();
     }
 
     /// <summary>

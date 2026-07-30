@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - "Allow PC to sleep" setting so the computer can sleep on its normal schedule while radio is playing (#82)
 - "Native preferred" playback engine mode preserving the pre-2.0 native-first behavior
+- Network awareness: playback is not attempted when offline, and a station that fails because there is no internet connection now shows an in-app error (#102)
+- Clearer playback error messages when a stream fails to start — the underlying stream/source error is surfaced, and repeated failures now report "couldn't play after several attempts" instead of retrying silently forever (#103)
 
 ## [1.1.0] - 2025
 

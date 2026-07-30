@@ -51,6 +51,14 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         _player.NextStationRequested += (_, _) => SelectNextStation();
         _player.PreviousStationRequested += (_, _) => SelectPreviousStation();
 
+        // Surface playback failures raised by the service (e.g. no network) as in-app errors
+        _player.PlaybackFailed += (_, message) =>
+        {
+            Debug.WriteLine($"[PlayerViewModel] PlaybackFailed from service: {message}");
+            _lastError = message;
+            PlaybackError?.Invoke(this, message);
+        };
+
         _player.PlaybackStateChanged += (_, _) =>
         {
             Debug.WriteLine($"[PlayerViewModel] PlaybackStateChanged event fired. IsPlaying={IsPlaying}");
