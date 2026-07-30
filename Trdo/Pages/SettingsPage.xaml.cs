@@ -135,6 +135,63 @@ public sealed partial class SettingsPage : Page
         }
     }
 
+    private async void OpenLogsFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string folder = LogService.LogFolderPath;
+            if (string.IsNullOrEmpty(folder) || !System.IO.Directory.Exists(folder))
+            {
+                DiagnosticsInfoBar.Severity = InfoBarSeverity.Informational;
+                DiagnosticsInfoBar.Message = "No logs have been written yet.";
+                DiagnosticsInfoBar.IsOpen = true;
+                return;
+            }
+
+            bool launched = await Windows.System.Launcher.LaunchFolderPathAsync(folder);
+            if (launched)
+            {
+                DiagnosticsInfoBar.Severity = InfoBarSeverity.Success;
+                DiagnosticsInfoBar.Message = "Opened the logs folder.";
+            }
+            else
+            {
+                DiagnosticsInfoBar.Severity = InfoBarSeverity.Error;
+                DiagnosticsInfoBar.Message = $"Couldn't open the logs folder. It's located at: {folder}";
+            }
+
+            DiagnosticsInfoBar.IsOpen = true;
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsInfoBar.Severity = InfoBarSeverity.Error;
+            DiagnosticsInfoBar.Message = $"Couldn't open the logs folder: {ex.Message}";
+            DiagnosticsInfoBar.IsOpen = true;
+        }
+    }
+
+    private void CopyDiagnosticsButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string diagnostics = LogService.ReadRecentText();
+
+            var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            package.SetText(diagnostics);
+            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+
+            DiagnosticsInfoBar.Severity = InfoBarSeverity.Success;
+            DiagnosticsInfoBar.Message = "Copied recent diagnostics to the clipboard.";
+            DiagnosticsInfoBar.IsOpen = true;
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsInfoBar.Severity = InfoBarSeverity.Error;
+            DiagnosticsInfoBar.Message = $"Couldn't copy diagnostics: {ex.Message}";
+            DiagnosticsInfoBar.IsOpen = true;
+        }
+    }
+
     private void AutoPlayOnStartupToggle_Toggled(object sender, RoutedEventArgs e)
     {
         if (_isUpdatingAutoPlayToggle)

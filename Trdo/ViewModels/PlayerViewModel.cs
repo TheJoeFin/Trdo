@@ -270,10 +270,14 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     Debug.WriteLine($"[PlayerViewModel] Saved station index {index} to settings");
                 }
 
+                LogService.Info("PlayerViewModel",
+                    $"Station selected: '{_selectedStation.Name}' ({LogService.Redact(_selectedStation.StreamUrl)}), volume={_selectedStation.Volume:0.00}");
+
                 // Validate the URL
                 if (!IsValidUrl(_selectedStation.StreamUrl))
                 {
                     _lastError = $"Invalid stream URL for {_selectedStation.Name}";
+                    LogService.Error("PlayerViewModel", _lastError);
                     Debug.WriteLine($"[PlayerViewModel] ERROR: {_lastError}");
                     PlaybackError?.Invoke(this, _lastError);
                     if (shouldResumePlayback)

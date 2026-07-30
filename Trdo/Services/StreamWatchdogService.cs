@@ -516,9 +516,11 @@ public sealed partial class StreamWatchdogService : IDisposable
 
             if (_consecutiveFailures >= 2)
             {
+                LogService.Warn("Watchdog", $"{_consecutiveFailures} consecutive failures; switching playback engine for recovery");
                 bool fallbackPrepared = await _playerService.RetryWithPlaybackFallbackAsync(cancellationToken);
                 if (fallbackPrepared)
                 {
+                    LogService.Info("Watchdog", "Prepared fallback playback engine for recovery");
                     Debug.WriteLine("[Watchdog] Prepared fallback playback engine for recovery");
                 }
             }
@@ -704,6 +706,21 @@ public sealed partial class StreamWatchdogService : IDisposable
     {
         Debug.WriteLine($"[Watchdog] {status}: {message}");
 
+        // Info for normal states; Error status maps to Error, recovery/backoff to Warn.
+        switch (status)
+        {
+            case StreamWatchdogStatus.Error:
+                LogService.Error("Watchdog", $"{status}: {message}");
+                break;
+            case StreamWatchdogStatus.Recovering:
+            case StreamWatchdogStatus.BackingOff:
+                LogService.Warn("Watchdog", $"{status}: {message}");
+                break;
+            default:
+                LogService.Info("Watchdog", $"{status}: {message}");
+                break;
+        }
+
         if (_uiQueue is null || _uiQueue.HasThreadAccess)
         {
             StreamStatusChanged?.Invoke(this, new StreamWatchdogEventArgs(message, status));
@@ -719,6 +736,7 @@ public sealed partial class StreamWatchdogService : IDisposable
 
     private void RaiseStutterDetected(StutterDetectedEventArgs args)
     {
+        LogService.Warn("Watchdog", $"Stutter detected (bufferIncreased={args.BufferWasIncreased}, newLevel={args.NewBufferLevel})");
         Debug.WriteLine($"[Watchdog] Raising StutterDetected event - BufferIncreased: {args.BufferWasIncreased}, NewLevel: {args.NewBufferLevel}");
 
         if (_uiQueue is null || _uiQueue.HasThreadAccess)

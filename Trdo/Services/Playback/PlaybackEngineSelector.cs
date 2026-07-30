@@ -47,32 +47,48 @@ public sealed class PlaybackEngineSelector : IDisposable
 
         if (mode == PlaybackEngineMode.NativeOnly || _libVlcBackend is null)
         {
+            LogService.Info("PlaybackEngineSelector",
+                $"Mode={mode}, LibVLC available={_libVlcBackend is not null} -> Native only for {LogService.Redact(streamUrl)}");
             return await PrepareNativeAsync(streamUrl, cancellationToken);
         }
 
         bool nativeFirst = mode == PlaybackEngineMode.NativePreferred;
+        bool usedRemembered = false;
         if (mode == PlaybackEngineMode.Auto &&
             TryGetPreferredBackend(streamUrl, out PlaybackBackendKind remembered))
         {
             Debug.WriteLine($"[PlaybackEngineSelector] Using remembered {remembered} preference for {streamUrl}");
             nativeFirst = remembered == PlaybackBackendKind.Native;
+            usedRemembered = true;
         }
 
         IPlaybackBackend first = nativeFirst ? _nativeBackend : _libVlcBackend;
         IPlaybackBackend second = nativeFirst ? _libVlcBackend : _nativeBackend;
 
+        LogService.Info("PlaybackEngineSelector",
+            $"Mode={mode}, remembered={usedRemembered}, trying {first.Kind} first for {LogService.Redact(streamUrl)}");
+
         PlaybackPrepareResult firstResult = await PrepareWithBackendAsync(first, streamUrl, usedFallback: false, cancellationToken);
         if (firstResult.Success)
         {
             RememberPreferredBackend(streamUrl, first.Kind);
+            LogService.Info("PlaybackEngineSelector", $"{first.Kind} prepared successfully");
             return firstResult;
         }
 
+        LogService.Warn("PlaybackEngineSelector",
+            $"{first.Kind} prepare failed ({firstResult.ErrorMessage}); falling back to {second.Kind}");
         Debug.WriteLine($"[PlaybackEngineSelector] {first.Kind} prepare failed, falling back to {second.Kind}: {firstResult.ErrorMessage}");
         PlaybackPrepareResult fallbackResult = await PrepareWithBackendAsync(second, streamUrl, usedFallback: true, cancellationToken);
         if (fallbackResult.Success)
         {
             RememberPreferredBackend(streamUrl, second.Kind);
+            LogService.Warn("PlaybackEngineSelector", $"Fallback to {second.Kind} succeeded");
+        }
+        else
+        {
+            LogService.Error("PlaybackEngineSelector",
+                $"Both backends failed to prepare; last error: {fallbackResult.ErrorMessage}");
         }
 
         return fallbackResult;
@@ -89,11 +105,17 @@ public sealed class PlaybackEngineSelector : IDisposable
             return await PrepareAsync(streamUrl, cancellationToken);
         }
 
+        LogService.Warn("PlaybackEngineSelector", $"Retrying with {other.Kind} fallback for {LogService.Redact(streamUrl)}");
         Debug.WriteLine($"[PlaybackEngineSelector] Retrying with {other.Kind} fallback");
         PlaybackPrepareResult result = await PrepareWithBackendAsync(other, streamUrl, usedFallback: true, cancellationToken);
         if (result.Success)
         {
             RememberPreferredBackend(streamUrl, other.Kind);
+            LogService.Info("PlaybackEngineSelector", $"{other.Kind} fallback retry succeeded");
+        }
+        else
+        {
+            LogService.Error("PlaybackEngineSelector", $"{other.Kind} fallback retry failed: {result.ErrorMessage}");
         }
 
         return result;

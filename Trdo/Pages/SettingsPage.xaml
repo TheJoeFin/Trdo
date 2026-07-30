@@ -245,19 +245,22 @@
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Playback engine" />
                         <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose how Traydio plays streams. Auto uses LibVLC first and falls back to Windows Media Foundation when needed." />
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <ComboBox
-                                Grid.Column="0"
-                                SelectedIndex="{x:Bind ViewModel.PlaybackEngineModeIndex, Mode=TwoWay}">
-                                <ComboBoxItem Content="Auto (recommended)" />
-                                <ComboBoxItem Content="Native only" />
-                                <ComboBoxItem Content="Native preferred" />
-                            </ComboBox>
-                            <TextBlock
-                                Grid.Column="1"
-                                Style="{StaticResource SettingStatusStyle}"
-                                Text="{x:Bind ViewModel.PlaybackEngineModeDescription, Mode=OneWay}" />
-                        </Grid>
+                        <ComboBox
+                            HorizontalAlignment="Stretch"
+                            SelectedIndex="{x:Bind ViewModel.PlaybackEngineModeIndex, Mode=TwoWay}">
+                            <ComboBoxItem Content="Auto (recommended)" />
+                            <ComboBoxItem Content="Native only" />
+                            <ComboBoxItem Content="Native preferred" />
+                        </ComboBox>
+                        <TextBlock
+                            Style="{StaticResource SettingStatusStyle}"
+                            Text="{x:Bind ViewModel.PlaybackEngineModeDescription, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                        <InfoBar
+                            IsClosable="False"
+                            IsOpen="{x:Bind ViewModel.IsLibVlcUnavailableOnThisDevice}"
+                            Message="On ARM devices the LibVLC engine isn't available, so streams always play through the Windows engine no matter which option you pick. Higher-than-100% volume also won't apply."
+                            Severity="Warning" />
                     </StackPanel>
                 </Border>
 
@@ -443,6 +446,27 @@
                         </StackPanel>
                         <InfoBar
                             x:Name="ImportExportInfoBar"
+                            IsClosable="True"
+                            IsOpen="False" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Diagnostics" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Traydio keeps a log of playback activity (which engine was used, stream status, and errors). Open the log folder or copy recent diagnostics to share when reporting a problem." />
+                        <StackPanel Orientation="Vertical" Spacing="8">
+                            <Button
+                                x:Name="OpenLogsFolderButton"
+                                Click="OpenLogsFolderButton_Click"
+                                Content="Open logs folder" />
+                            <Button
+                                x:Name="CopyDiagnosticsButton"
+                                Click="CopyDiagnosticsButton_Click"
+                                Content="Copy diagnostics" />
+                        </StackPanel>
+                        <InfoBar
+                            x:Name="DiagnosticsInfoBar"
                             IsClosable="True"
                             IsOpen="False" />
                     </StackPanel>

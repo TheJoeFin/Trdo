@@ -29,11 +29,18 @@ public static class LibVlcHost
         {
             Core.Initialize();
             _instance = new LibVLC("--no-video");
+            LogService.Info("LibVlcHost", "LibVLC initialized");
             Debug.WriteLine("[LibVlcHost] LibVLC initialized");
             return true;
         }
         catch (Exception ex)
         {
+            // Commonly the native libvlc.dll is missing for this architecture.
+            // The VideoLAN.LibVLC.Windows package ships only x64/x86 natives, so an
+            // ARM64 build has no libvlc to load and this fails by design.
+            LogService.Error("LibVlcHost",
+                $"LibVLC unavailable on {System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}; " +
+                "native libvlc.dll likely missing (package has no ARM64 build)", ex);
             Debug.WriteLine($"[LibVlcHost] Failed to initialize LibVLC: {ex.Message}");
             _instance = null;
             return false;

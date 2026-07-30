@@ -293,6 +293,7 @@ public sealed partial class RadioPlayerService : IDisposable
                 currentState = _player.PlaybackSession.PlaybackState;
                 isPlaying = currentState == MediaPlaybackState.Playing;
                 isBuffering = currentState is MediaPlaybackState.Opening or MediaPlaybackState.Buffering;
+                LogService.Info("RadioPlayerService", $"Native state -> {currentState} (isPlaying={isPlaying}, isBuffering={isBuffering})");
                 Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, IsBuffering={isBuffering}, State={currentState}, IsInternalChange={_isInternalStateChange}");
 
                 // Reaching Playing means the current attempt succeeded - reset failure tracking.
@@ -599,6 +600,9 @@ public sealed partial class RadioPlayerService : IDisposable
             throw new InvalidOperationException("No stream URL set. Call SetStreamUrl first.");
         }
 
+        LogService.Info("RadioPlayerService",
+            $"Play requested for {LogService.Redact(_streamUrl)} (hasPlayedOnce={_hasPlayedOnce}, wasExternalPause={_wasExternalPause})");
+
         // Fresh user-initiated attempt: allow failures to be reported and retried again.
         ResetPlaybackFailureTracking();
 
@@ -606,6 +610,7 @@ public sealed partial class RadioPlayerService : IDisposable
         // spin through prepare/fallback and fail. Tell the user instead.
         if (!NetworkStatusService.IsInternetAvailable())
         {
+            LogService.Warn("RadioPlayerService", "No internet connection; aborting play attempt");
             Debug.WriteLine("[RadioPlayerService] No network available, aborting play attempt");
             ReportPlaybackFailure();
             Debug.WriteLine($"=== Play END (no network) ===");
@@ -669,9 +674,15 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 ClearActiveBackendSource();
 
+                LogService.Info("RadioPlayerService",
+                    needsRecreation && _wasExternalPause
+                        ? "Recreating playback source after external pause"
+                        : "First play - preparing playback source");
+
                 PlaybackPrepareResult prepareResult = await PrepareStreamAsync();
                 if (!prepareResult.Success)
                 {
+                    LogService.Error("RadioPlayerService", $"Prepare failed: {prepareResult.ErrorMessage}");
                     Debug.WriteLine($"[RadioPlayerService] Prepare failed: {prepareResult.ErrorMessage}");
                     SetManualBuffering(false);
                     ReportPlaybackFailure(prepareResult.ErrorMessage);
@@ -680,6 +691,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 if (prepareResult.UsedFallback)
                 {
+                    LogService.Info("RadioPlayerService", $"Playing via fallback backend {prepareResult.Backend}");
                     Debug.WriteLine("[RadioPlayerService] Using LibVLC fallback for playback");
                 }
 
@@ -1120,7 +1132,10 @@ public sealed partial class RadioPlayerService : IDisposable
         }
 
         _hasReportedPlaybackFailure = true;
-        RaisePlaybackFailed(BuildPlaybackFailureMessage(detail, tooManyAttempts));
+        string message = BuildPlaybackFailureMessage(detail, tooManyAttempts);
+        LogService.Error("RadioPlayerService",
+            $"Reporting playback failure to user (tooManyAttempts={tooManyAttempts}): {message}");
+        RaisePlaybackFailed(message);
     }
 
     /// <summary>
@@ -1192,6 +1207,10 @@ public sealed partial class RadioPlayerService : IDisposable
 
         bool canFallback = e.CanRetryWithFallback && _libVlcBackend is not null;
         bool tooManyAttempts = _consecutivePlaybackFailures >= MaxConsecutivePlaybackFailures;
+
+        LogService.Warn("RadioPlayerService",
+            $"Backend failure #{_consecutivePlaybackFailures} ({e.Backend}): {e.Message} " +
+            $"[canFallback={canFallback}, tooManyAttempts={tooManyAttempts}]");
 
         if (tooManyAttempts || !canFallback)
         {

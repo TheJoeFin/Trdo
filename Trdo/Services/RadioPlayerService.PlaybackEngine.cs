@@ -74,8 +74,16 @@ public sealed partial class RadioPlayerService
             _libVlcBackend.NetworkCachingMs = (int)RequiredBufferDuration.TotalMilliseconds;
         }
 
+        int cachingMs = _libVlcBackend?.NetworkCachingMs ?? (int)RequiredBufferDuration.TotalMilliseconds;
+        LogService.Info("RadioPlayerService",
+            $"Preparing stream {LogService.Redact(_streamUrl)} (networkCaching={cachingMs}ms)");
+
         PlaybackPrepareResult result = await _playbackEngineSelector.PrepareAsync(_streamUrl, cancellationToken);
         _lastPrepareError = result.Success ? null : result.ErrorMessage;
+
+        LogService.Info("RadioPlayerService",
+            $"Prepare result: success={result.Success}, backend={result.Backend}, usedFallback={result.UsedFallback}" +
+            (result.Success ? string.Empty : $", error={result.ErrorMessage}"));
 
         if (!result.Success)
         {
@@ -92,6 +100,7 @@ public sealed partial class RadioPlayerService
 
             if (!opened)
             {
+                LogService.Warn("RadioPlayerService", "Native open timed out after 15s; attempting LibVLC fallback");
                 Debug.WriteLine("[RadioPlayerService] Native open timeout, attempting LibVLC fallback");
                 result = await _playbackEngineSelector.RetryWithFallbackAsync(_streamUrl, cancellationToken);
                 _lastPrepareError = result.Success ? null : result.ErrorMessage;
@@ -193,6 +202,7 @@ public sealed partial class RadioPlayerService
 
     private void OnNativePlaybackFailed(object? sender, PlaybackFailureEventArgs e)
     {
+        LogService.Warn("RadioPlayerService", $"Native backend reported failure: {e.Message}");
         Debug.WriteLine($"[RadioPlayerService] Native playback failed: {e.Message}");
         HandleBackendFailure(e);
     }
@@ -205,11 +215,13 @@ public sealed partial class RadioPlayerService
         }
 
         bool wasPlaying = ActiveBackend.IsPlaying;
+        LogService.Warn("RadioPlayerService", $"Trying playback fallback (wasPlaying={wasPlaying})");
         PlaybackPrepareResult result = await _playbackEngineSelector.RetryWithFallbackAsync(_streamUrl);
         _lastPrepareError = result.Success ? null : result.ErrorMessage;
 
         if (!result.Success)
         {
+            LogService.Error("RadioPlayerService", $"Fallback prepare failed: {result.ErrorMessage}");
             Debug.WriteLine($"[RadioPlayerService] Fallback prepare failed: {result.ErrorMessage}");
             SetManualBuffering(false);
             ReportPlaybackFailure(result.ErrorMessage, tooManyAttempts: true);
@@ -227,6 +239,8 @@ public sealed partial class RadioPlayerService
 
     private void OnLibVlcPlaybackStateChanged(object? sender, bool isPlaying)
     {
+        LogService.Info("RadioPlayerService", $"LibVLC state -> isPlaying={isPlaying}");
+
         // Reaching Playing means the current attempt succeeded - reset failure tracking.
         if (isPlaying)
         {
@@ -250,6 +264,7 @@ public sealed partial class RadioPlayerService
 
     private void OnLibVlcPlaybackFailed(object? sender, PlaybackFailureEventArgs e)
     {
+        LogService.Warn("RadioPlayerService", $"LibVLC backend reported failure: {e.Message}");
         Debug.WriteLine($"[RadioPlayerService] LibVLC playback failed: {e.Message}");
         HandleBackendFailure(e);
     }

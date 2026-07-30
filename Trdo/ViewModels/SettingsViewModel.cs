@@ -299,6 +299,16 @@ public partial class SettingsViewModel : INotifyPropertyChanged
             _ => "LibVLC first, Windows fallback"
         };
 
+    /// <summary>
+    /// True on ARM devices, where the LibVLC engine has no native binaries and
+    /// cannot load — only the Windows (native) engine works regardless of the
+    /// selected mode. Used to surface a warning next to the engine picker.
+    /// </summary>
+    public bool IsLibVlcUnavailableOnThisDevice =>
+        System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture
+            is System.Runtime.InteropServices.Architecture.Arm64
+            or System.Runtime.InteropServices.Architecture.Arm;
+
     public bool AllowSleepWhilePlaying
     {
         get => SettingsService.AllowSleepWhilePlaying;
