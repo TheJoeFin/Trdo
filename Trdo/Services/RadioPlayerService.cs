@@ -43,6 +43,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private int _consecutivePlaybackFailures;
     private bool _hasReportedPlaybackFailure;
     private const int MaxConsecutivePlaybackFailures = 3;
+    private static readonly TimeSpan MinPlaybackConfirmationTimeout = TimeSpan.FromSeconds(5);
 
     public static RadioPlayerService Instance { get; } = new();
 
@@ -653,31 +654,28 @@ public sealed partial class RadioPlayerService : IDisposable
     {
         try
         {
-            // Only recreate MediaSource if:
-            // 1. First play and no source exists, OR
-            // 2. Following an external pause (to ensure live stream position)
-            bool needsRecreation = (!_hasPlayedOnce &&
-                                    _nativeBackend.CurrentPlaybackItem is null &&
-                                    (_libVlcBackend?.VlcMediaPlayer.Media is null)) ||
-                                   _wasExternalPause;
+            // Recreate the playback source whenever there isn't a live one to resume,
+            // or when an external pause means we must seek back to the live position.
+            // Note _hasPlayedOnce must NOT gate this: a watchdog recovery clears the
+            // source without changing the URL, so _hasPlayedOnce stays true while the
+            // source is gone. Gating on it there left us calling Play() on a null source.
+            bool hasSource = _nativeBackend.CurrentPlaybackItem is not null ||
+                             (_libVlcBackend?.VlcMediaPlayer.Media is not null);
+            bool needsRecreation = !hasSource || _wasExternalPause;
 
             if (needsRecreation)
             {
-                if (_wasExternalPause)
-                {
-                    Debug.WriteLine("[RadioPlayerService] Recreating playback source after external pause to seek to live position");
-                }
-                else
-                {
-                    Debug.WriteLine("[RadioPlayerService] First play - preparing playback source");
-                }
+                string reason = _wasExternalPause
+                    ? "Recreating playback source after external pause"
+                    : _hasPlayedOnce
+                        ? "Recreating playback source - no live source to resume"
+                        : "First play - preparing playback source";
+
+                Debug.WriteLine($"[RadioPlayerService] {reason}");
 
                 ClearActiveBackendSource();
 
-                LogService.Info("RadioPlayerService",
-                    needsRecreation && _wasExternalPause
-                        ? "Recreating playback source after external pause"
-                        : "First play - preparing playback source");
+                LogService.Info("RadioPlayerService", reason);
 
                 PlaybackPrepareResult prepareResult = await PrepareStreamAsync();
                 if (!prepareResult.Success)
@@ -939,9 +937,11 @@ public sealed partial class RadioPlayerService : IDisposable
 
         try
         {
+            // See PlayWithBufferInternalAsync: _hasPlayedOnce must not gate this. The
+            // watchdog recovery path clears the source while leaving _hasPlayedOnce true.
             bool hasSource = _nativeBackend.CurrentPlaybackItem is not null ||
                              (_libVlcBackend?.VlcMediaPlayer.Media is not null);
-            bool needsRecreation = (!_hasPlayedOnce && !hasSource) || _wasExternalPause;
+            bool needsRecreation = !hasSource || _wasExternalPause;
 
             if (needsRecreation)
             {
@@ -1058,7 +1058,22 @@ public sealed partial class RadioPlayerService : IDisposable
             Debug.WriteLine("[RadioPlayerService] Ensured metadata for active backend (PlayWithBufferAsync)");
 
             LogBufferedRanges();
-            return true;
+
+            // Play() is fire-and-forget on both backends, so returning true here without
+            // checking would report success for a no-op. The watchdog relies on this
+            // result to decide whether to escalate, so it has to be honest.
+            bool confirmed = await WaitForPlaybackConfirmedAsync(
+                PlaybackConfirmationTimeout,
+                cancellationToken);
+
+            if (!confirmed)
+            {
+                LogService.Warn("RadioPlayerService",
+                    $"Playback did not start within {PlaybackConfirmationTimeout.TotalSeconds:F0}s of Play() " +
+                    $"(backend={ActivePlaybackBackend})");
+            }
+
+            return confirmed;
         }
         catch (OperationCanceledException)
         {
@@ -1076,6 +1091,65 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             Debug.WriteLine($"=== PlayWithBufferAsync END ===");
         }
+    }
+
+    /// <summary>
+    /// How long to wait for a backend to actually report playing after Play() is called,
+    /// before treating the attempt as failed. Scales with the configured buffer so a large
+    /// buffer setting doesn't get reported as a failure while it is still filling.
+    /// </summary>
+    private TimeSpan PlaybackConfirmationTimeout
+    {
+        get
+        {
+            TimeSpan scaled = RequiredBufferDuration + RequiredBufferDuration;
+            return scaled > MinPlaybackConfirmationTimeout ? scaled : MinPlaybackConfirmationTimeout;
+        }
+    }
+
+    /// <summary>
+    /// Polls the active backend until it reports playing, or the timeout elapses.
+    /// Mirrors the polling shape of <see cref="PlaybackEngineSelector.WaitForNativeOpenAsync"/>.
+    /// </summary>
+    /// <returns>True if the backend reported playing before the timeout.</returns>
+    private async Task<bool> WaitForPlaybackConfirmedAsync(TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        const int pollIntervalMs = 250;
+        DateTime deadline = DateTime.UtcNow + timeout;
+
+        while (DateTime.UtcNow < deadline)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return false;
+            }
+
+            try
+            {
+                if (ActiveBackend.IsPlaying)
+                {
+                    Debug.WriteLine("[RadioPlayerService] Playback confirmed - backend reports playing");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                // A disposed or half-torn-down backend counts as not playing.
+                Debug.WriteLine($"[RadioPlayerService] Error probing playback state: {ex.Message}");
+                return false;
+            }
+
+            try
+            {
+                await Task.Delay(pollIntervalMs, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
