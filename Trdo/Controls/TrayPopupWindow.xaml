@@ -13,7 +13,7 @@
         <MicaBackdrop />
     </ex:WindowEx.SystemBackdrop>
 
-    <Grid x:Name="PopupRoot">
+    <Grid x:Name="PopupRoot" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.Transitions>
             <TransitionCollection>
                 <EntranceThemeTransition FromVerticalOffset="40" />
