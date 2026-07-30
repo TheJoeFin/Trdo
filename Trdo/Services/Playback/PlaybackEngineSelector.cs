@@ -68,10 +68,12 @@ public sealed class PlaybackEngineSelector : IDisposable
         LogService.Info("PlaybackEngineSelector",
             $"Mode={mode}, remembered={usedRemembered}, trying {first.Kind} first for {LogService.Redact(streamUrl)}");
 
+        // Note: preparing successfully is not evidence a backend can play this stream -
+        // LibVlcPlaybackBackend.PrepareAsync always succeeds. The preference is only
+        // written once playback is actually confirmed, via ConfirmBackendHealthy.
         PlaybackPrepareResult firstResult = await PrepareWithBackendAsync(first, streamUrl, usedFallback: false, cancellationToken);
         if (firstResult.Success)
         {
-            RememberPreferredBackend(streamUrl, first.Kind);
             LogService.Info("PlaybackEngineSelector", $"{first.Kind} prepared successfully");
             return firstResult;
         }
@@ -82,7 +84,6 @@ public sealed class PlaybackEngineSelector : IDisposable
         PlaybackPrepareResult fallbackResult = await PrepareWithBackendAsync(second, streamUrl, usedFallback: true, cancellationToken);
         if (fallbackResult.Success)
         {
-            RememberPreferredBackend(streamUrl, second.Kind);
             LogService.Warn("PlaybackEngineSelector", $"Fallback to {second.Kind} succeeded");
         }
         else
@@ -110,7 +111,6 @@ public sealed class PlaybackEngineSelector : IDisposable
         PlaybackPrepareResult result = await PrepareWithBackendAsync(other, streamUrl, usedFallback: true, cancellationToken);
         if (result.Success)
         {
-            RememberPreferredBackend(streamUrl, other.Kind);
             LogService.Info("PlaybackEngineSelector", $"{other.Kind} fallback retry succeeded");
         }
         else
@@ -119,6 +119,52 @@ public sealed class PlaybackEngineSelector : IDisposable
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Records that a backend has actually played this stream, so it is tried first next time.
+    /// Call this only on a confirmed playing transition - prepare success is not sufficient
+    /// evidence, since the LibVLC backend's prepare cannot fail.
+    /// </summary>
+    public void ConfirmBackendHealthy(string streamUrl, PlaybackBackendKind backend)
+    {
+        if (string.IsNullOrWhiteSpace(streamUrl))
+        {
+            return;
+        }
+
+        if (TryGetPreferredBackend(streamUrl, out PlaybackBackendKind existing) && existing == backend)
+        {
+            return;
+        }
+
+        RememberPreferredBackend(streamUrl, backend);
+        LogService.Info("PlaybackEngineSelector",
+            $"Confirmed {backend} plays {LogService.Redact(streamUrl)}; remembering it");
+    }
+
+    /// <summary>
+    /// Records that a backend repeatedly failed to play this stream, so the next prepare
+    /// starts with the other one. Without this, a station that LibVLC can open but not play
+    /// stays pinned to LibVLC forever.
+    /// </summary>
+    public void MarkBackendUnhealthy(string streamUrl, PlaybackBackendKind backend)
+    {
+        if (string.IsNullOrWhiteSpace(streamUrl))
+        {
+            return;
+        }
+
+        PlaybackBackendKind other = backend == PlaybackBackendKind.LibVlc
+            ? PlaybackBackendKind.Native
+            : PlaybackBackendKind.LibVlc;
+
+        // Point the preference at the other backend rather than just clearing it, so the
+        // next attempt actively avoids the one that just failed instead of falling back
+        // to the mode default (which may be the failing backend again).
+        RememberPreferredBackend(streamUrl, other);
+        LogService.Warn("PlaybackEngineSelector",
+            $"{backend} marked unhealthy for {LogService.Redact(streamUrl)}; preferring {other} next");
     }
 
     public async Task<bool> WaitForNativeOpenAsync(CancellationToken cancellationToken, TimeSpan timeout)

@@ -301,6 +301,7 @@ public sealed partial class RadioPlayerService : IDisposable
                 if (isPlaying)
                 {
                     ResetPlaybackFailureTracking();
+                    ConfirmActiveBackendHealthy();
                 }
 
                 // If state change was not initiated internally (e.g., from hardware buttons),

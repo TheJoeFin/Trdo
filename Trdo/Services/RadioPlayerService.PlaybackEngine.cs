@@ -189,6 +189,20 @@ public sealed partial class RadioPlayerService
             cancellationToken);
     }
 
+    /// <summary>
+    /// Records the active backend as proven for the current stream. Called from the
+    /// backends' playing transitions - the only reliable evidence a backend works here.
+    /// </summary>
+    private void ConfirmActiveBackendHealthy()
+    {
+        if (string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            return;
+        }
+
+        _playbackEngineSelector.ConfirmBackendHealthy(_streamUrl, ActivePlaybackBackend);
+    }
+
     private void SyncActiveBackendVolume()
     {
         ActiveBackend.SetVolume(_volume);
@@ -245,6 +259,7 @@ public sealed partial class RadioPlayerService
         if (isPlaying)
         {
             ResetPlaybackFailureTracking();
+            ConfirmActiveBackendHealthy();
         }
 
         TryEnqueueOnUi(() =>
