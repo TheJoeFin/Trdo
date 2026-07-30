@@ -514,6 +514,10 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             _hasPlayedOnce = false;
             ResetPlaybackFailureTracking();
+
+            // A new stream must not inherit the previous one's recovery escalation or
+            // auto-buffer bump - one bad station shouldn't degrade every station after it.
+            _watchdog.ResetForStation();
             Debug.WriteLine("[RadioPlayerService] Station changed - reset first play flag");
         }
 
@@ -576,6 +580,7 @@ public sealed partial class RadioPlayerService : IDisposable
         _currentAlbumArtUrl = null;
         _hasPlayedOnce = false;
         _wasExternalPause = false;
+        _watchdog.ResetForStation();
 
         ScheduleSystemMediaTransportControlsUpdate();
         Debug.WriteLine("=== ClearPlaybackTarget END ===");
@@ -605,8 +610,11 @@ public sealed partial class RadioPlayerService : IDisposable
         LogService.Info("RadioPlayerService",
             $"Play requested for {LogService.Redact(_streamUrl)} (hasPlayedOnce={_hasPlayedOnce}, wasExternalPause={_wasExternalPause})");
 
-        // Fresh user-initiated attempt: allow failures to be reported and retried again.
+        // Fresh user-initiated attempt: allow failures to be reported and retried again,
+        // and give the recovery ladder a clean slate so a previous give-up doesn't stop
+        // the watchdog from protecting this attempt.
         ResetPlaybackFailureTracking();
+        _watchdog.ResetForStation();
 
         // Don't attempt to open a stream when the machine is offline - it would just
         // spin through prepare/fallback and fail. Tell the user instead.
