@@ -15,6 +15,7 @@
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
+        <converters:PercentStringConverter x:Key="PercentStringConverter" />
     </Page.Resources>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowSpacing="12">
@@ -254,6 +255,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="auto" />
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <FontIcon
                 Grid.Column="0"
@@ -263,12 +265,22 @@
             <Slider
                 x:Name="VolumeSlider"
                 Grid.Column="1"
-                Maximum="1"
+                Maximum="200"
                 Minimum="0"
-                SmallChange="0.01"
-                StepFrequency="0.01"
-                Value="{x:Bind ViewModel.Volume,
+                SmallChange="1"
+                StepFrequency="1"
+                ThumbToolTipValueConverter="{StaticResource PercentStringConverter}"
+                Value="{x:Bind ViewModel.VolumePercent,
                                Mode=TwoWay}" />
+            <TextBlock
+                Grid.Column="2"
+                MinWidth="40"
+                VerticalAlignment="Center"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Text="{x:Bind ViewModel.VolumePercent,
+                              Mode=OneWay,
+                              Converter={StaticResource PercentStringConverter}}"
+                TextAlignment="Right" />
         </Grid>
 
         <!--  Now Playing Info  -->

@@ -95,7 +95,9 @@ public sealed class NativePlaybackBackend : IPlaybackBackend
         }
     }
 
-    public void SetVolume(double volume) => _player.Volume = volume;
+    // Windows MediaPlayer only supports 0.0-1.0, so amplification above 100% is
+    // capped here; the LibVLC backend handles true >100% amplification.
+    public void SetVolume(double volume) => _player.Volume = Math.Clamp(volume, 0, 1);
 
     public async Task<PlaybackPrepareResult> PrepareAsync(string streamUrl, CancellationToken cancellationToken = default)
     {

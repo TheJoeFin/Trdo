@@ -22,7 +22,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private readonly StreamWatchdogService _watchdog;
     private readonly SystemMediaTransportControls? _systemMediaControls;
     private readonly HttpClient _httpClient;
-    private double _volume = 0.5;
+    private double _volume = 1.0;
     private const string VolumeKey = "RadioVolume";
     private const string WatchdogEnabledKey = "WatchdogEnabled";
     private string? _streamUrl;
@@ -218,7 +218,7 @@ public sealed partial class RadioPlayerService : IDisposable
         get => _volume;
         set
         {
-            value = Math.Clamp(value, 0, 1);
+            value = Math.Clamp(value, 0, 2);
             if (Math.Abs(_volume - value) < 0.0001) return;
             Debug.WriteLine($"[RadioPlayerService] Setting Volume from {_volume} to {value}");
             _volume = value;
@@ -277,7 +277,9 @@ public sealed partial class RadioPlayerService : IDisposable
             AudioCategory = MediaPlayerAudioCategory.Media,
             AutoPlay = false,
             IsLoopingEnabled = false,
-            Volume = _volume
+            // Windows MediaPlayer only supports 0.0-1.0; higher amplification is
+            // applied by the LibVLC backend. Clamp so the native player never throws.
+            Volume = Math.Clamp(_volume, 0, 1)
         };
         Debug.WriteLine($"[RadioPlayerService] MediaPlayer created with Volume={_volume}, AutoPlay=false");
 
@@ -427,8 +429,8 @@ public sealed partial class RadioPlayerService : IDisposable
                     string s when double.TryParse(s, out double d2) => d2,
                     _ => _volume
                 };
-                _volume = Math.Clamp(parsed, 0, 1);
-                _player.Volume = _volume;
+                _volume = Math.Clamp(parsed, 0, 2);
+                _player.Volume = Math.Clamp(_volume, 0, 1);
                 Debug.WriteLine($"[RadioPlayerService] Loaded volume from settings: {_volume}");
             }
 

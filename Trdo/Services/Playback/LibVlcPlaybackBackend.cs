@@ -69,7 +69,8 @@ public sealed class LibVlcPlaybackBackend : IPlaybackBackend
 
     public IReadOnlyList<MediaTimeRange> GetBufferedRanges() => [];
 
-    public void SetVolume(double volume) => _mediaPlayer.Volume = (int)Math.Clamp(volume * 100, 0, 100);
+    // volume is a fraction where 1.0 == 100%; LibVLC accepts 0-200 (200% = amplified).
+    public void SetVolume(double volume) => _mediaPlayer.Volume = (int)Math.Clamp(volume * 100, 0, 200);
 
     public Task<PlaybackPrepareResult> PrepareAsync(string streamUrl, CancellationToken cancellationToken = default)
     {

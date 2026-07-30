@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Renamed to Traydio** — same app, clearer name (#53)
 - The tray flyout is now a regular window placed near the click position, fixing DPI and reliability issues with the old flyout (#98, #96, #42)
 - LibVLC is now the default playback engine, with Windows Media Foundation kept as a fallback and as an opt-in "Native" mode (broader codec and stream support)
+- Volume is now shown as a percentage from 0% to 200%, with 100% (full stream volume) as the default; values above 100% amplify the stream on the LibVLC engine (#105)
+- Volume is now remembered per station, so each station keeps its own level and restores it when selected (#16)
 
 ### Added
 - "Allow PC to sleep" setting so the computer can sleep on its normal schedule while radio is playing (#82)

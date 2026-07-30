@@ -276,6 +276,8 @@ public sealed partial class PlayingPage : Page
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine("[PlayingPage] Close button clicked");
+        // Persist any pending per-station volume change before quitting.
+        ViewModel.FlushStationsSave();
         Application.Current.Exit();
     }
 
@@ -423,7 +425,7 @@ public sealed partial class PlayingPage : Page
     {
         int delta = e.GetCurrentPoint((UIElement)sender).Properties.MouseWheelDelta;
         double change = (delta / 120.0) * 0.02;
-        ViewModel.Volume = Math.Clamp(ViewModel.Volume + change, 0, 1);
+        ViewModel.Volume = Math.Clamp(ViewModel.Volume + change, 0, 2);
         e.Handled = true;
     }
 

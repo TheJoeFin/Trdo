@@ -27,6 +27,11 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     private bool _isCurrentTrackFavorited;
     private bool _isRefreshingMetadata;
 
+    // Debounces persisting per-station volume changes so dragging the slider does
+    // not rewrite stations.json on every tick.
+    private readonly Timer _saveStationsTimer;
+    private const int SaveStationsDebounceMs = 500;
+
     private static readonly Lazy<PlayerViewModel> _instance = new(() => new PlayerViewModel());
     public static PlayerViewModel Shared => _instance.Value;
 
@@ -47,6 +52,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     public PlayerViewModel()
     {
         Debug.WriteLine("=== PlayerViewModel Constructor START ===");
+
+        _saveStationsTimer = new Timer(_ => FlushStationsSave(), null, Timeout.Infinite, Timeout.Infinite);
 
         _player.NextStationRequested += (_, _) => SelectNextStation();
         _player.PreviousStationRequested += (_, _) => SelectPreviousStation();
@@ -103,6 +110,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         {
             Debug.WriteLine($"[PlayerViewModel] VolumeChanged event fired. Volume={Volume}");
             OnPropertyChanged(nameof(Volume));
+            OnPropertyChanged(nameof(VolumePercent));
         };
 
         // Subscribe to watchdog status changes
@@ -197,6 +205,9 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         // Initialize with selected station's URL if available
         if (_selectedStation != null)
         {
+            // Apply the restored station's saved volume before playback starts.
+            _player.Volume = _selectedStation.Volume;
+
             Debug.WriteLine($"[PlayerViewModel] Initializing stream with URL: {_selectedStation.StreamUrl}");
             InitializeStream(_selectedStation.StreamUrl);
 
@@ -287,6 +298,12 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     Debug.WriteLine($"[PlayerViewModel] Setting stream URL in player: {_selectedStation.StreamUrl}");
                     _player.SetStreamUrl(_selectedStation.StreamUrl);
                     Debug.WriteLine("[PlayerViewModel] Stream URL set successfully");
+
+                    // Apply this station's saved volume so it "follows the station" (#16)
+                    Debug.WriteLine($"[PlayerViewModel] Applying station volume: {_selectedStation.Volume}");
+                    _player.Volume = _selectedStation.Volume;
+                    OnPropertyChanged(nameof(Volume));
+                    OnPropertyChanged(nameof(VolumePercent));
 
                     // Set the station name for system media controls
                     Debug.WriteLine($"[PlayerViewModel] Setting station name: {_selectedStation.Name}");
@@ -583,7 +600,44 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine($"[PlayerViewModel] Setting Volume to {value}");
             _player.Volume = value;
             OnPropertyChanged();
+
+            // Remember the level on the current station so it follows the station (#16).
+            if (_selectedStation is not null)
+            {
+                double clamped = _player.Volume;
+                if (_selectedStation.Volume != clamped)
+                {
+                    _selectedStation.Volume = clamped;
+                    ScheduleStationsSave();
+                }
+            }
         }
+    }
+
+    /// <summary>
+    /// Volume expressed as a percentage of the stream volume (100 = full stream
+    /// volume, up to 200 for amplification). Backed by <see cref="Volume"/>.
+    /// </summary>
+    public double VolumePercent
+    {
+        get => _player.Volume * 100;
+        set => Volume = value / 100;
+    }
+
+    /// <summary>
+    /// Requests a debounced save of the station list, coalescing rapid volume
+    /// changes (e.g. dragging the slider) into a single write.
+    /// </summary>
+    private void ScheduleStationsSave() =>
+        _saveStationsTimer.Change(SaveStationsDebounceMs, Timeout.Infinite);
+
+    /// <summary>
+    /// Persists the station list immediately and cancels any pending debounced save.
+    /// </summary>
+    public void FlushStationsSave()
+    {
+        _saveStationsTimer.Change(Timeout.Infinite, Timeout.Infinite);
+        _stationService.SaveStations(Stations);
     }
 
     public void Toggle()
@@ -809,6 +863,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     public void SaveStations()
     {
         Debug.WriteLine("[PlayerViewModel] SaveStations called");
+        // Cancel any pending debounced volume save; this write covers it.
+        _saveStationsTimer.Change(Timeout.Infinite, Timeout.Infinite);
         _stationService.SaveStations(Stations);
 
         // If the current station was edited, reinitialize the stream
