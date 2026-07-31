@@ -43,4 +43,57 @@ public static class SongChangeAnnouncementPolicy
             previousDisplayText.Trim(),
             StringComparison.Ordinal);
     }
+
+    /// <summary>No delay — the popup appears as soon as the metadata changes.</summary>
+    public const double MinDelaySeconds = 0;
+
+    /// <summary>
+    /// Upper bound on the announcement delay. Stations that run metadata more than
+    /// half a minute ahead of the audio are broken in a way a delay cannot paper over,
+    /// and an unbounded value would let a popup outlive the song it describes.
+    /// </summary>
+    public const double MaxDelaySeconds = 30;
+
+    /// <summary>Constrains a delay to the supported range, mapping NaN to no delay.</summary>
+    public static double ClampDelay(double seconds)
+    {
+        if (double.IsNaN(seconds))
+            return MinDelaySeconds;
+
+        return Math.Clamp(seconds, MinDelaySeconds, MaxDelaySeconds);
+    }
+
+    /// <summary>
+    /// Works out how long to wait before announcing, given the station's own override and
+    /// the app-wide setting.
+    /// <para>
+    /// Many stations push metadata a few seconds before the audio actually reaches the
+    /// listener, and the size of that lead is a property of the station's encoder — so the
+    /// per-station value wins outright rather than adding to the global one. A station with
+    /// no override follows the app setting.
+    /// </para>
+    /// </summary>
+    /// <param name="stationDelaySeconds">The station's override, or null to follow the app setting.</param>
+    /// <param name="globalDelaySeconds">The app-wide delay.</param>
+    public static double ResolveDelaySeconds(double? stationDelaySeconds, double globalDelaySeconds)
+    {
+        return ClampDelay(stationDelaySeconds ?? globalDelaySeconds);
+    }
+
+    /// <summary>
+    /// Formats a delay for display, so the settings page, the station editor and the
+    /// popup's own menu all describe the same value identically.
+    /// </summary>
+    public static string DescribeDelay(double seconds)
+    {
+        double clamped = ClampDelay(seconds);
+
+        if (clamped <= 0)
+            return "No delay";
+
+        // Whole seconds read better than "5.0s" for the common preset values.
+        return Math.Abs(clamped - Math.Round(clamped)) < 0.05
+            ? $"{Math.Round(clamped):0} second{(Math.Round(clamped) == 1 ? "" : "s")}"
+            : $"{clamped:0.0} seconds";
+    }
 }

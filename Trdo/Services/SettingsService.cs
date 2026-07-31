@@ -22,6 +22,7 @@ public static class SettingsService
     private const string IsMiniPlayerTopmostKey = "IsMiniPlayerTopmost";
     private const string AllowSleepWhilePlayingKey = "AllowSleepWhilePlaying";
     private const string IsSongChangePopupEnabledKey = "IsSongChangePopupEnabled";
+    private const string SongChangePopupDelaySecondsKey = "SongChangePopupDelaySeconds";
 
     public static event EventHandler? MusicSearchServicesChanged;
 
@@ -276,6 +277,60 @@ public static class SettingsService
     {
         get => GetBoolSetting(IsSongChangePopupEnabledKey, defaultValue: false);
         set => SetBoolSetting(IsSongChangePopupEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets how long to wait after a song change before showing the popup, in
+    /// seconds. Defaults to no delay. Stations whose metadata runs ahead of the audio can
+    /// override this individually via <see cref="Models.RadioStation.SongPopupDelaySeconds"/>.
+    /// </summary>
+    public static double SongChangePopupDelaySeconds
+    {
+        get => SongChangeAnnouncementPolicy.ClampDelay(
+            GetDoubleSetting(SongChangePopupDelaySecondsKey, defaultValue: 0));
+        set => SetDoubleSetting(
+            SongChangePopupDelaySecondsKey,
+            SongChangeAnnouncementPolicy.ClampDelay(value));
+    }
+
+    private static double GetDoubleSetting(string key, double defaultValue)
+    {
+        try
+        {
+            if (ApplicationData.Current.LocalSettings.Values.TryGetValue(key, out object? value))
+            {
+                return value switch
+                {
+                    double d => d,
+                    float f => f,
+                    int i => i,
+                    string s when double.TryParse(
+                        s,
+                        System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out double parsed) => parsed,
+                    _ => defaultValue
+                };
+            }
+
+            return defaultValue;
+        }
+        catch
+        {
+            return defaultValue;
+        }
+    }
+
+    private static void SetDoubleSetting(string key, double value)
+    {
+        try
+        {
+            ApplicationData.Current.LocalSettings.Values[key] = value;
+        }
+        catch
+        {
+            // Silently fail if unable to save
+        }
     }
 
     private static bool GetBoolSetting(string key, bool defaultValue)

@@ -39,7 +39,7 @@ public sealed partial class ManualStationWindow : WindowEx
         // Focus the station name field once the window is ready
         if (args.WindowActivationState != Microsoft.UI.Xaml.WindowActivationState.Deactivated)
         {
-            WindowPlacementService.PositionWindowNearAnchor(this, 400, 500);
+            WindowPlacementService.PositionWindowNearAnchor(this, 400, 620);
             StationNameTextBox.Focus(Microsoft.UI.Xaml.FocusState.Programmatic);
             Activated -= ManualStationWindow_Activated;
         }
@@ -56,5 +56,16 @@ public sealed partial class ManualStationWindow : WindowEx
     private void CancelButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
         Close();
+    }
+
+    /// <summary>
+    /// Collapses the hero preview when the logo URL points at something that is
+    /// not a loadable image. Only the view can detect this — the URL is
+    /// well-formed, so the view model has no way to know until the download or
+    /// decode fails.
+    /// </summary>
+    private void HeroImage_ImageFailed(object sender, Microsoft.UI.Xaml.ExceptionRoutedEventArgs e)
+    {
+        ViewModel.NotifyHeroImageFailed();
     }
 }

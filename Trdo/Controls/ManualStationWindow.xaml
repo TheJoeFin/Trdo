@@ -9,7 +9,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     Title="Traydio - Add Station"
     Width="400"
-    Height="500"
+    Height="620"
     IsMaximizable="False"
     IsMinimizable="False"
     mc:Ignorable="d">
@@ -20,6 +20,7 @@
 
     <Grid RowDefinitions="Auto,*,Auto">
 
+
         <TitleBar x:Name="ModernTitlebar" Title="{x:Bind ViewModel.PageTitle, Mode=OneWay}">
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="/Assets/Radio.ico" />
@@ -29,6 +30,28 @@
         <!--  Content Area  -->
         <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="24,16,24,16" Spacing="12">
+
+                <!--
+                    Hero preview of the station logo. Collapses entirely when there
+                    is no usable image, so a station without one loses no space to
+                    an empty frame. Uniform keeps non-square logos undistorted.
+                -->
+                <Border
+                    Height="140"
+                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="{StaticResource ControlCornerRadius}"
+                    Visibility="{x:Bind ViewModel.HasHeroImage,
+                                        Mode=OneWay}">
+                    <Image
+                        Margin="12"
+                        AutomationProperties.AccessibilityView="Raw"
+                        ImageFailed="HeroImage_ImageFailed"
+                        Source="{x:Bind ViewModel.HeroImageSource,
+                                        Mode=OneWay}"
+                        Stretch="Uniform" />
+                </Border>
 
                 <!--  Station Name Input  -->
                 <StackPanel Spacing="4">
@@ -76,6 +99,130 @@
                                       UpdateSourceTrigger=PropertyChanged}"
                         TextWrapping="Wrap" />
                 </StackPanel>
+
+                <!--  Per-station playback settings, collapsed by default  -->
+                <Expander
+                    Margin="0,4,0,0"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <StackPanel Spacing="2">
+                            <TextBlock FontWeight="SemiBold" Text="Advanced" />
+                            <TextBlock
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="{x:Bind ViewModel.BufferSummary,
+                                              Mode=OneWay}" />
+                            <TextBlock
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="{x:Bind ViewModel.SongPopupDelaySummary,
+                                              Mode=OneWay}" />
+                        </StackPanel>
+                    </Expander.Header>
+
+                    <StackPanel Spacing="16">
+
+                        <!--  Per-station volume  -->
+                        <StackPanel Spacing="4">
+                            <TextBlock FontWeight="SemiBold" Text="Volume" />
+                            <TextBlock
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Remembered for this station, so it stays level when you switch away and back."
+                                TextWrapping="Wrap" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Slider
+                                    Grid.Column="0"
+                                    AutomationProperties.Name="Station volume"
+                                    Maximum="200"
+                                    Minimum="0"
+                                    StepFrequency="1"
+                                    Value="{x:Bind ViewModel.VolumePercent,
+                                                   Mode=TwoWay}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    MinWidth="48"
+                                    VerticalAlignment="Center"
+                                    Text="{x:Bind ViewModel.VolumeDescription,
+                                                  Mode=OneWay}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <!--  Per-station buffer override  -->
+                        <StackPanel Spacing="4">
+                            <TextBlock FontWeight="SemiBold" Text="Buffer level" />
+                            <TextBlock
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Higher buffer levels help on unstable connections, but they add a little more playback delay. Override this only for a station that needs it."
+                                TextWrapping="Wrap" />
+                            <ToggleSwitch
+                                Margin="0,4,0,0"
+                                AutomationProperties.Name="Override buffer level for this station"
+                                IsOn="{x:Bind ViewModel.HasBufferOverride,
+                                              Mode=TwoWay}"
+                                OffContent="Following the app setting"
+                                OnContent="Override for this station" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Slider
+                                    Grid.Column="0"
+                                    AutomationProperties.Name="Station buffer level"
+                                    IsEnabled="{x:Bind ViewModel.HasBufferOverride,
+                                                       Mode=OneWay}"
+                                    Maximum="3"
+                                    Minimum="0"
+                                    SnapsTo="StepValues"
+                                    StepFrequency="0.1"
+                                    Value="{x:Bind ViewModel.BufferLevel,
+                                                   Mode=TwoWay}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    MinWidth="92"
+                                    VerticalAlignment="Center"
+                                    Text="{x:Bind ViewModel.BufferLevelDescription,
+                                                  Mode=OneWay}" />
+                            </Grid>
+                        </StackPanel>
+
+                        <!--  Per-station song change popup delay  -->
+                        <StackPanel Spacing="4">
+                            <TextBlock FontWeight="SemiBold" Text="Song popup delay" />
+                            <TextBlock
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="Some stations announce the next track before it actually starts. Delay the popup so it appears when you hear the song. How far ahead a station runs is a property of its encoder, so set this per station."
+                                TextWrapping="Wrap" />
+                            <ToggleSwitch
+                                Margin="0,4,0,0"
+                                AutomationProperties.Name="Override song popup delay for this station"
+                                IsOn="{x:Bind ViewModel.HasSongPopupDelayOverride,
+                                              Mode=TwoWay}"
+                                OffContent="Following the app setting"
+                                OnContent="Override for this station" />
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Slider
+                                    Grid.Column="0"
+                                    AutomationProperties.Name="Station song popup delay in seconds"
+                                    IsEnabled="{x:Bind ViewModel.HasSongPopupDelayOverride,
+                                                       Mode=OneWay}"
+                                    Maximum="{x:Bind ViewModel.MaxSongPopupDelaySeconds}"
+                                    Minimum="0"
+                                    SnapsTo="StepValues"
+                                    StepFrequency="0.5"
+                                    Value="{x:Bind ViewModel.SongPopupDelaySeconds,
+                                                   Mode=TwoWay}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    MinWidth="92"
+                                    VerticalAlignment="Center"
+                                    Text="{x:Bind ViewModel.SongPopupDelayDescription,
+                                                  Mode=OneWay}" />
+                            </Grid>
+                        </StackPanel>
+
+                    </StackPanel>
+                </Expander>
 
             </StackPanel>
         </ScrollView>

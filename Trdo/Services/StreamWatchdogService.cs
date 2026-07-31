@@ -35,6 +35,7 @@ public sealed partial class StreamWatchdogService : IDisposable
     private readonly RecoveryPolicy _policy;
     private bool _autoBufferIncreaseEnabled;
     private double _currentBufferLevel;
+    private double? _stationBufferLevelOverride;
     private const string AutoBufferIncreaseKey = "AutoBufferIncreaseEnabled";
     private const string BufferLevelKey = "BufferLevel";
     private const string SilenceTimeoutKey = "SilenceTimeoutSeconds";
@@ -136,11 +137,43 @@ public sealed partial class StreamWatchdogService : IDisposable
     }
 
     /// <summary>
-    /// Gets the buffer level actually in force: the user's setting plus any transient
-    /// escalation the recovery ladder has asked for, clamped to the maximum.
+    /// Gets or sets the current station's buffer level override, or <c>null</c> when
+    /// the station follows the app-wide <see cref="BufferLevel"/>. Set by
+    /// PlayerViewModel as stations are selected; never persisted here (it lives on
+    /// the station itself).
+    /// </summary>
+    public double? StationBufferLevelOverride
+    {
+        get => _stationBufferLevelOverride;
+        set
+        {
+            double? clamped = value is null ? null : Math.Clamp(value.Value, 0, MaxBufferLevel);
+            if (clamped == _stationBufferLevelOverride) return;
+
+            double previousEffectiveLevel = EffectiveBufferLevel;
+            _stationBufferLevelOverride = clamped;
+            Debug.WriteLine($"[Watchdog] Station buffer override set to: {(clamped?.ToString() ?? "none")}");
+
+            if (Math.Abs(previousEffectiveLevel - EffectiveBufferLevel) > 0.0001)
+            {
+                RaiseBufferLevelChanged(_currentBufferLevel);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the buffer level the current station starts from: its own override when
+    /// it has one, otherwise the user's app-wide setting.
+    /// </summary>
+    public double BaseBufferLevel => _stationBufferLevelOverride ?? _currentBufferLevel;
+
+    /// <summary>
+    /// Gets the buffer level actually in force: the base level for the current
+    /// station plus any transient escalation the recovery ladder has asked for,
+    /// clamped to the maximum.
     /// </summary>
     public double EffectiveBufferLevel =>
-        Math.Clamp(_currentBufferLevel + _policy.AutoBufferBump, 0, MaxBufferLevel);
+        Math.Clamp(BaseBufferLevel + _policy.AutoBufferBump, 0, MaxBufferLevel);
 
     /// <summary>
     /// Gets the buffer delay in milliseconds based on the effective buffer level.
@@ -163,23 +196,23 @@ public sealed partial class StreamWatchdogService : IDisposable
     /// <summary>
     /// Gets a human-readable description of the user's configured buffer level.
     /// </summary>
-    public string BufferLevelDescription
+    public string BufferLevelDescription => DescribeBufferLevel(_currentBufferLevel);
+
+    /// <summary>
+    /// Maps a buffer level (0-3) onto its human-readable name. Shared so per-station
+    /// overrides are labelled identically to the app-wide setting.
+    /// </summary>
+    public static string DescribeBufferLevel(double level) => level switch
     {
-        get
-        {
-            return _currentBufferLevel switch
-            {
-                0 => "Default",
-                1 => "Medium",
-                2 => "Large",
-                3 => "Extra Large",
-                _ when _currentBufferLevel < 0.5 => "Default",
-                _ when _currentBufferLevel < 1.5 => "Medium",
-                _ when _currentBufferLevel < 2.5 => "Large",
-                _ => "Extra Large"
-            };
-        }
-    }
+        0 => "Default",
+        1 => "Medium",
+        2 => "Large",
+        3 => "Extra Large",
+        _ when level < 0.5 => "Default",
+        _ when level < 1.5 => "Medium",
+        _ when level < 2.5 => "Large",
+        _ => "Extra Large"
+    };
 
     public StreamWatchdogService(RadioPlayerService playerService)
     {

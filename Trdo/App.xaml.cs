@@ -25,6 +25,8 @@ public partial class App : Application
     private TrayPopupWindow? _trayPopupWindow;
     private MiniPlayerWindow? _miniPlayerWindow;
     private SongChangePopupWindow? _songChangePopupWindow;
+    private DispatcherQueueTimer? _songChangeDelayTimer;
+    private string? _pendingSongChangeText;
     private string? _lastKnownNowPlayingDisplayText;
     private readonly PlayerViewModel _playerVm = PlayerViewModel.Shared;
     private readonly UISettings _uiSettings = new();
@@ -106,8 +108,74 @@ public partial class App : Application
         if (!shouldAnnounce)
             return;
 
+        double delaySeconds = SongChangeAnnouncementPolicy.ResolveDelaySeconds(
+            _playerVm.SelectedStation?.SongPopupDelaySeconds,
+            SettingsService.SongChangePopupDelaySeconds);
+
+        if (delaySeconds <= 0)
+        {
+            ShowSongChangePopup(displayText);
+            return;
+        }
+
+        // Hold the announcement so it lands with the audio rather than ahead of it.
+        // A newer song arriving during the wait replaces the pending one and restarts
+        // the timer from its own arrival: showing the superseded track would announce
+        // a song that is already over.
+        _pendingSongChangeText = displayText;
+        EnsureSongChangeDelayTimer();
+        _songChangeDelayTimer!.Stop();
+        _songChangeDelayTimer.Interval = TimeSpan.FromSeconds(delaySeconds);
+        _songChangeDelayTimer.Start();
+    }
+
+    private void EnsureSongChangeDelayTimer()
+    {
+        if (_songChangeDelayTimer is not null)
+            return;
+
+        _songChangeDelayTimer = _uiDispatcherQueue?.CreateTimer()
+                                ?? DispatcherQueue.GetForCurrentThread()?.CreateTimer();
+
+        if (_songChangeDelayTimer is null)
+            return;
+
+        _songChangeDelayTimer.IsRepeating = false;
+        _songChangeDelayTimer.Tick += SongChangeDelayTimer_Tick;
+    }
+
+    private void SongChangeDelayTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        sender.Stop();
+
+        string? pending = _pendingSongChangeText;
+        _pendingSongChangeText = null;
+
+        if (string.IsNullOrWhiteSpace(pending))
+            return;
+
+        // Re-check the setting: the user may have turned popups off during the wait.
+        if (!SettingsService.IsSongChangePopupEnabled)
+            return;
+
+        ShowSongChangePopup(pending);
+    }
+
+    private void ShowSongChangePopup(string displayText)
+    {
         EnsureSongChangePopupWindow();
         _songChangePopupWindow?.ShowSongChange(displayText);
+    }
+
+    /// <summary>
+    /// Drops a popup that is still waiting out its delay. Called when the station changes:
+    /// a delayed announcement belongs to the stream it came from, and firing it after a
+    /// switch would name a song the user is no longer listening to.
+    /// </summary>
+    private void CancelPendingSongChangePopup()
+    {
+        _songChangeDelayTimer?.Stop();
+        _pendingSongChangeText = null;
     }
 
     private void EnsureSongChangePopupWindow()
@@ -129,6 +197,7 @@ public partial class App : Application
     {
         if (!SettingsService.IsSongChangePopupEnabled)
         {
+            CancelPendingSongChangePopup();
             _songChangePopupWindow?.HidePopup();
         }
     }
@@ -263,6 +332,14 @@ public partial class App : Application
         else if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata))
         {
             HandleSongChangePopup();
+        }
+        else if (e.PropertyName == nameof(PlayerViewModel.SelectedStation))
+        {
+            // The new station has its own delay, and anything still pending belongs to
+            // the previous stream. Reset the baseline too, so the incoming station's
+            // first metadata establishes it rather than announcing immediately.
+            CancelPendingSongChangePopup();
+            _lastKnownNowPlayingDisplayText = null;
         }
     }
 

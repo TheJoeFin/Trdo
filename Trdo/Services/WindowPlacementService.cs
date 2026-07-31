@@ -144,7 +144,29 @@ internal static partial class WindowPlacementService
     /// window last lived on. Falls back to the last pointer/tray anchor, then
     /// the primary display, if no taskbar can be located.
     /// </summary>
-    public static void PositionWindowBottomCenter(Window window, int width, int height)
+    public static void PositionWindowBottomCenter(Window window, int width, int height, int bottomMargin = 0)
+    {
+        RectInt32 bounds = GetBottomCenterPlacement(window, width, height, bottomMargin, out _);
+        window.AppWindow.MoveAndResize(bounds);
+    }
+
+    /// <summary>
+    /// Computes — but does not apply — the bottom-center placement described on
+    /// <see cref="PositionWindowBottomCenter"/>, in physical pixels, along with
+    /// the DPI of the monitor it was computed for. Callers that animate a
+    /// window into place need the target rect up front so they can offset from
+    /// it, and the DPI so their offsets scale with the monitor.
+    /// </summary>
+    /// <param name="bottomMargin">
+    /// Logical-pixel gap to leave between the bottom of the window and the
+    /// bottom of the work area (i.e. the top of the taskbar).
+    /// </param>
+    public static RectInt32 GetBottomCenterPlacement(
+        Window window,
+        int width,
+        int height,
+        int bottomMargin,
+        out uint dpi)
     {
         RectInt32 workArea;
         PointInt32 dpiProbePoint;
@@ -169,15 +191,13 @@ internal static partial class WindowPlacementService
         // Physical pixels, scaled by the taskbar monitor's DPI — see the
         // remarks on PositionWindowNearAnchor for why the anchor's monitor
         // (not the window's) must supply the DPI.
-        uint dpi = GetDpiForAnchor(dpiProbePoint, window);
+        dpi = GetDpiForAnchor(dpiProbePoint, window);
         int physWidth = (int)(width * dpi / 96.0);
         int physHeight = (int)(height * dpi / 96.0);
+        int physBottomMargin = (int)(bottomMargin * dpi / 96.0);
 
-        // Flush with the bottom of the work area (i.e. the top of the taskbar).
-        // The visible gap between the taskbar and the popup's surface comes from
-        // the overlay content's own bottom margin, so it only lives in one place.
         int x = workArea.X + (workArea.Width / 2) - (physWidth / 2);
-        int y = workArea.Y + workArea.Height - physHeight;
+        int y = workArea.Y + workArea.Height - physHeight - physBottomMargin;
 
         int maxX = System.Math.Max(workArea.X, workArea.X + workArea.Width - physWidth);
         int maxY = System.Math.Max(workArea.Y, workArea.Y + workArea.Height - physHeight);
@@ -185,7 +205,7 @@ internal static partial class WindowPlacementService
         x = System.Math.Clamp(x, workArea.X, maxX);
         y = System.Math.Clamp(y, workArea.Y, maxY);
 
-        window.AppWindow.MoveAndResize(new RectInt32(x, y, physWidth, physHeight));
+        return new RectInt32(x, y, physWidth, physHeight);
     }
 
     private static uint GetDpiForAnchor(PointInt32 anchor, Window window)

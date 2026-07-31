@@ -276,6 +276,29 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
+    /// <summary>
+    /// App-wide delay between a song change and the popup appearing, in seconds.
+    /// Stations that run further ahead can override this individually.
+    /// </summary>
+    public double SongChangePopupDelaySeconds
+    {
+        get => SettingsService.SongChangePopupDelaySeconds;
+        set
+        {
+            double clamped = SongChangeAnnouncementPolicy.ClampDelay(value);
+            if (Math.Abs(clamped - SettingsService.SongChangePopupDelaySeconds) < 0.0001) return;
+            SettingsService.SongChangePopupDelaySeconds = clamped;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SongChangePopupDelayDescription));
+        }
+    }
+
+    public string SongChangePopupDelayDescription =>
+        SongChangeAnnouncementPolicy.DescribeDelay(SettingsService.SongChangePopupDelaySeconds);
+
+    /// <summary>Upper bound offered by the delay slider.</summary>
+    public double MaxSongChangePopupDelaySeconds => SongChangeAnnouncementPolicy.MaxDelaySeconds;
+
     public string SongChangePopupToggleText
     {
         get => _songChangePopupToggleText;

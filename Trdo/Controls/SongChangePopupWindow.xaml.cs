@@ -2,12 +2,18 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
+using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Trdo.Models;
 using Trdo.Services;
+using Trdo.ViewModels;
+using Windows.Graphics;
 using WinRT.Interop;
-using WinUIEx;
 
 namespace Trdo.Controls;
 
@@ -19,49 +25,94 @@ namespace Trdo.Controls;
 /// animation cleanly even if a previous show/hide animation is still in
 /// flight.
 /// </summary>
+/// <remarks>
+/// The window itself is the visible pill — it is sized to its content and
+/// painted by <see cref="DesktopAcrylicBackdrop"/>, with DWM supplying the
+/// rounded corners and drop shadow. That is why the animation here is driven
+/// by a frame timer over the window's position and layered alpha rather than
+/// by XAML storyboards: a system backdrop sits behind the XAML content and is
+/// unaffected by <see cref="UIElement.Opacity"/>, so fading the XAML tree
+/// would leave the acrylic slab visible. Per-window alpha is the only way to
+/// fade the surface as a whole.
+/// </remarks>
 public sealed partial class SongChangePopupWindow : Window
 {
-    private const int WindowWidth = 600;
-    private const int WindowHeight = 140;
+    private const int WindowWidth = 440;
+    private const int MinWindowHeight = 64;
 
-    private static readonly System.TimeSpan AutoHideDelay = System.TimeSpan.FromMilliseconds(2500);
-    private static readonly Duration ShowOpacityDuration = new(System.TimeSpan.FromMilliseconds(200));
-    private static readonly Duration ShowSlideDuration = new(System.TimeSpan.FromMilliseconds(250));
-    private static readonly Duration HideDuration = new(System.TimeSpan.FromMilliseconds(180));
+    // Gap between the pill and the top of the taskbar. Previously this came
+    // from the content's own bottom margin; now that the window is the pill,
+    // it belongs to placement.
+    private const int TaskbarGap = 12;
 
-    private const int GWL_STYLE = -16;
+    private const int ShowSlideDistance = 24;
+    private const int HideSlideDistance = 12;
+
+    private static readonly TimeSpan AutoHideDelay = TimeSpan.FromMilliseconds(2500);
+    private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(15);
+    private const double ShowDurationMs = 250;
+    private const double HideDurationMs = 180;
+
     private const int GWL_EXSTYLE = -20;
-    private const int WS_CAPTION = 0x00C00000;
-    private const int WS_THICKFRAME = 0x00040000;
     private const int WS_EX_TOOLWINDOW = 0x00000080;
     private const int WS_EX_TRANSPARENT = 0x00000020;
     private const int WS_EX_NOACTIVATE = 0x08000000;
+    private const int WS_EX_LAYERED = 0x00080000;
+    private const uint LWA_ALPHA = 0x00000002;
     private const int SW_SHOWNA = 8;
     private const int SW_HIDE = 0;
-    private const int DWMWA_BORDER_COLOR = 34;
-    private const int DWMWA_COLOR_NONE = unchecked((int)0xFFFFFFFE);
+    private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    private const int DWMWCP_ROUND = 2;
 
     private readonly DispatcherQueueTimer _autoHideTimer;
-    private TranslateTransform? _surfaceTransform;
-    private Storyboard? _activeStoryboard;
+    private readonly DispatcherQueueTimer _animationTimer;
+    private readonly Stopwatch _animationClock = new();
+
+    /// <summary>
+    /// Delay presets offered on the popup's own menu. Chosen to cover the usual range of
+    /// encoder lead time; anything finer is available on the station editor's slider.
+    /// </summary>
+    private static readonly double[] DelayPresetsSeconds = [0, 2, 5, 10, 15];
+
     private nint _hwnd;
     private bool _isVisible;
     private bool _isConfigured;
+    private bool _isMenuOpen;
+
+    // Animation state. _baseY is the pill's resting Y; the slide animates an
+    // offset below it. All in physical pixels, scaled to the target monitor.
+    private bool _isHiding;
+    private int _baseX;
+    private int _baseY;
+    private int _fromOffset;
+    private int _toOffset;
+    private double _fromOpacity;
+    private double _toOpacity;
+    private double _durationMs = ShowDurationMs;
+
+    // Where the last rendered frame left the pill, so an animation that
+    // interrupts another can start from the current state instead of snapping.
+    private int _currentOffset;
+    private double _currentOpacity;
 
     public SongChangePopupWindow()
     {
         InitializeComponent();
 
-        // Makes the window itself see-through so only the rounded pill is
-        // visible. A WinUI 3 window cannot be made transparent with the classic
-        // DwmExtendFrameIntoClientArea trick — its content is composited over
-        // the window's own backdrop, so the backdrop is what has to go.
-        SystemBackdrop = new TransparentTintBackdrop();
+        // Paints the pill itself: real desktop acrylic, sampling whatever is
+        // behind the window. The XAML content must stay transparent for this
+        // to show through.
+        SystemBackdrop = new DesktopAcrylicBackdrop();
 
         _autoHideTimer = DispatcherQueue.CreateTimer();
         _autoHideTimer.Interval = AutoHideDelay;
         _autoHideTimer.IsRepeating = false;
         _autoHideTimer.Tick += AutoHideTimer_Tick;
+
+        _animationTimer = DispatcherQueue.CreateTimer();
+        _animationTimer.Interval = FrameInterval;
+        _animationTimer.IsRepeating = true;
+        _animationTimer.Tick += AnimationTimer_Tick;
 
         Closed += OnWindowClosed;
     }
@@ -80,11 +131,21 @@ public sealed partial class SongChangePopupWindow : Window
         EnsureConfigured();
 
         SongText.Text = displayText;
-        AutomationProperties.SetName(SurfaceBorder, $"Now playing: {displayText}");
+        AutomationProperties.SetName(RootGrid, $"Now playing: {displayText}");
 
-        WindowPlacementService.PositionWindowBottomCenter(this, WindowWidth, WindowHeight);
+        // The window hugs its content, so the height has to be remeasured for
+        // every song: a title that wraps to two lines needs a taller pill.
+        int height = MeasureContentHeight();
 
-        PlayShowAnimation();
+        RectInt32 bounds = WindowPlacementService.GetBottomCenterPlacement(
+            this, WindowWidth, height, TaskbarGap, out uint dpi);
+
+        _baseX = bounds.X;
+        _baseY = bounds.Y;
+
+        AppWindow.MoveAndResize(bounds);
+
+        PlayShowAnimation(dpi);
 
         _autoHideTimer.Stop();
         _autoHideTimer.Start();
@@ -114,8 +175,9 @@ public sealed partial class SongChangePopupWindow : Window
     {
         _autoHideTimer.Stop();
         _autoHideTimer.Tick -= AutoHideTimer_Tick;
-        _activeStoryboard?.Stop();
-        _activeStoryboard = null;
+        _animationTimer.Stop();
+        _animationTimer.Tick -= AnimationTimer_Tick;
+        _animationClock.Reset();
 
         if (_hwnd != 0)
         {
@@ -123,7 +185,166 @@ public sealed partial class SongChangePopupWindow : Window
         }
     }
 
-    private void AutoHideTimer_Tick(DispatcherQueueTimer sender, object args) => HidePopup();
+    private void AutoHideTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        // Never yank the pill out from under an open menu.
+        if (_isMenuOpen)
+            return;
+
+        HidePopup();
+    }
+
+    /// <summary>
+    /// A left click dismisses the popup. The pill is hit-testable so it can offer the
+    /// delay menu, so it will occasionally intercept a click meant for something behind
+    /// it; dismissing is both the useful interpretation and the fastest way to get the
+    /// pill out of the way.
+    /// </summary>
+    private void RootGrid_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        e.Handled = true;
+        HidePopup();
+    }
+
+    /// <summary>
+    /// Right-clicking offers the delay controls for the station that is playing. The
+    /// delay is a per-station property in practice, and this is the moment the user
+    /// can see it is wrong — so it is the natural place to correct it.
+    /// </summary>
+    private void RootGrid_RightTapped(object sender, RightTappedRoutedEventArgs e)
+    {
+        e.Handled = true;
+
+        MenuFlyout flyout = BuildDelayMenu();
+
+        // Hold the pill open while the menu is up, and take foreground so the menu
+        // light-dismisses properly - WS_EX_NOACTIVATE otherwise leaves it stranded
+        // when the user clicks away.
+        _isMenuOpen = true;
+        _autoHideTimer.Stop();
+        _ = SetForegroundWindow(_hwnd);
+
+        flyout.Closed += OnDelayMenuClosed;
+        flyout.ShowAt(RootGrid, new FlyoutShowOptions
+        {
+            Position = e.GetPosition(RootGrid),
+            Placement = FlyoutPlacementMode.Top
+        });
+    }
+
+    private void OnDelayMenuClosed(object? sender, object e)
+    {
+        if (sender is MenuFlyout flyout)
+            flyout.Closed -= OnDelayMenuClosed;
+
+        _isMenuOpen = false;
+
+        // Give the user a moment to read the result of what they just picked rather
+        // than snapping shut the instant the menu closes. Not when a hide is already
+        // running: "Turn off song popups" dismisses from inside the menu, and _isVisible
+        // stays true until that animation finishes.
+        if (_isVisible && !_isHiding)
+        {
+            _autoHideTimer.Stop();
+            _autoHideTimer.Start();
+        }
+    }
+
+    private MenuFlyout BuildDelayMenu()
+    {
+        var flyout = new MenuFlyout();
+
+        RadioStation? station = PlayerViewModel.Shared.SelectedStation;
+        double globalDelay = SettingsService.SongChangePopupDelaySeconds;
+        double? stationDelay = station?.SongPopupDelaySeconds;
+        double effective = SongChangeAnnouncementPolicy.ResolveDelaySeconds(stationDelay, globalDelay);
+
+        string header = station is null
+            ? "Popup delay"
+            : $"Popup delay for {station.Name}";
+
+        flyout.Items.Add(new MenuFlyoutItem
+        {
+            Text = header,
+            IsEnabled = false
+        });
+        flyout.Items.Add(new MenuFlyoutSeparator());
+
+        if (station is not null)
+        {
+            foreach (double preset in DelayPresetsSeconds)
+            {
+                double value = preset;
+                var item = new ToggleMenuFlyoutItem
+                {
+                    Text = SongChangeAnnouncementPolicy.DescribeDelay(value),
+                    IsChecked = stationDelay is not null && Math.Abs(stationDelay.Value - value) < 0.05
+                };
+                item.Click += (_, _) => ApplyStationDelay(station, value);
+                flyout.Items.Add(item);
+            }
+
+            var followApp = new ToggleMenuFlyoutItem
+            {
+                Text = $"Use app setting ({SongChangeAnnouncementPolicy.DescribeDelay(globalDelay)})",
+                IsChecked = stationDelay is null
+            };
+            followApp.Click += (_, _) => ApplyStationDelay(station, null);
+
+            flyout.Items.Add(new MenuFlyoutSeparator());
+            flyout.Items.Add(followApp);
+        }
+        else
+        {
+            flyout.Items.Add(new MenuFlyoutItem
+            {
+                Text = $"Currently {SongChangeAnnouncementPolicy.DescribeDelay(effective)} (no station selected)",
+                IsEnabled = false
+            });
+        }
+
+        var turnOff = new MenuFlyoutItem { Text = "Turn off song popups" };
+        turnOff.Click += (_, _) =>
+        {
+            SettingsService.IsSongChangePopupEnabled = false;
+            HidePopup();
+        };
+
+        flyout.Items.Add(new MenuFlyoutSeparator());
+        flyout.Items.Add(turnOff);
+
+        return flyout;
+    }
+
+    /// <summary>
+    /// Writes the chosen delay onto the station and persists it. Uses the flush-only
+    /// save: <c>SaveStations</c> also reinitializes the stream, which would interrupt
+    /// playback just for a popup timing tweak.
+    /// </summary>
+    private static void ApplyStationDelay(RadioStation station, double? seconds)
+    {
+        station.SongPopupDelaySeconds = seconds;
+        PlayerViewModel.Shared.FlushStationsSave();
+    }
+
+    /// <summary>
+    /// Measures the content against the pill's fixed width to get the window
+    /// height. Width is deliberately fixed so the pill does not jump around
+    /// between songs; only the height reacts, to accommodate wrapped titles.
+    /// </summary>
+    private int MeasureContentHeight()
+    {
+        RootGrid.Measure(new Windows.Foundation.Size(WindowWidth, double.PositiveInfinity));
+        double measured = RootGrid.DesiredSize.Height;
+
+        // DesiredSize is 0 until the tree has been realized at least once;
+        // EnsureConfigured activates the window to force that, but fall back
+        // rather than collapsing the window to nothing if it ever does not.
+        if (double.IsNaN(measured) || measured <= 0)
+            return MinWindowHeight;
+
+        return Math.Max(MinWindowHeight, (int)Math.Ceiling(measured));
+    }
 
     private void EnsureConfigured()
     {
@@ -132,7 +353,6 @@ public sealed partial class SongChangePopupWindow : Window
 
         _isConfigured = true;
 
-        _surfaceTransform = (TranslateTransform)SurfaceBorder.RenderTransform;
         _hwnd = WindowNative.GetWindowHandle(this);
 
         OverlappedPresenter presenter = OverlappedPresenter.Create();
@@ -140,128 +360,139 @@ public sealed partial class SongChangePopupWindow : Window
         presenter.IsMinimizable = false;
         presenter.IsResizable = false;
         presenter.IsAlwaysOnTop = true;
-        presenter.SetBorderAndTitleBar(false, false);
+
+        // Border kept, title bar dropped. The border is what DWM frames, and
+        // the frame is what carries the rounded corners and the drop shadow —
+        // stripping WS_CAPTION/WS_THICKFRAME here (as the transparent-window
+        // version of this popup did) would take both with it.
+        presenter.SetBorderAndTitleBar(true, false);
         AppWindow.SetPresenter(presenter);
         AppWindow.IsShownInSwitchers = false;
 
-        // No taskbar button, no Alt-Tab entry, never takes activation/focus, and
-        // WS_EX_TRANSPARENT so the large see-through area around the pill does
-        // not swallow clicks aimed at whatever is underneath. XAML's
-        // IsHitTestVisible only covers XAML hit testing, not the HWND's.
+        // No taskbar button, no Alt-Tab entry, and never takes activation/focus.
+        // WS_EX_LAYERED enables the per-window alpha the fade animation drives.
+        //
+        // WS_EX_TRANSPARENT is deliberately NOT set: the pill has to receive mouse
+        // input to offer click-to-dismiss and the right-click delay menu. The cost is
+        // that for the couple of seconds it is on screen it sits over whatever is
+        // beneath it — which is why a left click dismisses it, turning an intercepted
+        // click into the action the user most likely wanted. Once hidden the HWND is
+        // SW_HIDE'd, so it intercepts nothing the rest of the time.
         int exStyle = GetWindowLong(_hwnd, GWL_EXSTYLE);
-        _ = SetWindowLong(_hwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE);
+        _ = SetWindowLong(
+            _hwnd,
+            GWL_EXSTYLE,
+            exStyle | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED);
 
-        // SetBorderAndTitleBar(false, false) can leave the caption/resize-frame
-        // styles behind, which DWM then draws as a frame around the otherwise
-        // invisible window — same problem TrayPopupWindow hit. Strip them along
-        // with the 1px DWM border.
-        int style = GetWindowLong(_hwnd, GWL_STYLE);
-        _ = SetWindowLong(_hwnd, GWL_STYLE, style & ~(WS_CAPTION | WS_THICKFRAME));
-
-        int borderColor = DWMWA_COLOR_NONE;
-        _ = DwmSetWindowAttribute(_hwnd, DWMWA_BORDER_COLOR, ref borderColor, sizeof(int));
+        int cornerPreference = DWMWCP_ROUND;
+        _ = DwmSetWindowAttribute(_hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref cornerPreference, sizeof(int));
 
         // WinUI only creates and renders the XAML content once the window has
-        // been activated; SW_SHOWNA alone leaves it blank. Activating here is
-        // safe because WS_EX_NOACTIVATE is already applied (no focus theft) and
-        // the pill's own opacity is still 0, so nothing flashes on screen.
+        // been activated; SW_SHOWNA alone leaves it blank, and DesiredSize
+        // stays 0 so the window cannot be sized to its content. Activating
+        // here is safe because WS_EX_NOACTIVATE is already applied (no focus
+        // theft) and alpha is pinned to 0, so nothing flashes on screen.
+        SetAlpha(0);
         Activate();
         _ = ShowWindow(_hwnd, SW_HIDE);
     }
 
-    private void PlayShowAnimation()
+    private void PlayShowAnimation(uint dpi)
     {
-        _activeStoryboard?.Stop();
-        _activeStoryboard = null;
+        _isHiding = false;
+        _durationMs = ShowDurationMs;
+        _fromOffset = ScaleForDpi(ShowSlideDistance, dpi);
+        _toOffset = 0;
+        _fromOpacity = 0;
+        _toOpacity = 1;
 
-        // Force a deterministic starting state before every show so replays
-        // are clean regardless of where a previous hide animation left off.
-        SurfaceBorder.Opacity = 0;
-        _surfaceTransform!.Y = 24;
+        // Deterministic starting state before every show, so replays are clean
+        // regardless of where a previous hide animation left off.
+        ApplyFrame(_fromOffset, 0);
 
-        CubicEase easeOut = new() { EasingMode = EasingMode.EaseOut };
-
-        DoubleAnimation opacityAnim = new()
-        {
-            To = 1,
-            Duration = ShowOpacityDuration,
-            EnableDependentAnimation = true
-        };
-        Storyboard.SetTarget(opacityAnim, SurfaceBorder);
-        Storyboard.SetTargetProperty(opacityAnim, "Opacity");
-
-        DoubleAnimation slideAnim = new()
-        {
-            To = 0,
-            Duration = ShowSlideDuration,
-            EasingFunction = easeOut,
-            EnableDependentAnimation = true
-        };
-        Storyboard.SetTarget(slideAnim, _surfaceTransform);
-        Storyboard.SetTargetProperty(slideAnim, "Y");
-
-        Storyboard sb = new();
-        sb.Children.Add(opacityAnim);
-        sb.Children.Add(slideAnim);
-
-        _activeStoryboard = sb;
         _isVisible = true;
 
         // Show without activating/stealing focus, then animate in.
         _ = ShowWindow(_hwnd, SW_SHOWNA);
-        sb.Begin();
+
+        _animationClock.Restart();
+        _animationTimer.Start();
     }
 
     private void PlayHideAnimation()
     {
-        _activeStoryboard?.Stop();
-        _activeStoryboard = null;
+        uint dpi = GetDpiForWindow(_hwnd);
+        if (dpi == 0)
+            dpi = 96;
 
-        CubicEase easeIn = new() { EasingMode = EasingMode.EaseIn };
+        // Start from wherever the pill currently is: HidePopup can land while a
+        // show animation is still running, and snapping to the resting state
+        // first would read as a visible jump.
+        _isHiding = true;
+        _durationMs = HideDurationMs;
+        _fromOffset = _currentOffset;
+        _toOffset = ScaleForDpi(HideSlideDistance, dpi);
+        _fromOpacity = _currentOpacity;
+        _toOpacity = 0;
 
-        DoubleAnimation opacityAnim = new()
-        {
-            To = 0,
-            Duration = HideDuration,
-            EnableDependentAnimation = true
-        };
-        Storyboard.SetTarget(opacityAnim, SurfaceBorder);
-        Storyboard.SetTargetProperty(opacityAnim, "Opacity");
-
-        DoubleAnimation slideAnim = new()
-        {
-            To = 12,
-            Duration = HideDuration,
-            EasingFunction = easeIn,
-            EnableDependentAnimation = true
-        };
-        Storyboard.SetTarget(slideAnim, _surfaceTransform);
-        Storyboard.SetTargetProperty(slideAnim, "Y");
-
-        Storyboard sb = new();
-        sb.Children.Add(opacityAnim);
-        sb.Children.Add(slideAnim);
-        sb.Completed += (_, _) => OnHideAnimationCompleted(sb);
-
-        _activeStoryboard = sb;
-        sb.Begin();
+        _animationClock.Restart();
+        _animationTimer.Start();
     }
 
-    private void OnHideAnimationCompleted(Storyboard sb)
+    private void AnimationTimer_Tick(DispatcherQueueTimer sender, object args)
     {
-        // A newer Show/Hide call may have already replaced _activeStoryboard;
-        // only act if this completion is still the current one.
-        if (!ReferenceEquals(_activeStoryboard, sb))
+        double progress = _animationClock.Elapsed.TotalMilliseconds / _durationMs;
+        bool finished = progress >= 1;
+        if (finished)
+            progress = 1;
+
+        // Cubic ease on the slide (out on the way in, in on the way out) with a
+        // linear fade, matching the feel of the storyboards this replaced.
+        double eased = _isHiding
+            ? progress * progress * progress
+            : 1 - Math.Pow(1 - progress, 3);
+
+        int offset = _fromOffset + (int)Math.Round((_toOffset - _fromOffset) * eased);
+        double opacity = _fromOpacity + ((_toOpacity - _fromOpacity) * progress);
+
+        ApplyFrame(offset, opacity);
+
+        if (!finished)
             return;
 
-        _isVisible = false;
-        _activeStoryboard = null;
+        _animationTimer.Stop();
+        _animationClock.Reset();
 
-        if (_hwnd != 0)
+        if (_isHiding)
         {
-            _ = ShowWindow(_hwnd, SW_HIDE);
+            _isVisible = false;
+
+            if (_hwnd != 0)
+            {
+                _ = ShowWindow(_hwnd, SW_HIDE);
+            }
         }
     }
+
+    private void ApplyFrame(int offset, double opacity)
+    {
+        if (_hwnd == 0)
+            return;
+
+        _currentOffset = offset;
+        _currentOpacity = opacity;
+
+        SetAlpha(opacity);
+        AppWindow.Move(new PointInt32(_baseX, _baseY + offset));
+    }
+
+    private void SetAlpha(double opacity)
+    {
+        byte alpha = (byte)Math.Clamp(Math.Round(opacity * 255), 0, 255);
+        _ = SetLayeredWindowAttributes(_hwnd, 0, alpha, LWA_ALPHA);
+    }
+
+    private static int ScaleForDpi(int logical, uint dpi) => (int)Math.Round(logical * dpi / 96.0);
 
     [DllImport("user32.dll")]
     private static extern int GetWindowLong(nint hWnd, int nIndex);
@@ -271,6 +502,15 @@ public sealed partial class SongChangePopupWindow : Window
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(nint hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetLayeredWindowAttributes(nint hwnd, uint crKey, byte bAlpha, uint dwFlags);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(nint hwnd);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(nint hWnd);
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmSetWindowAttribute(nint hwnd, int attribute, ref int value, int size);

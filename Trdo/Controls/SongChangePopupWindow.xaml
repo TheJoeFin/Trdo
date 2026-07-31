@@ -8,58 +8,46 @@
     mc:Ignorable="d">
 
     <!--
-        The window itself is see-through (TransparentTintBackdrop, applied in
-        code-behind), so everything outside SurfaceBorder shows the desktop.
-        RootGrid deliberately has no fixed size: the window is sized and placed
-        by WindowPlacementService, and the pill hugs its own content.
+        The window *is* the pill: DesktopAcrylicBackdrop paints the surface,
+        and DWM supplies the rounded corners and drop shadow (see
+        EnsureConfigured). So there is no Border here and no background brush —
+        RootGrid must stay transparent for the backdrop to show through, and
+        its padding is what gives the pill its inset. The window is sized to
+        RootGrid's measured height, so nothing here may set a fixed height.
     -->
     <Grid
         x:Name="RootGrid"
+        Padding="18,14"
+        AutomationProperties.AutomationId="SongChangePopupSurface"
+        AutomationProperties.LiveSetting="Polite"
+        AutomationProperties.Name="Now playing"
         Background="Transparent"
-        IsHitTestVisible="False">
-        <Border
-            x:Name="SurfaceBorder"
-            AutomationProperties.AutomationId="SongChangePopupSurface"
-            AutomationProperties.LiveSetting="Polite"
-            AutomationProperties.Name="Now playing"
-            MaxWidth="520"
-            Margin="20,20,20,16"
-            Padding="18,14"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Bottom"
-            Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
-            BorderBrush="{ThemeResource SurfaceStrokeColorDefaultBrush}"
-            BorderThickness="1"
-            CornerRadius="{StaticResource OverlayCornerRadius}"
-            Opacity="0">
-            <Border.RenderTransform>
-                <TranslateTransform x:Name="SurfaceTransform" Y="24" />
-            </Border.RenderTransform>
-
-            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
-                <FontIcon
-                    Grid.Column="0"
-                    VerticalAlignment="Center"
-                    AutomationProperties.AccessibilityView="Raw"
-                    FontSize="22"
-                    Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                    Glyph="&#xE8D6;" />
-                <StackPanel
-                    Grid.Column="1"
-                    VerticalAlignment="Center"
-                    Spacing="2">
-                    <TextBlock
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="Now playing" />
-                    <TextBlock
-                        x:Name="SongText"
-                        MaxLines="2"
-                        Style="{StaticResource BodyStrongTextBlockStyle}"
-                        TextTrimming="CharacterEllipsis"
-                        TextWrapping="Wrap" />
-                </StackPanel>
-            </Grid>
-        </Border>
+        ColumnDefinitions="Auto,*"
+        ColumnSpacing="14"
+        RightTapped="RootGrid_RightTapped"
+        Tapped="RootGrid_Tapped"
+        ToolTipService.ToolTip="Click to dismiss, right-click to adjust the delay">
+        <FontIcon
+            Grid.Column="0"
+            VerticalAlignment="Center"
+            AutomationProperties.AccessibilityView="Raw"
+            FontSize="22"
+            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+            Glyph="&#xE8D6;" />
+        <StackPanel
+            Grid.Column="1"
+            VerticalAlignment="Center"
+            Spacing="2">
+            <TextBlock
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="Now playing" />
+            <TextBlock
+                x:Name="SongText"
+                MaxLines="2"
+                Style="{StaticResource BodyStrongTextBlockStyle}"
+                TextTrimming="CharacterEllipsis"
+                TextWrapping="Wrap" />
+        </StackPanel>
     </Grid>
 </Window>

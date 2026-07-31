@@ -206,8 +206,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         // Initialize with selected station's URL if available
         if (_selectedStation != null)
         {
-            // Apply the restored station's saved volume before playback starts.
+            // Apply the restored station's saved volume and buffer override before
+            // playback starts, so the first connection already uses them.
             _player.Volume = _selectedStation.Volume;
+            _player.Watchdog.StationBufferLevelOverride = _selectedStation.BufferLevel;
 
             Debug.WriteLine($"[PlayerViewModel] Initializing stream with URL: {_selectedStation.StreamUrl}");
             InitializeStream(_selectedStation.StreamUrl);
@@ -960,6 +962,11 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
     private void BeginStationTransition(RadioStation station, bool playAfterSwitch)
     {
+        // Must land before the transition starts: the buffer level is read when the
+        // stream connects, so setting it afterwards would not take effect until the
+        // next switch. Also covers SaveStations, which re-enters here after an edit.
+        _player.Watchdog.StationBufferLevelOverride = station.BufferLevel;
+
         CancelStationTransition();
         CancellationTokenSource transitionCts = new();
         _stationTransitionCts = transitionCts;
