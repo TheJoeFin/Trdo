@@ -33,6 +33,9 @@ public partial class App : Application
     private TaskbarCreatedMonitor? _taskbarCreatedMonitor;
     private DispatcherQueue? _uiDispatcherQueue;
     private DispatcherQueueTimer? _restoreEventMonitorTimer;
+#if DEBUG
+    private DispatcherQueueTimer? _songChangePopupPreviewTimer;
+#endif
 
     /// <summary>
     /// Maximum length for the now playing text in the tooltip before truncation.
@@ -195,7 +198,44 @@ public partial class App : Application
         await UpdateTrayIconAsync();
         UpdatePlayPauseCommandText(forceTooltip: true);
         StartRestoreEventMonitor();
+
+#if DEBUG
+        StartSongChangePopupPreviewIfRequested();
+#endif
     }
+
+#if DEBUG
+    /// <summary>
+    /// Debug-only preview of the song-change popup so its appearance, placement
+    /// and animation can be checked without waiting for a live stream to change
+    /// tracks. Set TRDO_PREVIEW_SONG_POPUP=1 in the environment before launching.
+    /// Re-shows faster than the auto-hide delay so the popup stays on screen.
+    /// </summary>
+    private void StartSongChangePopupPreviewIfRequested()
+    {
+        if (Environment.GetEnvironmentVariable("TRDO_PREVIEW_SONG_POPUP") != "1")
+            return;
+
+        string[] samples =
+        [
+            "Fleetwood Mac - Dreams",
+            "The Blue Nile - A Walk Across the Rooftops",
+            "Khruangbin - August 10",
+        ];
+        int index = 0;
+
+        _songChangePopupPreviewTimer = DispatcherQueue.GetForCurrentThread().CreateTimer();
+        _songChangePopupPreviewTimer.Interval = TimeSpan.FromSeconds(2);
+        _songChangePopupPreviewTimer.IsRepeating = true;
+        _songChangePopupPreviewTimer.Tick += (_, _) =>
+        {
+            EnsureSongChangePopupWindow();
+            _songChangePopupWindow?.ShowSongChange(samples[index % samples.Length]);
+            index++;
+        };
+        _songChangePopupPreviewTimer.Start();
+    }
+#endif
 
     private void PlayerVmOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
