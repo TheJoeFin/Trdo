@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Trdo.Services;
+using Trdo.Services.Playback;
 using Trdo.ViewModels;
 
 namespace Trdo.Pages;
@@ -168,6 +169,33 @@ public sealed partial class SettingsPage : Page
             DiagnosticsInfoBar.Message = $"Couldn't open the logs folder: {ex.Message}";
             DiagnosticsInfoBar.IsOpen = true;
         }
+    }
+
+    /// <summary>
+    /// Forgets which engine each station was proven to play on. The records live in local
+    /// settings rather than on the player, so this needs no reference to the running service.
+    /// </summary>
+    private void ResetEngineMemoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var store = new EngineHealthStore(new LocalSettingsEngineHealthStorage());
+            int removed = store.Clear();
+
+            LogService.Info("SettingsPage", $"User reset engine memory ({removed} record(s) removed)");
+
+            EngineMemoryInfoBar.Severity = InfoBarSeverity.Success;
+            EngineMemoryInfoBar.Message = removed == 0
+                ? "There were no remembered engines to reset."
+                : $"Forgot the remembered engine for {removed} station{(removed == 1 ? string.Empty : "s")}.";
+        }
+        catch (Exception ex)
+        {
+            EngineMemoryInfoBar.Severity = InfoBarSeverity.Error;
+            EngineMemoryInfoBar.Message = $"Couldn't reset remembered engines: {ex.Message}";
+        }
+
+        EngineMemoryInfoBar.IsOpen = true;
     }
 
     private void CopyDiagnosticsButton_Click(object sender, RoutedEventArgs e)
