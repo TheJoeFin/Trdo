@@ -21,8 +21,16 @@ public static class SettingsService
     private const string IsMiniPlayerVisualizerEnabledKey = "IsMiniPlayerVisualizerEnabled";
     private const string IsMiniPlayerTopmostKey = "IsMiniPlayerTopmost";
     private const string AllowSleepWhilePlayingKey = "AllowSleepWhilePlaying";
+    private const string IsSongChangePopupEnabledKey = "IsSongChangePopupEnabled";
 
     public static event EventHandler? MusicSearchServicesChanged;
+
+    /// <summary>
+    /// Raised when <see cref="IsSongChangePopupEnabled"/> changes, so a popup
+    /// that is currently on screen can be dismissed the moment the user turns
+    /// the feature off.
+    /// </summary>
+    public static event EventHandler? SongChangePopupEnabledChanged;
 
     /// <summary>
     /// Gets or sets whether the app should automatically start playing the last selected station on startup.
@@ -259,6 +267,17 @@ public static class SettingsService
         set => SetBoolSetting(AllowSleepWhilePlayingKey, value);
     }
 
+    /// <summary>
+    /// Gets or sets whether a brief on-screen popup appears near the taskbar
+    /// whenever the playing song changes. Opt-in; defaults to false so
+    /// existing users see no new UI until they enable it.
+    /// </summary>
+    public static bool IsSongChangePopupEnabled
+    {
+        get => GetBoolSetting(IsSongChangePopupEnabledKey, defaultValue: false);
+        set => SetBoolSetting(IsSongChangePopupEnabledKey, value);
+    }
+
     private static bool GetBoolSetting(string key, bool defaultValue)
     {
         try
@@ -288,6 +307,10 @@ public static class SettingsService
             if (key is IsSpotifyEnabledKey or IsDiscogsEnabledKey or IsAppleMusicEnabledKey or IsYouTubeMusicEnabledKey)
             {
                 MusicSearchServicesChanged?.Invoke(null, EventArgs.Empty);
+            }
+            else if (key is IsSongChangePopupEnabledKey)
+            {
+                SongChangePopupEnabledChanged?.Invoke(null, EventArgs.Empty);
             }
         }
         catch

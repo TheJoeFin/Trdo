@@ -26,6 +26,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     private string _discogsToggleText = "On";
     private string _appleMusicToggleText = "On";
     private string _youtubeMusicToggleText = "On";
+    private string _songChangePopupToggleText = "Off";
     private StartupTask? _startupTask;
     private bool _initDone;
 
@@ -68,6 +69,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         DiscogsToggleText = GetToggleText(SettingsService.IsDiscogsEnabled);
         AppleMusicToggleText = GetToggleText(SettingsService.IsAppleMusicEnabled);
         YouTubeMusicToggleText = GetToggleText(SettingsService.IsYouTubeMusicEnabled);
+        SongChangePopupToggleText = GetToggleText(SettingsService.IsSongChangePopupEnabled);
 
         // Initialize startup task
         _ = InitializeStartupTaskAsync();
@@ -254,6 +256,33 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         {
             if (value == SettingsService.TrayClickBehavior) return;
             SettingsService.TrayClickBehavior = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether a brief on-screen popup appears near the taskbar
+    /// whenever the playing song changes.
+    /// </summary>
+    public bool IsSongChangePopupEnabled
+    {
+        get => SettingsService.IsSongChangePopupEnabled;
+        set
+        {
+            if (value == SettingsService.IsSongChangePopupEnabled) return;
+            SettingsService.IsSongChangePopupEnabled = value;
+            OnPropertyChanged();
+            SongChangePopupToggleText = GetToggleText(value);
+        }
+    }
+
+    public string SongChangePopupToggleText
+    {
+        get => _songChangePopupToggleText;
+        set
+        {
+            if (value == _songChangePopupToggleText) return;
+            _songChangePopupToggleText = value;
             OnPropertyChanged();
         }
     }

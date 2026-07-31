@@ -126,6 +126,28 @@
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
+                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Song change popup" />
+                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Show a brief on-screen notification near the taskbar whenever the playing song changes." />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <ToggleSwitch
+                                x:Name="SongChangePopupToggle"
+                                AutomationProperties.AutomationId="SongChangePopupToggle"
+                                AutomationProperties.Name="Song change popup"
+                                Grid.Column="0"
+                                MinWidth="0"
+                                IsOn="{x:Bind ViewModel.IsSongChangePopupEnabled, Mode=TwoWay}"
+                                OffContent=""
+                                OnContent="" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.SongChangePopupToggleText, Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Music search services" />
                         <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose which shortcuts appear on Now Playing and Favorites when you want to search for the current song elsewhere." />
 
