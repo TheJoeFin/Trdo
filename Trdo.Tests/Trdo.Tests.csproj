@@ -23,6 +23,7 @@
   -->
   <ItemGroup>
     <Compile Include="..\Trdo\Services\Playback\RecoveryPolicy.cs" Link="Playback\RecoveryPolicy.cs" />
+    <Compile Include="..\Trdo\Services\SongChangeAnnouncementPolicy.cs" Link="Services\SongChangeAnnouncementPolicy.cs" />
   </ItemGroup>
 
 </Project>
