@@ -137,6 +137,57 @@ internal static partial class WindowPlacementService
         window.AppWindow.MoveAndResize(new RectInt32(x, y, physWidth, physHeight));
     }
 
+    /// <summary>
+    /// Positions a transient overlay window (e.g. the song-change popup) at
+    /// the bottom-center of the work area belonging to the taskbar/tray
+    /// monitor — not necessarily the primary display or whichever monitor the
+    /// window last lived on. Falls back to the last pointer/tray anchor, then
+    /// the primary display, if no taskbar can be located.
+    /// </summary>
+    public static void PositionWindowBottomCenter(Window window, int width, int height)
+    {
+        RectInt32 workArea;
+        PointInt32 dpiProbePoint;
+
+        if (TryGetTaskbarRect(out RECT taskbarRect, out _))
+        {
+            PointInt32 taskbarPoint = new(
+                (taskbarRect.Left + taskbarRect.Right) / 2,
+                (taskbarRect.Top + taskbarRect.Bottom) / 2);
+            DisplayArea? taskbarDisplay = DisplayArea.GetFromPoint(taskbarPoint, DisplayAreaFallback.Nearest);
+            workArea = taskbarDisplay?.WorkArea ?? DisplayArea.Primary.WorkArea;
+            dpiProbePoint = taskbarPoint;
+        }
+        else
+        {
+            PointInt32 anchor = GetAnchorPoint();
+            DisplayArea? displayArea = DisplayArea.GetFromPoint(anchor, DisplayAreaFallback.Nearest);
+            workArea = displayArea?.WorkArea ?? DisplayArea.Primary.WorkArea;
+            dpiProbePoint = anchor;
+        }
+
+        // Physical pixels, scaled by the taskbar monitor's DPI — see the
+        // remarks on PositionWindowNearAnchor for why the anchor's monitor
+        // (not the window's) must supply the DPI.
+        uint dpi = GetDpiForAnchor(dpiProbePoint, window);
+        int physWidth = (int)(width * dpi / 96.0);
+        int physHeight = (int)(height * dpi / 96.0);
+
+        // Flush with the bottom of the work area (i.e. the top of the taskbar).
+        // The visible gap between the taskbar and the popup's surface comes from
+        // the overlay content's own bottom margin, so it only lives in one place.
+        int x = workArea.X + (workArea.Width / 2) - (physWidth / 2);
+        int y = workArea.Y + workArea.Height - physHeight;
+
+        int maxX = System.Math.Max(workArea.X, workArea.X + workArea.Width - physWidth);
+        int maxY = System.Math.Max(workArea.Y, workArea.Y + workArea.Height - physHeight);
+
+        x = System.Math.Clamp(x, workArea.X, maxX);
+        y = System.Math.Clamp(y, workArea.Y, maxY);
+
+        window.AppWindow.MoveAndResize(new RectInt32(x, y, physWidth, physHeight));
+    }
+
     private static uint GetDpiForAnchor(PointInt32 anchor, Window window)
     {
         POINT point = new() { X = anchor.X, Y = anchor.Y };
