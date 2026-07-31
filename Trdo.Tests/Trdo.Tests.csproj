@@ -23,6 +23,9 @@
   -->
   <ItemGroup>
     <Compile Include="..\Trdo\Services\Playback\RecoveryPolicy.cs" Link="Playback\RecoveryPolicy.cs" />
+    <Compile Include="..\Trdo\Services\Playback\EngineHealthStore.cs" Link="Playback\EngineHealthStore.cs" />
+    <Compile Include="..\Trdo\Services\Playback\PlaybackBackendKind.cs" Link="Playback\PlaybackBackendKind.cs" />
+    <Compile Include="..\Trdo\Services\Playback\StreamDiagnostics.cs" Link="Playback\StreamDiagnostics.cs" />
     <Compile Include="..\Trdo\Services\SongChangeAnnouncementPolicy.cs" Link="Services\SongChangeAnnouncementPolicy.cs" />
   </ItemGroup>
 

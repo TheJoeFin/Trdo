@@ -19,6 +19,12 @@ public sealed partial class RadioPlayerService
     private PlaybackEngineSelector _playbackEngineSelector = null!;
     private string? _lastPrepareError;
 
+    // Guards engine switching. Both the confirmation deadline and a backend's own failure
+    // event can decide to switch engines, and they can fire within the same few seconds.
+    // Letting both run would switch twice and land back on the engine that just failed.
+    // 0 = idle, 1 = a switch is in progress.
+    private int _engineSwitchGate;
+
     public string? LastPrepareError => _lastPrepareError;
 
     public PlaybackBackendKind ActivePlaybackBackend => _playbackEngineSelector.ActiveBackendKind;
@@ -52,7 +58,7 @@ public sealed partial class RadioPlayerService
 
         if (LibVlcHost.TryInitialize() && LibVlcHost.Instance is not null)
         {
-            _libVlcBackend = new LibVlcPlaybackBackend(LibVlcHost.Instance);
+            _libVlcBackend = new LibVlcPlaybackBackend(LibVlcHost.Instance, LibVlcHost.LogCapture);
             _libVlcBackend.PlaybackStateChanged += OnLibVlcPlaybackStateChanged;
             _libVlcBackend.BufferingStateChanged += OnLibVlcBackendBufferingStateChanged;
             _libVlcBackend.PlaybackFailed += OnLibVlcPlaybackFailed;
@@ -285,6 +291,192 @@ public sealed partial class RadioPlayerService
         return await RebuildPlaybackPipelineAsync(recycleBackend: true, cancellationToken);
     }
 
+    /// <summary>
+    /// Waits for the active backend to actually reach playback and, if it does not, switches
+    /// to the other engine and tries once more.
+    /// <para>
+    /// This closes the failure mode behind stations that "just don't play": an engine can
+    /// accept the stream, report no error, and never produce audio. LibVLC in particular
+    /// always succeeds at prepare and only raises <c>EncounteredError</c> for some failures,
+    /// so without an explicit confirmation deadline nothing detected the stall on the user's
+    /// play. Recovery was left to the watchdog, which takes three escalation rungs and the
+    /// better part of a minute to reach the engine switch that fixes it.
+    /// </para>
+    /// </summary>
+    /// <returns>True once an engine has reached confirmed playback.</returns>
+    private async Task<bool> ConfirmPlaybackOrSwitchEngineAsync(CancellationToken cancellationToken)
+    {
+        if (await WaitForPlaybackConfirmedAsync(PlaybackConfirmationTimeout, cancellationToken))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            return false;
+        }
+
+        PlaybackBackendKind stalled = ActivePlaybackBackend;
+        LogService.Warn("RadioPlayerService",
+            $"{stalled} did not reach playback within {PlaybackConfirmationTimeout.TotalSeconds:F0}s " +
+            $"for {LogService.Redact(_streamUrl)} ({DescribeActiveBackendState()})");
+
+        if (stalled == PlaybackBackendKind.LibVlc)
+        {
+            _libVlcBackend?.DumpDiagnostics("Playback did not start");
+        }
+
+        _playbackEngineSelector.RecordBackendFailure(_streamUrl, stalled);
+
+        if (!CanSwitchEngine(stalled))
+        {
+            LogService.Warn("RadioPlayerService",
+                $"No alternative engine available for {LogService.Redact(_streamUrl)} " +
+                $"(libVlcAvailable={_playbackEngineSelector.IsLibVlcAvailable}, mode={PlaybackEngineSelector.GetEngineMode()})");
+            return false;
+        }
+
+        // The backend's own failure event may already be switching engines. Rather than
+        // switch a second time, give that attempt the confirmation window instead.
+        if (Interlocked.CompareExchange(ref _engineSwitchGate, 1, 0) != 0)
+        {
+            LogService.Info("RadioPlayerService",
+                "An engine switch is already in progress; waiting for it rather than starting another");
+            return await WaitForPlaybackConfirmedAsync(PlaybackConfirmationTimeout, cancellationToken);
+        }
+
+        try
+        {
+            LogService.Warn("RadioPlayerService", $"Switching engine after {stalled} stalled, and retrying");
+
+            PlaybackPrepareResult result = await _playbackEngineSelector.RetryWithFallbackAsync(_streamUrl, cancellationToken);
+            _lastPrepareError = result.Success ? null : result.ErrorMessage;
+
+            if (!result.Success)
+            {
+                LogService.Error("RadioPlayerService", $"Engine switch prepare failed: {result.ErrorMessage}");
+                return false;
+            }
+
+            SyncActiveBackendVolume();
+            await PlayActiveBackendWithFadeInAsync(cancellationToken);
+            StartMetadataForActiveBackend();
+
+            bool confirmed = await WaitForPlaybackConfirmedAsync(PlaybackConfirmationTimeout, cancellationToken);
+            if (confirmed)
+            {
+                LogService.Info("RadioPlayerService",
+                    $"Engine switch to {ActivePlaybackBackend} restored playback for {LogService.Redact(_streamUrl)}");
+            }
+            else
+            {
+                LogService.Error("RadioPlayerService",
+                    $"Both engines failed to play {LogService.Redact(_streamUrl)}; " +
+                    $"{ActivePlaybackBackend} state: {DescribeActiveBackendState()}");
+                _playbackEngineSelector.RecordBackendFailure(_streamUrl, ActivePlaybackBackend);
+            }
+
+            return confirmed;
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _engineSwitchGate, 0);
+        }
+    }
+
+    /// <summary>
+    /// Whether there is another engine worth trying after <paramref name="current"/> failed.
+    /// </summary>
+    private bool CanSwitchEngine(PlaybackBackendKind current)
+    {
+        if (PlaybackEngineSelector.GetEngineMode() == PlaybackEngineMode.NativeOnly)
+        {
+            return false;
+        }
+
+        // Switching away from LibVLC only needs the native backend, which always exists;
+        // switching to LibVLC needs LibVLC to have initialized on this machine.
+        return current == PlaybackBackendKind.LibVlc || _playbackEngineSelector.IsLibVlcAvailable;
+    }
+
+    private string DescribeActiveBackendState()
+    {
+        try
+        {
+            string engineDetail = ActivePlaybackBackend == PlaybackBackendKind.LibVlc && _libVlcBackend is not null
+                ? _libVlcBackend.DescribeState()
+                : $"buffering={ActiveBackend.IsBuffering}, progress={ActiveBackend.BufferingProgress:P0}";
+
+            return $"engine={ActivePlaybackBackend}, isPlaying={ActiveBackend.IsPlaying}, {engineDetail}";
+        }
+        catch (Exception ex)
+        {
+            return $"engine={ActivePlaybackBackend}, state unavailable ({ex.GetType().Name})";
+        }
+    }
+
+    /// <summary>
+    /// Works out why the current stream will not play and writes the full finding to the log,
+    /// returning a short explanation suitable for showing the user.
+    /// <para>
+    /// Both engines can only report that they failed, not why. Probing the URL directly is
+    /// the only way to tell "this station is offline" from "this address is a playlist file"
+    /// from "both engines are being defeated by something local" — and those need completely
+    /// different responses from the user.
+    /// </para>
+    /// </summary>
+    public async Task<string?> DiagnoseStreamFailureAsync(CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            return null;
+        }
+
+        string url = _streamUrl;
+
+        try
+        {
+            StreamDiagnosis diagnosis = await StreamDiagnostics.ProbeAsync(
+                url,
+                _httpClient,
+                cancellationToken: cancellationToken);
+
+            LogService.Error("StreamDiagnostics",
+                $"Probe of {LogService.Redact(url)} -> {diagnosis.Result}: {diagnosis.Detail}");
+            LogService.Info("StreamDiagnostics",
+                $"Engine history: {_playbackEngineSelector.DescribeEngineHealth(url)}; " +
+                $"mode={PlaybackEngineSelector.GetEngineMode()}, " +
+                $"libVlcAvailable={_playbackEngineSelector.IsLibVlcAvailable}, " +
+                $"lastActive={ActivePlaybackBackend}");
+
+            if (diagnosis.Result == StreamProbeResult.PlaylistFile && diagnosis.PlaylistEntryUrl is not null)
+            {
+                return $"{diagnosis.Summary} Try using {diagnosis.PlaylistEntryUrl} as the stream address instead.";
+            }
+
+            if (diagnosis.ServerLooksHealthy)
+            {
+                // The server is fine, so the fault is on this machine's side. Say so rather
+                // than blaming the station, and include what the engine reported.
+                string? engineReason = _lastPrepareError ?? _libVlcBackend?.DescribeLastError();
+                return string.IsNullOrWhiteSpace(engineReason)
+                    ? "The station is online, but neither playback engine could play it on this PC."
+                    : $"The station is online, but playback failed on this PC: {engineReason}";
+            }
+
+            return diagnosis.Summary;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            LogService.Error("StreamDiagnostics", $"Probe of {LogService.Redact(url)} threw", ex);
+            return null;
+        }
+    }
+
     private void StartMetadataForActiveBackend()
     {
         if (string.IsNullOrWhiteSpace(_streamUrl))
@@ -425,9 +617,29 @@ public sealed partial class RadioPlayerService
             return;
         }
 
+        // The confirmation deadline may already be switching engines for this same attempt.
+        if (Interlocked.CompareExchange(ref _engineSwitchGate, 1, 0) != 0)
+        {
+            LogService.Info("RadioPlayerService",
+                "Skipping fallback - an engine switch is already in progress for this stream");
+            return;
+        }
+
+        try
+        {
+            await TryFallbackPlaybackCoreAsync();
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _engineSwitchGate, 0);
+        }
+    }
+
+    private async Task TryFallbackPlaybackCoreAsync()
+    {
         bool wasPlaying = ActiveBackend.IsPlaying;
         LogService.Warn("RadioPlayerService", $"Trying playback fallback (wasPlaying={wasPlaying})");
-        PlaybackPrepareResult result = await _playbackEngineSelector.RetryWithFallbackAsync(_streamUrl);
+        PlaybackPrepareResult result = await _playbackEngineSelector.RetryWithFallbackAsync(_streamUrl!);
         _lastPrepareError = result.Success ? null : result.ErrorMessage;
 
         if (!result.Success)
@@ -435,7 +647,7 @@ public sealed partial class RadioPlayerService
             LogService.Error("RadioPlayerService", $"Fallback prepare failed: {result.ErrorMessage}");
             Debug.WriteLine($"[RadioPlayerService] Fallback prepare failed: {result.ErrorMessage}");
             SetManualBuffering(false);
-            ReportPlaybackFailure(result.ErrorMessage, tooManyAttempts: true);
+            await ReportPlaybackFailureWithDiagnosisAsync(result.ErrorMessage, tooManyAttempts: true);
             return;
         }
 
@@ -445,6 +657,20 @@ public sealed partial class RadioPlayerService
             await PlayActiveBackendWithFadeInAsync(CancellationToken.None);
             StartMetadataForActiveBackend();
             _watchdog.NotifyUserIntentionToPlay();
+
+            // The fallback engine is fire-and-forget too, so verify it rather than assuming
+            // the switch worked - otherwise a stream neither engine can play looks like it
+            // recovered and the user is left with silence and no explanation.
+            if (!await WaitForPlaybackConfirmedAsync(PlaybackConfirmationTimeout, CancellationToken.None))
+            {
+                LogService.Error("RadioPlayerService",
+                    $"Fallback to {ActivePlaybackBackend} did not reach playback ({DescribeActiveBackendState()})");
+                _playbackEngineSelector.RecordBackendFailure(_streamUrl, ActivePlaybackBackend);
+                SetManualBuffering(false);
+                await ReportPlaybackFailureWithDiagnosisAsync(
+                    $"neither engine could play the stream (last tried {ActivePlaybackBackend})",
+                    tooManyAttempts: true);
+            }
         }
     }
 

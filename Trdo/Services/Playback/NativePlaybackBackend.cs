@@ -17,6 +17,7 @@ public sealed class NativePlaybackBackend : IPlaybackBackend
     private readonly MediaPlayer _player;
     private readonly HttpClient _httpClient;
     private MediaPlaybackItem? _currentPlaybackItem;
+    private string? _currentStreamUrl;
 
     public NativePlaybackBackend(MediaPlayer player, HttpClient httpClient)
     {
@@ -102,12 +103,15 @@ public sealed class NativePlaybackBackend : IPlaybackBackend
     public async Task<PlaybackPrepareResult> PrepareAsync(string streamUrl, CancellationToken cancellationToken = default)
     {
         ClearSource();
+        _currentStreamUrl = streamUrl;
 
         (MediaPlaybackItem? item, string? error) =
             await HlsStreamHelper.CreatePlaybackItemAsync(streamUrl, _httpClient, cancellationToken);
 
         if (item is null)
         {
+            LogService.Error("NativePlaybackBackend",
+                $"Could not build a playback item for {LogService.Redact(streamUrl)}: {error}");
             return PlaybackPrepareResult.Failed(PlaybackBackendKind.Native, error ?? "Failed to create playback item");
         }
 
@@ -139,10 +143,43 @@ public sealed class NativePlaybackBackend : IPlaybackBackend
 
     private void OnMediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
     {
-        string message = args.ErrorMessage ?? args.Error.ToString();
+        string message = DescribeFailure(args);
         Debug.WriteLine($"[NativePlaybackBackend] MediaFailed: {message}");
+        LogService.Error("NativePlaybackBackend",
+            $"Media Foundation failed on {LogService.Redact(_currentStreamUrl)}: {message}");
         PlaybackFailed?.Invoke(this, new PlaybackFailureEventArgs(PlaybackBackendKind.Native, message, canRetryWithFallback: true));
     }
+
+    /// <summary>
+    /// Turns a Media Foundation failure into something a human can act on. The
+    /// <c>ErrorMessage</c> alone is usually empty, and the enum alone says only
+    /// "SourceNotSupported" - the HRESULT is what distinguishes an unreachable server
+    /// from an unsupported codec, so it is always included.
+    /// </summary>
+    private static string DescribeFailure(MediaPlayerFailedEventArgs args)
+    {
+        int hresult = args.ExtendedErrorCode?.HResult ?? 0;
+        string known = DescribeHResult(hresult);
+        string detail = string.IsNullOrWhiteSpace(args.ErrorMessage)
+            ? known
+            : $"{known} ({args.ErrorMessage.Trim()})";
+
+        return $"{args.Error} - {detail} [0x{hresult:X8}]";
+    }
+
+    private static string DescribeHResult(int hresult) => (uint)hresult switch
+    {
+        0xC00D36C4 => "the stream format isn't supported by Windows",
+        0xC00D36B4 => "the stream data is invalid or the codec is unavailable",
+        0xC00D001A => "the server couldn't be reached",
+        0xC00D0026 => "the network connection was lost",
+        0xC00D3E85 => "the server rejected the connection",
+        0xC00D11BF => "the request timed out",
+        0x80072EE7 => "the server's address couldn't be resolved",
+        0x80072EFD => "the connection to the server was refused",
+        0 => "no extended error code was reported",
+        _ => "Windows reported an unspecified media error"
+    };
 
     public void Dispose()
     {

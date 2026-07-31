@@ -851,6 +851,16 @@ public sealed partial class RadioPlayerService : IDisposable
 
             // Log final buffer state
             LogBufferedRanges();
+
+            // Play() is fire-and-forget on both engines, so reaching here proves nothing.
+            // Verify the engine actually produced playback and switch to the other one if
+            // it did not, rather than leaving the user with a silent player and no error.
+            if (!await ConfirmPlaybackOrSwitchEngineAsync(cancellationToken))
+            {
+                SetManualBuffering(false);
+                string? diagnosis = await DiagnoseStreamFailureAsync(cancellationToken);
+                ReportPlaybackFailure(diagnosis, tooManyAttempts: true);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -1145,7 +1155,19 @@ public sealed partial class RadioPlayerService : IDisposable
             {
                 LogService.Warn("RadioPlayerService",
                     $"Playback did not start within {PlaybackConfirmationTimeout.TotalSeconds:F0}s of Play() " +
-                    $"(backend={ActivePlaybackBackend})");
+                    $"({DescribeActiveBackendState()})");
+
+                // Escalation is the watchdog ladder's job here, but the engine memory should
+                // still learn from this attempt so the next play starts on the better engine.
+                if (!string.IsNullOrWhiteSpace(_streamUrl))
+                {
+                    _playbackEngineSelector.RecordBackendFailure(_streamUrl, ActivePlaybackBackend);
+                }
+
+                if (ActivePlaybackBackend == PlaybackBackendKind.LibVlc)
+                {
+                    _libVlcBackend?.DumpDiagnostics("Watchdog play attempt did not reach playback");
+                }
             }
 
             return confirmed;
@@ -1288,6 +1310,42 @@ public sealed partial class RadioPlayerService : IDisposable
     }
 
     /// <summary>
+    /// Reports a playback failure after probing the stream, so the user is told what is
+    /// actually wrong ("the server refused the connection", "this address is a playlist
+    /// file") instead of the engine's own error text, which is rarely meaningful to them.
+    /// <para>
+    /// Claims the report slot before awaiting, so failures arriving from the other engine
+    /// while the probe is running don't produce a second dialog.
+    /// </para>
+    /// </summary>
+    private async Task ReportPlaybackFailureWithDiagnosisAsync(string? engineDetail, bool tooManyAttempts)
+    {
+        if (_hasReportedPlaybackFailure)
+        {
+            Debug.WriteLine("[RadioPlayerService] Playback failure already reported for this attempt, skipping");
+            return;
+        }
+
+        _hasReportedPlaybackFailure = true;
+
+        string? diagnosis = null;
+        try
+        {
+            diagnosis = await DiagnoseStreamFailureAsync();
+        }
+        catch (Exception ex)
+        {
+            LogService.Error("RadioPlayerService", "Stream diagnosis failed", ex);
+        }
+
+        LogService.Error("RadioPlayerService",
+            $"Playback failed (tooManyAttempts={tooManyAttempts}); engine reported: {engineDetail ?? "(nothing)"}");
+
+        string message = BuildPlaybackFailureMessage(diagnosis ?? engineDetail, tooManyAttempts);
+        RaisePlaybackFailed(message);
+    }
+
+    /// <summary>
     /// Clears the per-attempt failure tracking so a new play attempt can report
     /// failures and retry with fallback again.
     /// </summary>
@@ -1311,16 +1369,35 @@ public sealed partial class RadioPlayerService : IDisposable
         string sanitizedDetail = SanitizeFailureDetail(detail);
         bool hasDetail = !string.IsNullOrWhiteSpace(sanitizedDetail);
 
-        if (tooManyAttempts)
+        if (!hasDetail)
         {
-            return hasDetail
-                ? $"Couldn't play this station after several attempts ({sanitizedDetail}). The stream may be offline or the URL may be wrong."
-                : "Couldn't play this station after several attempts. The stream may be offline or the URL may be wrong.";
+            return tooManyAttempts
+                ? "Couldn't play this station after several attempts. The stream may be offline or the URL may be wrong."
+                : "Couldn't play this station. The stream may be unavailable or the URL may be wrong.";
         }
 
-        return hasDetail
-            ? $"Couldn't play this station: {sanitizedDetail}"
-            : "Couldn't play this station. The stream may be unavailable or the URL may be wrong.";
+        // A diagnosis from StreamDiagnostics is already a complete sentence explaining the
+        // cause, so it reads better standing on its own than parenthesised inside a generic
+        // apology. Raw engine error text is a fragment and still needs the wrapper.
+        if (ReadsAsSentence(sanitizedDetail))
+        {
+            return $"Couldn't play this station. {sanitizedDetail}";
+        }
+
+        return tooManyAttempts
+            ? $"Couldn't play this station after several attempts ({sanitizedDetail}). The stream may be offline or the URL may be wrong."
+            : $"Couldn't play this station: {sanitizedDetail}";
+    }
+
+    /// <summary>
+    /// Whether a failure detail is already a self-contained sentence, as the stream
+    /// diagnosis produces, rather than a raw error fragment from a playback engine.
+    /// </summary>
+    private static bool ReadsAsSentence(string detail)
+    {
+        return detail.Length > 0 &&
+               char.IsUpper(detail[0]) &&
+               (detail.EndsWith('.') || detail.EndsWith('!'));
     }
 
     /// <summary>
@@ -1359,12 +1436,19 @@ public sealed partial class RadioPlayerService : IDisposable
 
         LogService.Warn("RadioPlayerService",
             $"Backend failure #{_consecutivePlaybackFailures} ({e.Backend}): {e.Message} " +
-            $"[canFallback={canFallback}, tooManyAttempts={tooManyAttempts}]");
+            $"[canFallback={canFallback}, tooManyAttempts={tooManyAttempts}, {DescribeActiveBackendState()}]");
+
+        // Teach the engine memory which engine this stream fails on, so the next play
+        // starts with the other one instead of rediscovering the failure.
+        if (!string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            _playbackEngineSelector.RecordBackendFailure(_streamUrl, e.Backend);
+        }
 
         if (tooManyAttempts || !canFallback)
         {
             SetManualBuffering(false);
-            ReportPlaybackFailure(detail: e.Message, tooManyAttempts: tooManyAttempts);
+            _ = ReportPlaybackFailureWithDiagnosisAsync(e.Message, tooManyAttempts);
             return;
         }
 
