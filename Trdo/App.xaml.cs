@@ -24,6 +24,8 @@ public partial class App : Application
     private TrayIcon? _trayIcon;
     private TrayPopupWindow? _trayPopupWindow;
     private MiniPlayerWindow? _miniPlayerWindow;
+    private SongChangePopupWindow? _songChangePopupWindow;
+    private string? _lastKnownNowPlayingDisplayText;
     private readonly PlayerViewModel _playerVm = PlayerViewModel.Shared;
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
@@ -52,6 +54,8 @@ public partial class App : Application
 
         // Subscribe to theme change events
         _uiSettings.ColorValuesChanged += OnColorValuesChanged;
+
+        SettingsService.SongChangePopupEnabledChanged += OnSongChangePopupEnabledChanged;
     }
 
     public void TryShowFlyout()
@@ -74,6 +78,56 @@ public partial class App : Application
         // Position before activating so the window never flashes at a stale location.
         WindowPlacementService.PositionWindowNearAnchor(_miniPlayerWindow, 320, 220);
         _miniPlayerWindow.Activate();
+    }
+
+    /// <summary>
+    /// Reacts to a stream metadata change by (maybe) showing the song-change
+    /// popup. Meaningful display text updates the remembered "last known"
+    /// value so the dedupe/baseline logic in
+    /// <see cref="SongChangeAnnouncementPolicy"/> works whether or not the
+    /// popup is currently enabled. Blank metadata is ignored so a transient
+    /// clear cannot make the same song appear new.
+    /// </summary>
+    private void HandleSongChangePopup()
+    {
+        string displayText = _playerVm.CurrentMetadata.DisplayText.Trim();
+        if (displayText.Length == 0)
+            return;
+
+        string? previous = _lastKnownNowPlayingDisplayText;
+        bool shouldAnnounce = SongChangeAnnouncementPolicy.ShouldAnnounce(
+            previous, displayText, SettingsService.IsSongChangePopupEnabled);
+
+        _lastKnownNowPlayingDisplayText = displayText;
+
+        if (!shouldAnnounce)
+            return;
+
+        EnsureSongChangePopupWindow();
+        _songChangePopupWindow?.ShowSongChange(displayText);
+    }
+
+    private void EnsureSongChangePopupWindow()
+    {
+        if (_songChangePopupWindow is not null)
+            return;
+
+        _songChangePopupWindow = new SongChangePopupWindow();
+        WindowHelper.Track(_songChangePopupWindow);
+        _songChangePopupWindow.Closed += (_, _) => _songChangePopupWindow = null;
+    }
+
+    /// <summary>
+    /// Dismisses a popup that is still on screen when the user turns the
+    /// feature off, so the setting takes effect immediately rather than after
+    /// the current auto-hide delay.
+    /// </summary>
+    private void OnSongChangePopupEnabledChanged(object? sender, EventArgs e)
+    {
+        if (!SettingsService.IsSongChangePopupEnabled)
+        {
+            _songChangePopupWindow?.HidePopup();
+        }
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
@@ -165,6 +219,10 @@ public partial class App : Application
         {
             // Update tooltip when now playing info changes
             UpdatePlayPauseCommandText();
+        }
+        else if (e.PropertyName == nameof(PlayerViewModel.CurrentMetadata))
+        {
+            HandleSongChangePopup();
         }
     }
 

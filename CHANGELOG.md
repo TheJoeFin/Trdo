@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Volume is now remembered per station, so each station keeps its own level and restores it when selected (#16)
 
 ### Added
+- Optional song change popup: a brief notification above the taskbar whenever the playing song changes, off by default and enabled in Settings
 - "Allow PC to sleep" setting so the computer can sleep on its normal schedule while radio is playing (#82)
 - "Native preferred" playback engine mode preserving the pre-2.0 native-first behavior
 - Network awareness: playback is not attempted when offline, and a station that fails because there is no internet connection now shows an in-app error (#102)
