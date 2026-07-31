@@ -335,7 +335,74 @@ public sealed partial class RadioPlayerService
 
     private void SyncActiveBackendVolume()
     {
-        ActiveBackend.SetVolume(_volume);
+        SetActiveBackendVolume(GetActiveBackendTargetVolume());
+    }
+
+    private double GetActiveBackendTargetVolume()
+    {
+        return ActivePlaybackBackend == PlaybackBackendKind.Native
+            ? Math.Min(_volume, 1)
+            : _volume;
+    }
+
+    private void SetActiveBackendVolume(double volume)
+    {
+        double maximum = ActivePlaybackBackend == PlaybackBackendKind.Native ? 1 : 2;
+        _activeBackendVolume = Math.Clamp(volume, 0, maximum);
+        ActiveBackend.SetVolume(_activeBackendVolume);
+    }
+
+    private async Task PlayActiveBackendWithFadeInAsync(CancellationToken cancellationToken)
+    {
+        SetActiveBackendVolume(0);
+        SetInternalStateChange(true);
+        ActiveBackend.Play();
+
+        await FadeActiveBackendVolumeAsync(
+            targetVolume: GetActiveBackendTargetVolume(),
+            FadeInDuration,
+            followUserVolume: true,
+            cancellationToken);
+    }
+
+    private async Task FadeActiveBackendVolumeAsync(
+        double targetVolume,
+        TimeSpan duration,
+        bool followUserVolume,
+        CancellationToken cancellationToken)
+    {
+        await _volumeFadeLock.WaitAsync(cancellationToken);
+        try
+        {
+            _isVolumeFading = true;
+            double startVolume = _activeBackendVolume;
+            int steps = Math.Max(1, (int)Math.Ceiling(duration.TotalMilliseconds / FadeStepInterval.TotalMilliseconds));
+
+            for (int step = 1; step <= steps; step++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                double progress = (double)step / steps;
+                double easedProgress = progress * progress * (3 - (2 * progress));
+                double currentTarget = followUserVolume
+                    ? GetActiveBackendTargetVolume()
+                    : targetVolume;
+
+                SetActiveBackendVolume(startVolume + ((currentTarget - startVolume) * easedProgress));
+
+                if (step < steps)
+                {
+                    await Task.Delay(FadeStepInterval, cancellationToken);
+                }
+            }
+
+            SetActiveBackendVolume(followUserVolume ? GetActiveBackendTargetVolume() : targetVolume);
+        }
+        finally
+        {
+            _isVolumeFading = false;
+            _volumeFadeLock.Release();
+        }
     }
 
     private void ClearActiveBackendSource()
@@ -375,7 +442,7 @@ public sealed partial class RadioPlayerService
         SyncActiveBackendVolume();
         if (wasPlaying)
         {
-            ActiveBackend.Play();
+            await PlayActiveBackendWithFadeInAsync(CancellationToken.None);
             StartMetadataForActiveBackend();
             _watchdog.NotifyUserIntentionToPlay();
         }

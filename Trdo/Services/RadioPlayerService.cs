@@ -34,16 +34,22 @@ public sealed partial class RadioPlayerService : IDisposable
     private Timer? _smtcUpdateTimer;
     private bool _smtcUpdatePending;
     private readonly object _smtcUpdateLock = new();
+    private readonly SemaphoreSlim _volumeFadeLock = new(1, 1);
     private Timer? _internalStateChangeTimer;
     private DateTime _lastExternalPauseRecovery = DateTime.MinValue;
     private bool _hasPlayedOnce;
     private bool _isManuallyBuffering;
+    private bool _isVolumeFading;
+    private double _activeBackendVolume = 1.0;
     private bool _isStationCyclingEnabled;
     private CancellationTokenSource? _playAttemptCts;
     private int _consecutivePlaybackFailures;
     private bool _hasReportedPlaybackFailure;
     private const int MaxConsecutivePlaybackFailures = 3;
     private static readonly TimeSpan MinPlaybackConfirmationTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan FadeInDuration = TimeSpan.FromMilliseconds(350);
+    private static readonly TimeSpan FadeOutDuration = TimeSpan.FromMilliseconds(220);
+    private static readonly TimeSpan FadeStepInterval = TimeSpan.FromMilliseconds(20);
 
     public static RadioPlayerService Instance { get; } = new();
 
@@ -223,7 +229,10 @@ public sealed partial class RadioPlayerService : IDisposable
             if (Math.Abs(_volume - value) < 0.0001) return;
             Debug.WriteLine($"[RadioPlayerService] Setting Volume from {_volume} to {value}");
             _volume = value;
-            SyncActiveBackendVolume();
+            if (!_isVolumeFading)
+            {
+                SyncActiveBackendVolume();
+            }
             try
             {
                 ApplicationData.Current.LocalSettings.Values[VolumeKey] = _volume;
@@ -433,7 +442,7 @@ public sealed partial class RadioPlayerService : IDisposable
                     _ => _volume
                 };
                 _volume = Math.Clamp(parsed, 0, 2);
-                _player.Volume = Math.Clamp(_volume, 0, 1);
+                SyncActiveBackendVolume();
                 Debug.WriteLine($"[RadioPlayerService] Loaded volume from settings: {_volume}");
             }
 
@@ -557,6 +566,65 @@ public sealed partial class RadioPlayerService : IDisposable
         Debug.WriteLine($"[RadioPlayerService] Setting station favicon to: {faviconUrl}");
         _currentStationFaviconUrl = faviconUrl;
         ScheduleSystemMediaTransportControlsUpdate();
+    }
+
+    public async Task TransitionToStationAsync(
+        string streamUrl,
+        string stationName,
+        string? faviconUrl,
+        double volume,
+        bool playAfterSwitch,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (IsPlaying || IsBuffering)
+            {
+                await FadeOutAndPauseAsync(cancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            SetStreamUrl(streamUrl);
+            Volume = volume;
+            SetStationName(stationName);
+            SetStationFavicon(faviconUrl);
+
+            if (playAfterSwitch)
+            {
+                Play();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            SyncActiveBackendVolume();
+            throw;
+        }
+    }
+
+    public async Task FadeOutAndPauseAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            CancelPendingPlayAttempt();
+
+            if (ActiveBackend.IsPlaying)
+            {
+                await FadeActiveBackendVolumeAsync(
+                    targetVolume: 0,
+                    FadeOutDuration,
+                    followUserVolume: false,
+                    cancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            Pause();
+        }
+        catch (OperationCanceledException)
+        {
+            SyncActiveBackendVolume();
+            throw;
+        }
     }
 
     public void ClearPlaybackTarget()
@@ -716,6 +784,8 @@ public sealed partial class RadioPlayerService : IDisposable
 
             if (needsBuffering)
             {
+                SetActiveBackendVolume(0);
+
                 // Start playback briefly to initiate buffering
                 Debug.WriteLine("[RadioPlayerService] Starting playback to initiate buffering...");
                 SetInternalStateChange(true);
@@ -753,7 +823,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 // Now resume playback
                 Debug.WriteLine("[RadioPlayerService] Buffer complete. Calling _player.Play()...");
-                ActiveBackend.Play();
+                await PlayActiveBackendWithFadeInAsync(cancellationToken);
 
                 // Clear manual buffering state as playback is resuming
                 SetManualBuffering(false);
@@ -764,8 +834,7 @@ public sealed partial class RadioPlayerService : IDisposable
             {
                 // No buffering needed - start playback immediately
                 Debug.WriteLine("[RadioPlayerService] No buffering required (default level). Starting playback...");
-                SetInternalStateChange(true);
-                ActiveBackend.Play();
+                await PlayActiveBackendWithFadeInAsync(cancellationToken);
                 Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully");
             }
 
@@ -822,6 +891,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 if (needsBuffering)
                 {
+                    SetActiveBackendVolume(0);
                     SetInternalStateChange(true);
                     ActiveBackend.Play();
                     ActiveBackend.Pause();
@@ -831,14 +901,13 @@ public sealed partial class RadioPlayerService : IDisposable
 
                     await Task.Delay(RequiredBufferDuration, cancellationToken);
 
-                    ActiveBackend.Play();
+                    await PlayActiveBackendWithFadeInAsync(cancellationToken);
                     SetManualBuffering(false);
                     Debug.WriteLine("[RadioPlayerService] Playback resumed after buffering (retry), manual buffering cleared");
                 }
                 else
                 {
-                    SetInternalStateChange(true);
-                    ActiveBackend.Play();
+                    await PlayActiveBackendWithFadeInAsync(cancellationToken);
                     Debug.WriteLine("[RadioPlayerService] ActiveBackend.Play() called successfully (retry)");
                 }
 
@@ -972,8 +1041,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
             if (needsBuffering)
             {
-                double savedVolume = _volume;
-                ActiveBackend.SetVolume(0);
+                SetActiveBackendVolume(0);
 
                 // Start playback briefly to initiate buffering
                 Debug.WriteLine("[RadioPlayerService] Starting playback to initiate buffering...");
@@ -986,7 +1054,6 @@ public sealed partial class RadioPlayerService : IDisposable
                 // Pause to prevent audio from playing while we buffer
                 Debug.WriteLine("[RadioPlayerService] Pausing for buffering...");
                 ActiveBackend.Pause();
-                ActiveBackend.SetVolume(savedVolume);
 
                 // Set manual buffering state so UI shows buffering during user-configured delay
                 SetManualBuffering(true);
@@ -1046,7 +1113,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 // Now resume playback
                 Debug.WriteLine("[RadioPlayerService] Buffer complete. Calling _player.Play()...");
-                ActiveBackend.Play();
+                await PlayActiveBackendWithFadeInAsync(cancellationToken);
 
                 // Clear manual buffering state as playback is resuming
                 SetManualBuffering(false);
@@ -1057,8 +1124,7 @@ public sealed partial class RadioPlayerService : IDisposable
             {
                 // No buffering needed - start playback immediately
                 Debug.WriteLine("[RadioPlayerService] No buffering required (default level). Starting playback...");
-                SetInternalStateChange(true);
-                ActiveBackend.Play();
+                await PlayActiveBackendWithFadeInAsync(cancellationToken);
             }
 
             _wasExternalPause = false;

@@ -26,6 +26,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     private string? _lastError;
     private bool _isCurrentTrackFavorited;
     private bool _isRefreshingMetadata;
+    private CancellationTokenSource? _stationTransitionCts;
 
     // Debounces persisting per-station volume changes so dragging the slider does
     // not rewrite stations.json on every tick.
@@ -248,6 +249,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             bool shouldResumePlayback = IsPlaying || IsBuffering;
             Debug.WriteLine($"[PlayerViewModel] Should resume playback after station change: {shouldResumePlayback}");
 
+            CancelStationTransition();
             _selectedStation = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanPlay));
@@ -291,43 +293,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
                 try
                 {
-                    // Stop current playback
-                    if (shouldResumePlayback)
-                    {
-                        Debug.WriteLine("[PlayerViewModel] Pausing current playback before switching...");
-                        _player.Pause();
-                    }
-
-                    // Set the new stream URL
-                    Debug.WriteLine($"[PlayerViewModel] Setting stream URL in player: {_selectedStation.StreamUrl}");
-                    _player.SetStreamUrl(_selectedStation.StreamUrl);
-                    Debug.WriteLine("[PlayerViewModel] Stream URL set successfully");
-
-                    // Apply this station's saved volume so it "follows the station" (#16)
-                    Debug.WriteLine($"[PlayerViewModel] Applying station volume: {_selectedStation.Volume}");
-                    _player.Volume = _selectedStation.Volume;
-                    OnPropertyChanged(nameof(Volume));
-                    OnPropertyChanged(nameof(VolumePercent));
-
-                    // Set the station name for system media controls
-                    Debug.WriteLine($"[PlayerViewModel] Setting station name: {_selectedStation.Name}");
-                    _player.SetStationName(_selectedStation.Name);
-                    Debug.WriteLine("[PlayerViewModel] Station name set successfully");
-
-                    // Set the station favicon for system media controls
-                    Debug.WriteLine($"[PlayerViewModel] Setting station favicon: {_selectedStation.FaviconUrl}");
-                    _player.SetStationFavicon(_selectedStation.FaviconUrl);
-                    Debug.WriteLine("[PlayerViewModel] Station favicon set successfully");
-
-                    // Resume playback if we were playing before
-                    if (shouldResumePlayback)
-                    {
-                        Debug.WriteLine("[PlayerViewModel] Resuming playback with new station...");
-                        _player.Play();
-                        Debug.WriteLine("[PlayerViewModel] Play command sent to player");
-                    }
-
-                    _lastError = null;
+                    BeginStationTransition(_selectedStation, shouldResumePlayback);
                 }
                 catch (Exception ex)
                 {
@@ -653,6 +619,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
         try
         {
+            CancelStationTransition();
             _player.TogglePlayPause();
             Debug.WriteLine($"[PlayerViewModel] TogglePlayPause called successfully. New IsPlaying: {IsPlaying}");
             _lastError = null;
@@ -683,6 +650,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
         try
         {
+            CancelStationTransition();
             _player.Pause();
             _lastError = null;
         }
@@ -762,7 +730,20 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
         try
         {
-            PrepareSelectedStationForPlayback();
+            if (_selectedStation is null)
+            {
+                CancelStationTransition();
+                _player.ClearPlaybackTarget();
+            }
+            else if (!IsValidUrl(_selectedStation.StreamUrl))
+            {
+                throw new InvalidOperationException($"Invalid stream URL for {_selectedStation.Name}");
+            }
+            else
+            {
+                BeginStationTransition(_selectedStation, playAfterSwitch: false);
+            }
+
             _lastError = null;
         }
         catch (Exception ex)
@@ -877,21 +858,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine($"[PlayerViewModel] Reinitializing stream after save: {_selectedStation.StreamUrl}");
             try
             {
-                bool wasPlaying = IsPlaying;
-                if (wasPlaying)
-                {
-                    Debug.WriteLine("[PlayerViewModel] Pausing before reinitialize");
-                    _player.Pause();
-                }
-
-                _player.SetStreamUrl(_selectedStation.StreamUrl);
-                Debug.WriteLine("[PlayerViewModel] Stream URL updated");
-
-                if (wasPlaying)
-                {
-                    Debug.WriteLine("[PlayerViewModel] Resuming playback");
-                    _player.Play();
-                }
+                bool wasPlaybackActive = IsPlaying || IsBuffering;
+                BeginStationTransition(_selectedStation, wasPlaybackActive);
             }
             catch (Exception ex)
             {
@@ -990,31 +958,66 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         _player.SetStationCyclingEnabled(CanCycleStations);
     }
 
-    private void PrepareSelectedStationForPlayback()
+    private void BeginStationTransition(RadioStation station, bool playAfterSwitch)
     {
-        if (_selectedStation == null)
+        CancelStationTransition();
+        CancellationTokenSource transitionCts = new();
+        _stationTransitionCts = transitionCts;
+        _ = TransitionToStationAsync(station, playAfterSwitch, transitionCts);
+    }
+
+    private async Task TransitionToStationAsync(
+        RadioStation station,
+        bool playAfterSwitch,
+        CancellationTokenSource transitionCts)
+    {
+        try
         {
-            Debug.WriteLine("[PlayerViewModel] Clearing playback target because no station is selected");
-            _player.ClearPlaybackTarget();
-            return;
-        }
+            await _player.TransitionToStationAsync(
+                station.StreamUrl,
+                station.Name,
+                station.FaviconUrl,
+                station.Volume,
+                playAfterSwitch,
+                transitionCts.Token);
 
-        if (!IsValidUrl(_selectedStation.StreamUrl))
+            if (ReferenceEquals(_selectedStation, station))
+            {
+                _lastError = null;
+                OnPropertyChanged(nameof(Volume));
+                OnPropertyChanged(nameof(VolumePercent));
+            }
+        }
+        catch (OperationCanceledException)
         {
-            throw new InvalidOperationException($"Invalid stream URL for {_selectedStation.Name}");
+            Debug.WriteLine($"[PlayerViewModel] Station transition cancelled: {station.Name}");
         }
-
-        bool streamChanged = !string.Equals(_player.StreamUrl, _selectedStation.StreamUrl, StringComparison.Ordinal);
-
-        if (streamChanged)
+        catch (Exception ex)
         {
-            Debug.WriteLine($"[PlayerViewModel] Preparing selected station stream: {_selectedStation.StreamUrl}");
-            _player.SetStreamUrl(_selectedStation.StreamUrl);
+            if (ReferenceEquals(_selectedStation, station))
+            {
+                _lastError = $"Failed to switch to {station.Name}: {ex.Message}";
+                Debug.WriteLine($"[PlayerViewModel] EXCEPTION: {_lastError}");
+                Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
+                PlaybackError?.Invoke(this, _lastError);
+            }
         }
+        finally
+        {
+            if (ReferenceEquals(_stationTransitionCts, transitionCts))
+            {
+                _stationTransitionCts = null;
+            }
 
-        Debug.WriteLine($"[PlayerViewModel] Preparing selected station metadata: {_selectedStation.Name}");
-        _player.SetStationName(_selectedStation.Name);
-        _player.SetStationFavicon(_selectedStation.FaviconUrl);
+            transitionCts.Dispose();
+        }
+    }
+
+    private void CancelStationTransition()
+    {
+        CancellationTokenSource? transitionCts = _stationTransitionCts;
+        _stationTransitionCts = null;
+        transitionCts?.Cancel();
     }
 
     private static bool IsValidUrl(string? url)
