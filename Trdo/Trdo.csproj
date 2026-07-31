@@ -27,6 +27,7 @@
     <None Remove="Controls\SpectrumVisualizerControl.xaml" />
     <None Remove="Controls\ManualStationWindow.xaml" />
     <None Remove="Controls\TutorialWindow.xaml" />
+    <None Remove="Controls\SongChangePopupWindow.xaml" />
     <None Remove="Pages\AddStation.xaml" />
     <None Remove="Pages\FavoritesPage.xaml" />
     <None Remove="Pages\PlayingPage.xaml" />
@@ -153,6 +154,11 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Controls\TutorialWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\SongChangePopupWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
