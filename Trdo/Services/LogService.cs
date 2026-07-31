@@ -44,6 +44,11 @@ public static class LogService
     // absorbed without unbounded memory; excess is dropped (and counted).
     private const int MaxQueuedLines = 8192;
 
+    // Upper bound on how long a reader will wait for the writer thread to drain. Generous
+    // enough to cover a below-normal-priority thread on a loaded machine, short enough that
+    // a wedged writer can't freeze the UI on the diagnostics button.
+    private static readonly TimeSpan DefaultFlushTimeout = TimeSpan.FromMilliseconds(750);
+
     // Serializes access to the StreamWriter and size counter between the writer
     // thread and readers (ReadRecentText). Producers never take this lock.
     private static readonly object Gate = new();
@@ -61,6 +66,13 @@ public static class LogService
     private static long _currentSize;
     private static int _droppedSinceLastNote;
     private static Thread? _worker;
+
+    // Progress counters for the drain barrier. _accepted advances when a line enters the
+    // queue, _consumed when the writer thread has taken it back out (whether or not the
+    // write itself succeeded). A reader waits for _consumed to catch up to the _accepted
+    // value it observed, which is the only way to know the queue holds nothing older.
+    private static long _accepted;
+    private static long _consumed;
 
     /// <summary>Full path to the folder that contains the log files.</summary>
     public static string LogFolderPath
@@ -101,6 +113,11 @@ public static class LogService
     {
         EnsureStarted();
 
+        // Drain the queue and flush to disk before reading, so the copy includes the lines
+        // logged moments ago - which, when the user is copying diagnostics, are the whole
+        // point. Must happen outside Gate: the writer thread needs it to make progress.
+        FlushToDisk();
+
         var sb = new StringBuilder();
         sb.AppendLine(BuildHeader());
         sb.AppendLine();
@@ -109,9 +126,6 @@ public static class LogService
         {
             try
             {
-                // Flush anything buffered so the copy reflects the latest lines.
-                _writer?.Flush();
-
                 string current = ReadFileSafe(_logFilePath);
                 string previous = string.Empty;
 
@@ -153,7 +167,16 @@ public static class LogService
         try
         {
             var uri = new Uri(url);
-            return $"{uri.Scheme}://{uri.Host}";
+
+            // Keep the port and path: two stations frequently share a host and differ only
+            // by mount point or port, so host-only lines can't be told apart when
+            // diagnosing which stream failed. The query string and any userinfo are dropped
+            // — that is where stream tokens and credentials live.
+            string port = uri.IsDefaultPort ? string.Empty : $":{uri.Port}";
+            string path = uri.AbsolutePath == "/" ? string.Empty : uri.AbsolutePath;
+            string query = string.IsNullOrEmpty(uri.Query) ? string.Empty : "?(redacted)";
+
+            return $"{uri.Scheme}://{uri.Host}{port}{path}{query}";
         }
         catch
         {
@@ -178,9 +201,73 @@ public static class LogService
 
         // Non-blocking: if the writer can't keep up, drop rather than stall a
         // playback thread. Dropped lines are counted and noted in the file later.
-        if (!Queue.TryAdd(line))
+        if (!TryQueue(line))
         {
             Interlocked.Increment(ref _droppedSinceLastNote);
+        }
+    }
+
+    /// <summary>
+    /// Adds a line to the queue and, on success, advances the accepted counter the drain
+    /// barrier waits on. Every enqueue must go through here or a reader could return before
+    /// that line reaches disk.
+    /// </summary>
+    private static bool TryQueue(string line)
+    {
+        if (!Queue.TryAdd(line))
+        {
+            return false;
+        }
+
+        Interlocked.Increment(ref _accepted);
+        return true;
+    }
+
+    /// <summary>
+    /// Blocks until every line queued before this call has been written and flushed to
+    /// disk, or <paramref name="timeout"/> elapses.
+    /// <para>
+    /// Flushing the <see cref="StreamWriter"/> alone is not enough: it only pushes what the
+    /// writer thread has already dequeued. Lines still in the queue have never reached the
+    /// writer, and that thread runs at below-normal priority, so a caller that only flushed
+    /// would routinely miss the most recent entries — exactly the ones worth copying when
+    /// something has just gone wrong.
+    /// </para>
+    /// </summary>
+    public static void FlushToDisk(TimeSpan? timeout = null)
+    {
+        EnsureStarted();
+
+        if (_disabled)
+        {
+            return;
+        }
+
+        long target = Interlocked.Read(ref _accepted);
+        TimeSpan limit = timeout ?? DefaultFlushTimeout;
+        long deadline = Environment.TickCount64 + (long)limit.TotalMilliseconds;
+
+        // Deliberately not holding Gate here — the writer thread needs it to make progress.
+        while (Interlocked.Read(ref _consumed) < target)
+        {
+            if (Environment.TickCount64 >= deadline || _worker is null || !_worker.IsAlive)
+            {
+                break;
+            }
+
+            Thread.Sleep(2);
+        }
+
+        lock (Gate)
+        {
+            try
+            {
+                _writer?.Flush();
+            }
+            catch
+            {
+                // Best effort.
+            }
         }
     }
 
@@ -219,7 +306,7 @@ public static class LogService
                 // Best-effort flush of buffered lines on normal process exit.
                 AppDomain.CurrentDomain.ProcessExit += (_, _) => Shutdown();
 
-                Queue.TryAdd(BuildHeader());
+                TryQueue(BuildHeader());
             }
             catch
             {
@@ -265,6 +352,13 @@ public static class LogService
                     catch
                     {
                         // Drop this line; keep the loop alive.
+                    }
+                    finally
+                    {
+                        // Counts consumption, not successful writing: a waiter must be
+                        // released even when this line could not be written, or a failing
+                        // writer would hang every reader until its timeout.
+                        Interlocked.Increment(ref _consumed);
                     }
                 }
             }
@@ -396,9 +490,21 @@ public static class LogService
 
     private static string ReadFileSafe(string? path)
     {
+        if (path is null || !File.Exists(path))
+        {
+            return string.Empty;
+        }
+
         try
         {
-            return path is not null && File.Exists(path) ? File.ReadAllText(path, Encoding.UTF8) : string.Empty;
+            // FileShare.ReadWrite is required, not merely polite: the writer holds this file
+            // open for writing, and Windows share negotiation is bidirectional. File.ReadAllText
+            // opens with FileShare.Read, which refuses to tolerate the existing writer, so it
+            // throws for the active log every time - silently leaving the copy with nothing but
+            // the previous rolled generation.
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            return reader.ReadToEnd();
         }
         catch
         {
