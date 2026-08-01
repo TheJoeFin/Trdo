@@ -46,8 +46,8 @@ internal static partial class WindowPlacementService
         // anchor's monitor, not the window: a hidden window keeps the DPI of
         // wherever it last was, which goes stale across monitor/scale changes.
         uint dpi = GetDpiForAnchor(anchor, window);
-        int physWidth = (int)(width * dpi / 96.0);
-        int physHeight = (int)(height * dpi / 96.0);
+        int physWidth = ToPhysical(width, dpi);
+        int physHeight = ToPhysical(height, dpi);
 
         int x;
         int y;
@@ -192,8 +192,8 @@ internal static partial class WindowPlacementService
         // remarks on PositionWindowNearAnchor for why the anchor's monitor
         // (not the window's) must supply the DPI.
         dpi = GetDpiForAnchor(dpiProbePoint, window);
-        int physWidth = (int)(width * dpi / 96.0);
-        int physHeight = (int)(height * dpi / 96.0);
+        int physWidth = ToPhysical(width, dpi);
+        int physHeight = ToPhysical(height, dpi);
         int physBottomMargin = (int)(bottomMargin * dpi / 96.0);
 
         int x = workArea.X + (workArea.Width / 2) - (physWidth / 2);
@@ -207,6 +207,16 @@ internal static partial class WindowPlacementService
 
         return new RectInt32(x, y, physWidth, physHeight);
     }
+
+    /// <summary>
+    /// Converts a logical (DIP) extent to physical pixels, rounding *up*. A
+    /// window sized from measured content must never end up a fraction of a
+    /// pixel shorter than that content: at fractional scales (125%, 150%) a
+    /// truncating cast loses up to a pixel, and windows that hug their content
+    /// pay for it with clipped text.
+    /// </summary>
+    private static int ToPhysical(int logical, uint dpi) =>
+        (int)System.Math.Ceiling(logical * dpi / 96.0);
 
     private static uint GetDpiForAnchor(PointInt32 anchor, Window window)
     {

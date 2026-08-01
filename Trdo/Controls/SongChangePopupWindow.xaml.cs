@@ -40,6 +40,13 @@ public sealed partial class SongChangePopupWindow : Window
     private const int WindowWidth = 440;
     private const int MinWindowHeight = 64;
 
+    /// <summary>
+    /// Logical pixels added to the measured content height so layout rounding
+    /// cannot arrange the content a physical pixel taller than the pill it sits
+    /// in. See the remarks on <see cref="MeasureContentHeight"/>.
+    /// </summary>
+    private const int LayoutRoundingHeadroom = 1;
+
     // Gap between the pill and the top of the taskbar. Previously this came
     // from the content's own bottom margin; now that the window is the pill,
     // it belongs to placement.
@@ -139,6 +146,17 @@ public sealed partial class SongChangePopupWindow : Window
 
         RectInt32 bounds = WindowPlacementService.GetBottomCenterPlacement(
             this, WindowWidth, height, TaskbarGap, out uint dpi);
+
+        // Grow the window rect by its invisible frame, so the *client* area —
+        // all the XAML content ever gets — ends up the size the content was
+        // measured at. Anchoring the window's bottom-right corner keeps the
+        // visible pill's bottom and centre exactly where placement put them:
+        // the extra pixels are taken off the top and split across the sides.
+        (int frameWidth, int frameHeight) = GetFrameThickness();
+        bounds.X -= frameWidth / 2;
+        bounds.Y -= frameHeight;
+        bounds.Width += frameWidth;
+        bounds.Height += frameHeight;
 
         _baseX = bounds.X;
         _baseY = bounds.Y;
@@ -328,10 +346,21 @@ public sealed partial class SongChangePopupWindow : Window
     }
 
     /// <summary>
-    /// Measures the content against the pill's fixed width to get the window
-    /// height. Width is deliberately fixed so the pill does not jump around
+    /// Measures the content against the pill's fixed width to get the height it
+    /// needs. Width is deliberately fixed so the pill does not jump around
     /// between songs; only the height reacts, to accommodate wrapped titles.
     /// </summary>
+    /// <remarks>
+    /// A DIP of headroom is added on top of the measured height. Layout
+    /// rounding snaps each arranged element to whole physical pixels, so at
+    /// fractional scales (125%, 150%) the arranged content can end up a pixel
+    /// past its own <c>DesiredSize</c> — and because everything in the pill is
+    /// centre-aligned, a shortfall of even one pixel is split into a visible
+    /// shave off the top *and* the bottom of the text. The headroom is well
+    /// under a pixel per edge, and in the common single-line case it changes
+    /// nothing at all: <see cref="MinWindowHeight"/> is still the binding
+    /// constraint there.
+    /// </remarks>
     private int MeasureContentHeight()
     {
         RootGrid.Measure(new Windows.Foundation.Size(WindowWidth, double.PositiveInfinity));
@@ -343,7 +372,45 @@ public sealed partial class SongChangePopupWindow : Window
         if (double.IsNaN(measured) || measured <= 0)
             return MinWindowHeight;
 
-        return Math.Max(MinWindowHeight, (int)Math.Ceiling(measured));
+        return Math.Max(MinWindowHeight, (int)Math.Ceiling(measured) + LayoutRoundingHeadroom);
+    }
+
+    /// <summary>
+    /// Physical-pixel difference between this window's outer rect and its
+    /// client rect — the invisible DWM resize border that sits outside the
+    /// visible pill. <c>AppWindow.MoveAndResize</c> sizes the outer rect, but
+    /// the XAML content is laid out in the client rect, so a window sized
+    /// straight from the measured content comes up short by this much.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The shortfall does not simply crop the pill's edge: XAML layout-clips an
+    /// element that is arranged smaller than it asked for, so the text is cut
+    /// at RootGrid's padding box while the padding itself still renders in
+    /// full. That is why it reads as a glyph with its descender sliced off
+    /// rather than as an obviously too-small window.
+    /// </para>
+    /// <para>
+    /// Measured rather than derived. <c>AppWindow.ResizeClient</c> — and the
+    /// <c>AdjustWindowRectEx</c> underneath it — works from the window's
+    /// *styles*, which still carry a caption that this presenter only hides.
+    /// It therefore over-corrects by a caption's height and inflates the pill
+    /// with roughly 32 DIP of dead space above and below the text.
+    /// </para>
+    /// </remarks>
+    private (int Width, int Height) GetFrameThickness()
+    {
+        if (_hwnd == 0
+            || !GetWindowRect(_hwnd, out RECT window)
+            || !GetClientRect(_hwnd, out RECT client))
+        {
+            return (0, 0);
+        }
+
+        int width = (window.Right - window.Left) - (client.Right - client.Left);
+        int height = (window.Bottom - window.Top) - (client.Bottom - client.Top);
+
+        return (Math.Max(0, width), Math.Max(0, height));
     }
 
     private void EnsureConfigured()
@@ -493,6 +560,23 @@ public sealed partial class SongChangePopupWindow : Window
     }
 
     private static int ScaleForDpi(int logical, uint dpi) => (int)Math.Round(logical * dpi / 96.0);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(nint hWnd, out RECT rect);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetClientRect(nint hWnd, out RECT rect);
 
     [DllImport("user32.dll")]
     private static extern int GetWindowLong(nint hWnd, int nIndex);
