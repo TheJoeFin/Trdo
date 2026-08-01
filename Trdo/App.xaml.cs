@@ -45,6 +45,13 @@ public partial class App : Application
     private const int MaxTooltipNowPlayingLength = 60;
 
     /// <summary>
+    /// Stand-in title for the Settings demo when nothing is playing. Long
+    /// enough that the preview shows how a real artist/title pair sits in the
+    /// pill rather than a token that fits with room to spare.
+    /// </summary>
+    private const string DemoSongText = "Fleetwood Mac - Dreams";
+
+    /// <summary>
     /// Maximum length for the full tray icon tooltip (NOTIFYICONDATA limit).
     /// </summary>
     private const int MaxTrayTooltipLength = 128;
@@ -165,6 +172,28 @@ public partial class App : Application
     {
         EnsureSongChangePopupWindow();
         _songChangePopupWindow?.ShowSongChange(displayText);
+    }
+
+    /// <summary>
+    /// Shows the song change popup on demand so Settings can demonstrate what
+    /// it looks like. Uses whatever is playing when there is something, since
+    /// seeing a real title is the most honest preview, and a sample otherwise.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately bypasses both the delay and the enabled setting. The delay
+    /// exists to line an <em>announcement</em> up with the audio and has no
+    /// meaning for something the user just asked to see; and the preview is
+    /// most useful precisely when popups are still off and the user is deciding
+    /// whether to turn them on.
+    /// </remarks>
+    public void ShowSongChangePopupDemo()
+    {
+        string displayText = _playerVm.NowPlaying.Trim();
+
+        if (displayText.Length == 0)
+            displayText = DemoSongText;
+
+        ShowSongChangePopup(displayText);
     }
 
     /// <summary>
@@ -375,8 +404,7 @@ public partial class App : Application
             // Swapped: right click plays/pauses (fall back to flyout if no station selected)
             if (_playerVm.CanPlay)
             {
-                _playerVm.Toggle();
-                _ = UpdateTrayIconAsync();
+                TogglePlaybackFromTray();
                 return;
             }
         }
@@ -404,8 +432,56 @@ public partial class App : Application
         }
 
         // We have stations, toggle play/pause
+        TogglePlaybackFromTray();
+    }
+
+    /// <summary>
+    /// Toggles playback from a tray click and, when that *starts* playback,
+    /// announces what is now playing.
+    /// </summary>
+    /// <remarks>
+    /// This is the only tray path that opens no window, so on its own it leaves
+    /// the user with nothing on screen telling them what they just started —
+    /// which is exactly the gap the popup fills. Deliberately silent when the
+    /// click pauses instead: the pill is headed "Now playing", and saying that
+    /// about a stream the user just stopped would be a lie. The previous state
+    /// is captured before the toggle because playback starts asynchronously,
+    /// so <see cref="PlayerViewModel.IsPlaying"/> has not necessarily flipped
+    /// by the time <c>Toggle</c> returns.
+    /// </remarks>
+    private void TogglePlaybackFromTray()
+    {
+        bool wasPlaying = _playerVm.IsPlaying;
+
         _playerVm.Toggle();
         _ = UpdateTrayIconAsync();
+
+        if (!wasPlaying)
+            ShowNowPlayingFromTray();
+    }
+
+    /// <summary>
+    /// Shows the song change popup for whatever is playing right now, on demand
+    /// rather than in response to a metadata change.
+    /// </summary>
+    /// <remarks>
+    /// Skips the announcement delay, which exists to line an announcement up
+    /// with the audio and has no meaning for something the user just clicked.
+    /// Honours the on/off setting though, so it stays a single master switch
+    /// for "this pill never appears" — unlike the Settings demo button, where
+    /// the whole point is to preview the pill before turning it on.
+    /// </remarks>
+    private void ShowNowPlayingFromTray()
+    {
+        if (!SettingsService.IsSongChangePopupEnabled)
+            return;
+
+        string displayText = _playerVm.NowPlaying.Trim();
+
+        if (displayText.Length == 0)
+            return;
+
+        ShowSongChangePopup(displayText);
     }
 
     private void ShowFlyout(TrayIconEventArgs args)
