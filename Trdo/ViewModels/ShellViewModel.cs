@@ -39,6 +39,15 @@ public partial class ShellViewModel : ObservableObject
         _navigationService.Navigate(typeof(PlayingPage));
     }
 
+    /// <summary>
+    /// Returns to the root page and drops any history, so a reopened window
+    /// never starts out showing a back button.
+    /// </summary>
+    public void ResetToPlayingPage()
+    {
+        _navigationService.ResetTo(typeof(PlayingPage));
+    }
+
     [RelayCommand]
     public void NavigateToSettingsPage()
     {

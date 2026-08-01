@@ -66,12 +66,25 @@ public partial class NavigationService : ObservableObject
             _frame.GoBack();
     }
 
+    /// <summary>
+    /// Navigates to <paramref name="pageType"/> as a fresh root, leaving no
+    /// history behind it. The clear has to happen *after* the navigation:
+    /// navigating pushes the page being left onto the back stack, so clearing
+    /// first would immediately re-arm the back button.
+    /// </summary>
+    public void ResetTo(Type pageType, object? parameter = null)
+    {
+        Navigate(pageType, parameter);
+        ClearBackStack();
+    }
+
     public void ClearBackStack()
     {
         if (_frame is null)
             return;
 
         _frame.BackStack.Clear();
+        _frame.ForwardStack.Clear();
         OnPropertyChanged(nameof(CanGoBack));
         Debug.WriteLine($"CanGoBack: {CanGoBack}");
     }

@@ -85,8 +85,7 @@ public sealed partial class TrayPopupWindow : WindowEx
         EnsureShellPage();
 
         // Reset navigation on each open, matching the old flyout behavior.
-        NavigationService.Instance.ClearBackStack();
-        _shellPage?.ViewModel.NavigateToPlayingPage();
+        _shellPage?.ResetNavigation();
 
         // Position before showing so the window never flashes at a stale location.
         WindowPlacementService.PositionWindowNearAnchor(this, PopupWidth, PopupHeight);
@@ -98,6 +97,10 @@ public sealed partial class TrayPopupWindow : WindowEx
         this.Show();
         Activate();
         SetForegroundWindow(WindowNative.GetWindowHandle(this));
+
+        // Once the window is back up, undo any deactivated (dimmed) title bar
+        // visuals left over from the light-dismiss that hid it.
+        DispatcherQueue.TryEnqueue(() => _shellPage?.RefreshTitleBarActivation());
     }
 
     public void HidePopup()
