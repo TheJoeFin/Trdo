@@ -128,7 +128,7 @@
                     <StackPanel Spacing="10">
                         <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Song change popup" />
                         <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Show a brief on-screen notification near the taskbar whenever the playing song changes." />
-                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                             <ToggleSwitch
                                 x:Name="SongChangePopupToggle"
                                 AutomationProperties.AutomationId="SongChangePopupToggle"
@@ -142,6 +142,19 @@
                                 Grid.Column="1"
                                 Style="{StaticResource SettingStatusStyle}"
                                 Text="{x:Bind ViewModel.SongChangePopupToggleText, Mode=OneWay}" />
+                            <!--
+                                Stays enabled while popups are off: seeing the popup is
+                                most useful when deciding whether to turn it on.
+                            -->
+                            <Button
+                                x:Name="SongChangePopupDemoButton"
+                                Grid.Column="2"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="SongChangePopupDemoButton"
+                                AutomationProperties.Name="Demo the song change popup"
+                                Click="SongChangePopupDemoButton_Click"
+                                Content="Demo"
+                                ToolTipService.ToolTip="Show the popup now, so you can see what it looks like" />
                         </Grid>
                         <TextBlock
                             Style="{StaticResource SettingDescriptionStyle}"

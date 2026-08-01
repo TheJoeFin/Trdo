@@ -33,4 +33,31 @@ public sealed partial class ShellPage : Page
     {
         ViewModel.GoBack();
     }
+
+    /// <summary>
+    /// Puts the shell back at its root page with an empty back stack. Call this
+    /// whenever the hosting window is shown: the page instance lives across
+    /// hide/show, so without it the window reopens wherever the user left it.
+    /// </summary>
+    public void ResetNavigation()
+    {
+        ViewModel.ResetToPlayingPage();
+    }
+
+    /// <summary>
+    /// Forces the title bar back to its activated (full colour) visuals.
+    /// TitleBar dims each of its parts through "…Deactivated" visual states
+    /// driven by window activation; a window that is hidden while deactivated
+    /// and then shown again can come back without a fresh activation, leaving
+    /// the control stuck in the dimmed state it had when focus was lost.
+    /// </summary>
+    public void RefreshTitleBarActivation()
+    {
+        VisualStateManager.GoToState(
+            SimpleTitleBar,
+            ViewModel.CanGoBack ? "BackButtonVisible" : "BackButtonCollapsed",
+            false);
+        VisualStateManager.GoToState(SimpleTitleBar, "IconVisible", false);
+        VisualStateManager.GoToState(SimpleTitleBar, "TitleTextVisible", false);
+    }
 }

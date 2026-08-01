@@ -37,6 +37,17 @@ public sealed partial class SettingsPage : Page
         RadioPlayerService.Instance.Watchdog.AudioLevelUpdated -= OnAudioLevelUpdated;
     }
 
+    /// <summary>
+    /// Pops the song change popup up on demand. The popup never takes
+    /// activation (WS_EX_NOACTIVATE), so this does not light-dismiss the
+    /// Traydio window the Settings page is hosted in.
+    /// </summary>
+    private void SongChangePopupDemoButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current is App app)
+            app.ShowSongChangePopupDemo();
+    }
+
     private void OnAudioLevelUpdated(float rms)
     {
         // Marshal to UI thread — the event fires on the NAudio capture thread
