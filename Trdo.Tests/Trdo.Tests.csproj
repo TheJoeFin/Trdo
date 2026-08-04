@@ -28,6 +28,20 @@
     <Compile Include="..\Trdo\Services\Playback\StreamDiagnostics.cs" Link="Playback\StreamDiagnostics.cs" />
     <Compile Include="..\Trdo\Services\SongChangeAnnouncementPolicy.cs" Link="Services\SongChangeAnnouncementPolicy.cs" />
     <Compile Include="..\Trdo\Services\PlaybackErrorPolicy.cs" Link="Services\PlaybackErrorPolicy.cs" />
+    <Compile Include="..\Trdo\Models\RadioStation.cs" Link="Models\RadioStation.cs" />
+    <Compile Include="..\Trdo\Models\RadioBrowserStation.cs" Link="Models\RadioBrowserStation.cs" />
+    <Compile Include="..\Trdo\Services\RadioStationJsonContext.cs" Link="Services\RadioStationJsonContext.cs" />
+    <Compile Include="..\Trdo\Services\StationStorageFormat.cs" Link="Services\StationStorageFormat.cs" />
+    <Compile Include="..\Trdo\Services\StationIdentityPolicy.cs" Link="Services\StationIdentityPolicy.cs" />
+    <Compile Include="..\Trdo\Services\StationSelectionPolicy.cs" Link="Services\StationSelectionPolicy.cs" />
+    <Compile Include="..\Trdo\Models\StationGroup.cs" Link="Models\StationGroup.cs" />
+    <Compile Include="..\Trdo\Models\StationDivider.cs" Link="Models\StationDivider.cs" />
+    <Compile Include="..\Trdo\Models\StationLayoutDocument.cs" Link="Models\StationLayoutDocument.cs" />
+    <Compile Include="..\Trdo\Models\StationSortMode.cs" Link="Models\StationSortMode.cs" />
+    <Compile Include="..\Trdo\Services\StationLayoutPolicy.cs" Link="Services\StationLayoutPolicy.cs" />
+    <Compile Include="..\Trdo\Services\StationSortPolicy.cs" Link="Services\StationSortPolicy.cs" />
+    <Compile Include="..\Trdo\Services\StationMetadataMatchPolicy.cs" Link="Services\StationMetadataMatchPolicy.cs" />
+    <Compile Include="..\Trdo\Services\StationMetadataMergePolicy.cs" Link="Services\StationMetadataMergePolicy.cs" />
   </ItemGroup>
 
 </Project>
