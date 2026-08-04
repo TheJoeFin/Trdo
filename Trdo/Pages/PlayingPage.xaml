@@ -3,6 +3,7 @@
     x:Class="Trdo.Pages.PlayingPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Trdo.Controls"
     xmlns:converters="using:Trdo.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:labs="using:CommunityToolkit.Labs.WinUI.MarqueeTextRns"
@@ -16,14 +17,300 @@
         <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter" />
         <converters:StringToImageSourceConverter x:Key="StringToImageSourceConverter" />
         <converters:PercentStringConverter x:Key="PercentStringConverter" />
+
+        <!--
+            Station row. Column 0 holds the indentation rail, which collapses to zero width for
+            a station that is not in a folder - so an ungrouped list renders exactly as it did
+            before folders existed.
+        -->
+        <DataTemplate x:Key="StationRowTemplate" x:DataType="models:RadioStation">
+            <Grid ColumnDefinitions="Auto,Auto,*">
+                <Grid.ContextFlyout>
+                    <!--
+                        The three original commands stay first and in their original order:
+                        this menu has been the same since 1.x and muscle memory is worth more
+                        than a tidier grouping.
+                    -->
+                    <MenuFlyout Opening="StationContextMenu_Opening">
+                        <MenuFlyoutItem
+                            Click="VisitSite_Click"
+                            Tag="{x:Bind}"
+                            Text="Visit Website">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xEB41;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem
+                            Click="EditStation_Click"
+                            Tag="{x:Bind}"
+                            Text="Edit">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE70F;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem
+                            Click="RemoveStation_Click"
+                            Tag="{x:Bind}"
+                            Text="Remove">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE74D;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutSubItem x:Name="MoveToGroupSubItem" Text="Move to group">
+                            <MenuFlyoutSubItem.Icon>
+                                <FontIcon Glyph="&#xE8DE;" />
+                            </MenuFlyoutSubItem.Icon>
+                        </MenuFlyoutSubItem>
+                        <MenuFlyoutItem
+                            Click="InsertDividerAbove_Click"
+                            Tag="{x:Bind}"
+                            Text="Insert divider above">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE738;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem
+                            Click="RefreshStationInfo_Click"
+                            Tag="{x:Bind}"
+                            Text="Refresh station info">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE72C;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </Grid.ContextFlyout>
+
+                <!--  Selection indicator  -->
+                <Border
+                    x:Name="SelectionIndicator"
+                    Grid.ColumnSpan="3"
+                    Margin="-8,-6"
+                    Background="{ThemeResource AccentAcrylicBackgroundFillColorDefaultBrush}"
+                    CornerRadius="2"
+                    Visibility="{x:Bind IsSelectedStation,
+                                        Converter={StaticResource BooleanToVisibilityConverter},
+                                        Mode=OneWay}" />
+
+                <!--  Indentation rail, shown only for a station inside a folder  -->
+                <Border
+                    Grid.Column="0"
+                    Width="1"
+                    Margin="6,0,10,0"
+                    Background="{ThemeResource DividerStrokeColorDefaultBrush}"
+                    Visibility="{x:Bind GroupId,
+                                        Converter={StaticResource NullToVisibilityConverter},
+                                        Mode=OneWay}" />
+
+                <!--  Favicon  -->
+                <Grid
+                    Grid.Column="1"
+                    Width="24"
+                    Height="24"
+                    Margin="0,0,12,0"
+                    VerticalAlignment="Center"
+                    Visibility="{x:Bind FaviconUrl,
+                                        Converter={StaticResource NullToVisibilityConverter},
+                                        Mode=OneWay}">
+                    <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="4">
+                        <Image Source="{x:Bind FaviconUrl, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}" Stretch="UniformToFill" />
+                    </Border>
+                </Grid>
+
+                <!--  Station Name  -->
+                <TextBlock
+                    Grid.Column="2"
+                    VerticalAlignment="Center"
+                    FontSize="12"
+                    Text="{x:Bind Name, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap" />
+            </Grid>
+        </DataTemplate>
+
+        <!--  Folder header. Tapping anywhere on the row expands or collapses it.  -->
+        <DataTemplate x:Key="StationGroupRowTemplate" x:DataType="models:StationGroup">
+            <Grid
+                Background="Transparent"
+                ColumnDefinitions="Auto,*,Auto"
+                Tapped="GroupRow_Tapped">
+                <Grid.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem
+                            Click="RenameGroup_Click"
+                            Tag="{x:Bind}"
+                            Text="Rename">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE8AC;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <!--
+                            Removing the folder keeps the stations, so it needs no confirming -
+                            same reasoning as removing a single station. Throwing the stations
+                            away is a separate, explicitly worded command that does confirm.
+                        -->
+                        <MenuFlyoutItem
+                            Click="DeleteGroup_Click"
+                            Tag="{x:Bind}"
+                            Text="Delete group">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE74D;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem
+                            Click="DeleteGroupAndStations_Click"
+                            Tag="{x:Bind}"
+                            Text="Delete group and its stations" />
+                    </MenuFlyout>
+                </Grid.ContextFlyout>
+                <FontIcon
+                    Grid.Column="0"
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    FontSize="10"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Glyph="{x:Bind ChevronGlyph, Mode=OneWay}" />
+                <TextBlock
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    FontSize="12"
+                    FontWeight="SemiBold"
+                    Text="{x:Bind Name, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis"
+                    TextWrapping="NoWrap" />
+                <TextBlock
+                    Grid.Column="2"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center"
+                    FontSize="11"
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Text="{x:Bind StationCount, Mode=OneWay}" />
+            </Grid>
+        </DataTemplate>
+
+        <!--  Divider: a rule, with the caption inline when there is one.  -->
+        <DataTemplate x:Key="StationDividerRowTemplate" x:DataType="models:StationDivider">
+            <Grid
+                Background="Transparent"
+                ColumnDefinitions="Auto,Auto,*"
+                Tapped="DividerRow_Tapped">
+                <Grid.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem
+                            Click="EditDividerLabel_Click"
+                            Tag="{x:Bind}"
+                            Text="Edit label">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE70F;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem
+                            Click="RemoveDivider_Click"
+                            Tag="{x:Bind}"
+                            Text="Remove divider">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE74D;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </Grid.ContextFlyout>
+                <Border
+                    Grid.Column="0"
+                    Width="1"
+                    Margin="6,0,10,0"
+                    Background="{ThemeResource DividerStrokeColorDefaultBrush}"
+                    Visibility="{x:Bind GroupId,
+                                        Converter={StaticResource NullToVisibilityConverter},
+                                        Mode=OneWay}" />
+                <TextBlock
+                    Grid.Column="1"
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center"
+                    FontSize="11"
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Text="{x:Bind Label, Mode=OneWay}"
+                    Visibility="{x:Bind HasLabel,
+                                        Converter={StaticResource BooleanToVisibilityConverter},
+                                        Mode=OneWay}" />
+                <Border
+                    Grid.Column="2"
+                    Height="1"
+                    VerticalAlignment="Center"
+                    Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+            </Grid>
+        </DataTemplate>
+
+        <controls:StationRowTemplateSelector
+            x:Key="StationRowTemplateSelector"
+            DividerTemplate="{StaticResource StationDividerRowTemplate}"
+            GroupTemplate="{StaticResource StationGroupRowTemplate}"
+            StationTemplate="{StaticResource StationRowTemplate}" />
+
+        <Style x:Key="StationRowContainerStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Margin" Value="0,0,0,1" />
+        </Style>
+
+        <Style x:Key="StationGroupRowContainerStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="Margin" Value="0,0,0,1" />
+        </Style>
+
+        <Style x:Key="StationDividerRowContainerStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="8,2" />
+            <Setter Property="Margin" Value="0,0,0,1" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+
+        <controls:StationRowContainerStyleSelector
+            x:Key="StationRowContainerStyleSelector"
+            DividerStyle="{StaticResource StationDividerRowContainerStyle}"
+            GroupStyle="{StaticResource StationGroupRowContainerStyle}"
+            StationStyle="{StaticResource StationRowContainerStyle}" />
     </Page.Resources>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" RowSpacing="12">
         <Grid.ContextFlyout>
             <MenuFlyout x:Name="PageContextMenu" Opening="PageContextMenu_Opening">
                 <MenuFlyoutItem
+                    x:Name="NewGroupMenuItem"
+                    Click="NewGroup_Click"
+                    Text="New Group">
+                    <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE8B7;" />
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+                <MenuFlyoutItem
+                    x:Name="NewDividerMenuItem"
+                    Click="NewDivider_Click"
+                    Text="New Divider">
+                    <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE738;" />
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+                <MenuFlyoutSeparator />
+                <MenuFlyoutSubItem x:Name="SortBySubItem" Text="Sort by">
+                    <MenuFlyoutSubItem.Icon>
+                        <FontIcon Glyph="&#xE8CB;" />
+                    </MenuFlyoutSubItem.Icon>
+                </MenuFlyoutSubItem>
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem
+                    x:Name="RefreshAllInfoMenuItem"
+                    Click="RefreshAllStationInfo_Click"
+                    Text="Refresh info for all stations">
+                    <MenuFlyoutItem.Icon>
+                        <FontIcon Glyph="&#xE72C;" />
+                    </MenuFlyoutItem.Icon>
+                </MenuFlyoutItem>
+                <MenuFlyoutSeparator />
+                <MenuFlyoutItem
                     x:Name="ShowVolumeMenuItem"
-                    Click="ShowVolumeSlider_Click"
+                    Click="ToggleVolumeSlider_Click"
                     Text="Show Volume Slider">
                     <MenuFlyoutItem.Icon>
                         <FontIcon Glyph="&#xE767;" />
@@ -90,11 +377,39 @@
         </Grid>
 
         <!--  Stations Header  -->
-        <TextBlock
-            Grid.Row="1"
-            FontSize="16"
-            FontWeight="SemiBold"
-            Text="Stations" />
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+            <TextBlock
+                Grid.Column="0"
+                FontSize="16"
+                FontWeight="SemiBold"
+                Text="Stations" />
+
+            <!--
+                Only shown while a view sort is active. Names all three surprises at once -
+                folders hidden, dividers hidden, dragging off - because meeting them one at a
+                time reads like a bug.
+            -->
+            <StackPanel
+                Grid.Column="1"
+                HorizontalAlignment="Right"
+                Orientation="Horizontal"
+                Spacing="2"
+                Visibility="{x:Bind ViewModel.IsViewSorted,
+                                    Converter={StaticResource BooleanToVisibilityConverter},
+                                    Mode=OneWay}">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="11"
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Text="{x:Bind ViewModel.SortHintText, Mode=OneWay}" />
+                <HyperlinkButton
+                    Padding="4,0"
+                    VerticalAlignment="Center"
+                    Click="ResetSort_Click"
+                    Content="Manual"
+                    FontSize="11" />
+            </StackPanel>
+        </Grid>
 
         <!--  Stations List  -->
         <Grid Grid.Row="2">
@@ -104,87 +419,13 @@
                 CanDragItems="True"
                 CanReorderItems="True"
                 DragItemsCompleted="StationsListView_DragItemsCompleted"
-                ItemsSource="{x:Bind ViewModel.Stations,
+                DragItemsStarting="StationsListView_DragItemsStarting"
+                ItemContainerStyleSelector="{StaticResource StationRowContainerStyleSelector}"
+                ItemTemplateSelector="{StaticResource StationRowTemplateSelector}"
+                ItemsSource="{x:Bind ViewModel.DisplayRows,
                                      Mode=OneWay}"
-                SelectedItem="{x:Bind ViewModel.SelectedStation,
-                                      Mode=TwoWay}"
                 SelectionChanged="StationsListView_SelectionChanged"
-                SelectionMode="Single">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="Padding" Value="8,6" />
-                        <Setter Property="Margin" Value="0,0,0,1" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="models:RadioStation">
-                        <Grid ColumnDefinitions="Auto,Auto,*">
-                            <Grid.ContextFlyout>
-                                <MenuFlyout>
-                                    <MenuFlyoutItem
-                                        Click="VisitSite_Click"
-                                        Tag="{x:Bind}"
-                                        Text="Visit Website">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon Glyph="&#xEB41;" />
-                                        </MenuFlyoutItem.Icon>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutItem
-                                        Click="EditStation_Click"
-                                        Tag="{x:Bind}"
-                                        Text="Edit">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon Glyph="&#xE70F;" />
-                                        </MenuFlyoutItem.Icon>
-                                    </MenuFlyoutItem>
-                                    <MenuFlyoutItem
-                                        Click="RemoveStation_Click"
-                                        Tag="{x:Bind}"
-                                        Text="Remove">
-                                        <MenuFlyoutItem.Icon>
-                                            <FontIcon Glyph="&#xE74D;" />
-                                        </MenuFlyoutItem.Icon>
-                                    </MenuFlyoutItem>
-                                </MenuFlyout>
-                            </Grid.ContextFlyout>
-
-                            <!--  Selection indicator  -->
-                            <Border
-                                x:Name="SelectionIndicator"
-                                Grid.ColumnSpan="3"
-                                Margin="-8,-6"
-                                Background="{ThemeResource AccentAcrylicBackgroundFillColorDefaultBrush}"
-                                CornerRadius="2"
-                                Visibility="Collapsed" />
-
-                            <!--  Favicon  -->
-                            <Grid
-                                Grid.Column="1"
-                                Width="24"
-                                Height="24"
-                                Margin="0,0,12,0"
-                                VerticalAlignment="Center"
-                                Visibility="{x:Bind FaviconUrl,
-                                                    Converter={StaticResource NullToVisibilityConverter},
-                                                    Mode=OneWay}">
-                                <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="4">
-                                    <Image Source="{x:Bind FaviconUrl, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}" Stretch="UniformToFill" />
-                                </Border>
-                            </Grid>
-
-                            <!--  Station Name  -->
-                            <TextBlock
-                                Grid.Column="2"
-                                VerticalAlignment="Center"
-                                FontSize="12"
-                                Text="{x:Bind Name}"
-                                TextTrimming="CharacterEllipsis"
-                                TextWrapping="NoWrap" />
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                SelectionMode="Single" />
 
             <!--  Empty State  -->
             <Grid
@@ -192,7 +433,7 @@
                 Padding="6"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                Visibility="{x:Bind ViewModel.Stations.Count,
+                Visibility="{x:Bind ViewModel.StationCount,
                                     Mode=OneWay,
                                     Converter={StaticResource CountToEmptyStateVisibilityConverter}}">
                 <StackPanel

@@ -204,14 +204,7 @@ public sealed partial class SearchStation : Page
         {
             await StopPreviewAsync();
 
-            RadioStation newStation = new()
-            {
-                Name = station.Name,
-                StreamUrl = station.GetStreamUrl(),
-                Homepage = !string.IsNullOrWhiteSpace(station.Homepage) ? station.Homepage : null,
-                FaviconUrl = !string.IsNullOrWhiteSpace(station.Favicon) ? station.Favicon : null
-            };
-            PlayerViewModel.Shared.AddStation(newStation);
+            PlayerViewModel.Shared.AddStation(station.ToRadioStation());
 
             // Save right away and return to the main page
             _shellViewModel?.NavigateToPlayingPage();
