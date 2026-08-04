@@ -586,6 +586,13 @@ public partial class SettingsViewModel : INotifyPropertyChanged
 
             if (!alreadyExists)
             {
+                // This adds to the collection directly rather than going through
+                // PlayerViewModel.AddStation, so stamp what that path would have stamped.
+                // Imported stations carry no directory details, which makes them exactly the
+                // candidates the "refresh station info" command exists for.
+                station.Id = StationIdentityPolicy.NewId();
+                station.DateAdded ??= DateTimeOffset.UtcNow;
+
                 player.Stations.Add(station);
                 addedCount++;
             }

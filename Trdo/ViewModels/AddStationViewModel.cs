@@ -19,6 +19,13 @@ public class AddStationViewModel : INotifyPropertyChanged
     private string _pageTitle = "Add Radio Station";
     private PlayerViewModel? _playerViewModel;
     private RadioStation? _editingStation;
+    /// <summary>
+    /// The directory result this station is being added from, when the user arrived here by
+    /// choosing "edit before adding" on a search result. Kept so <see cref="Save"/> can start
+    /// from the full projection and keep the genre, country and language the search already
+    /// knew, rather than saving only the four fields shown on this page.
+    /// </summary>
+    private RadioBrowserStation? _searchSource;
     private double _volumePercent = 100;
     private bool _hasBufferOverride;
     private double _bufferLevel;
@@ -66,6 +73,7 @@ public class AddStationViewModel : INotifyPropertyChanged
 
     public void LoadFromSearchResult(RadioBrowserStation searchStation)
     {
+        _searchSource = searchStation;
         StationName = searchStation.Name;
         StreamUrl = searchStation.GetStreamUrl();
         Homepage = !string.IsNullOrWhiteSpace(searchStation.Homepage) ? searchStation.Homepage : null;
@@ -374,17 +382,19 @@ public class AddStationViewModel : INotifyPropertyChanged
         }
         else
         {
-            // Add mode - create new station
-            RadioStation newStation = new()
-            {
-                Name = StationName.Trim(),
-                StreamUrl = StreamUrl.Trim(),
-                Homepage = !string.IsNullOrWhiteSpace(Homepage) ? Homepage.Trim() : null,
-                FaviconUrl = !string.IsNullOrWhiteSpace(FaviconUrl) ? FaviconUrl.Trim() : null,
-                Volume = VolumePercent / 100,
-                BufferLevel = HasBufferOverride ? BufferLevel : null,
-                SongPopupDelaySeconds = HasSongPopupDelayOverride ? SongPopupDelaySeconds : null
-            };
+            // Add mode - create new station. Start from the directory result when there is
+            // one so its genre, country and language ride along, then layer the user's edits
+            // on top; what they typed always wins over what the directory said.
+            RadioStation newStation = _searchSource?.ToRadioStation()
+                ?? new RadioStation { Name = string.Empty, StreamUrl = string.Empty };
+
+            newStation.Name = StationName.Trim();
+            newStation.StreamUrl = StreamUrl.Trim();
+            newStation.Homepage = !string.IsNullOrWhiteSpace(Homepage) ? Homepage.Trim() : null;
+            newStation.FaviconUrl = !string.IsNullOrWhiteSpace(FaviconUrl) ? FaviconUrl.Trim() : null;
+            newStation.Volume = VolumePercent / 100;
+            newStation.BufferLevel = HasBufferOverride ? BufferLevel : null;
+            newStation.SongPopupDelaySeconds = HasSongPopupDelayOverride ? SongPopupDelaySeconds : null;
 
             // Add to PlayerViewModel if available
             _playerViewModel?.AddStation(newStation);
