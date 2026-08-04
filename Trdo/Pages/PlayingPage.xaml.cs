@@ -168,7 +168,7 @@ public sealed partial class PlayingPage : Page
             SyncSelectedItem();
         }
 
-        if (e.PropertyName is nameof(PlayerViewModel.SortMode))
+        if (e.PropertyName is nameof(PlayerViewModel.SortMode) or nameof(PlayerViewModel.GroupByMode))
         {
             UpdateDragAvailability();
         }
@@ -475,8 +475,11 @@ public sealed partial class PlayingPage : Page
         {
             group.IsExpanded = !group.IsExpanded;
             ViewModel.RebuildDisplayRows();
-            // Whether a folder is open is worth remembering across restarts.
-            ViewModel.PersistStationList();
+
+            // A synthetic "Group by" folder is never written to the layout file, so there is
+            // nothing to persist - only a real folder's expanded state is worth remembering.
+            if (!group.IsVirtual)
+                ViewModel.PersistStationList();
         }
 
         // Stops the row being selected: a folder header is a control, not a destination.
@@ -516,11 +519,6 @@ public sealed partial class PlayingPage : Page
         e.Handled = true;
     }
 
-    private void HideVolumeSlider_Click(object sender, RoutedEventArgs e)
-    {
-        SetVolumeSliderVisible(false);
-    }
-
     private void ToggleVolumeSlider_Click(object sender, RoutedEventArgs e)
     {
         SetVolumeSliderVisible(VolumeControlGrid.Visibility != Visibility.Visible);
@@ -541,15 +539,16 @@ public sealed partial class PlayingPage : Page
             ? "Hide Volume Slider"
             : "Show Volume Slider";
 
-        // A sorted list has no meaningful place to put a new folder or divider: the user is
-        // not the one deciding positions while it is on.
-        bool manual = !ViewModel.IsViewSorted;
+        // A sorted or grouped list has no meaningful place to put a new folder or divider: the
+        // user is not the one deciding positions while either is on.
+        bool manual = !ViewModel.IsViewSorted && !ViewModel.IsGroupedView;
         NewGroupMenuItem.IsEnabled = manual;
         NewDividerMenuItem.IsEnabled = manual;
 
         RefreshAllInfoMenuItem.IsEnabled = ViewModel.Stations.Count > 0;
 
         BuildSortMenu();
+        BuildGroupByMenu();
     }
 
     private async void RefreshStationInfo_Click(object sender, RoutedEventArgs e)
@@ -754,15 +753,42 @@ public sealed partial class PlayingPage : Page
         }
     }
 
+    private void BuildGroupByMenu()
+    {
+        GroupBySubItem.Items.Clear();
+
+        foreach (StationGroupByMode mode in Enum.GetValues<StationGroupByMode>())
+        {
+            RadioMenuFlyoutItem item = new()
+            {
+                Text = StationGroupingPolicy.DisplayName(mode),
+                GroupName = "StationGroupBy",
+                IsChecked = mode == ViewModel.GroupByMode,
+                Tag = mode
+            };
+            item.Click += GroupByMode_Click;
+            GroupBySubItem.Items.Add(item);
+        }
+    }
+
+    private void GroupByMode_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem { Tag: StationGroupByMode mode })
+        {
+            ViewModel.GroupByMode = mode;
+        }
+    }
+
     private void ResetSort_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.SortMode = StationSortMode.Manual;
+        ViewModel.GroupByMode = StationGroupByMode.None;
     }
 
     /// <summary>
-    /// Switches dragging off entirely while a view sort is active.
+    /// Switches dragging off entirely while a view sort or a view grouping is active.
     /// <para>
-    /// Turning it off is better than trying to interpret the drop. Under a sort the rows are
+    /// Turning it off is better than trying to interpret the drop. Under either, the rows are
     /// not in the stored order, so there is no honest answer to where a dropped row should
     /// land - and silently rewriting the user's arrangement to match a temporary view would
     /// break the one promise this feature makes.
@@ -770,11 +796,23 @@ public sealed partial class PlayingPage : Page
     /// </summary>
     private void UpdateDragAvailability()
     {
-        bool manual = !ViewModel.IsViewSorted;
+        bool manual = !ViewModel.IsViewSorted && !ViewModel.IsGroupedView;
         StationsListView.CanDragItems = manual;
         StationsListView.CanReorderItems = manual;
         // Also suppresses the drop indicator, so nothing suggests a drag would work.
         StationsListView.AllowDrop = manual;
+    }
+
+    /// <summary>
+    /// Swallows the right-click on a synthetic "Group by" folder header entirely: there is
+    /// nothing to rename or delete on a folder that exists only for the current view.
+    /// </summary>
+    private void GroupRow_ContextRequested(UIElement sender, ContextRequestedEventArgs args)
+    {
+        if (sender is FrameworkElement { DataContext: StationGroup { IsVirtual: true } })
+        {
+            args.Handled = true;
+        }
     }
 
     private void NewGroup_Click(object sender, RoutedEventArgs e)
@@ -861,9 +899,9 @@ public sealed partial class PlayingPage : Page
             subItem.Items.Add(entry);
         }
 
-        // Folders are not on screen under a view sort, so moving between them would be an
-        // invisible change.
-        subItem.IsEnabled = subItem.Items.Count > 1 && !ViewModel.IsViewSorted;
+        // Folders are not on screen under a view sort or a view grouping, so moving between
+        // them would be an invisible change.
+        subItem.IsEnabled = subItem.Items.Count > 1 && !ViewModel.IsViewSorted && !ViewModel.IsGroupedView;
     }
 
     private void MoveToGroup_Click(object sender, RoutedEventArgs e)

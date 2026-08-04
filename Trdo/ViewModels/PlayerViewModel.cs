@@ -32,6 +32,14 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     private readonly List<object> _topLevelNodes;
 
     private StationSortMode _sortMode = SettingsService.StationSortMode;
+    private StationGroupByMode _groupByMode = SettingsService.StationGroupByMode;
+
+    /// <summary>
+    /// Synthetic folders built by "Group by", keyed by bucket id, reused across a rebuild so a
+    /// folder the user expanded or collapsed keeps that state. Cleared whenever grouping is
+    /// switched off.
+    /// </summary>
+    private readonly Dictionary<string, StationGroup> _groupByCache = [];
 
     /// <summary>
     /// Set while <see cref="RebuildDisplayRows"/> is editing <see cref="DisplayRows"/>, and
@@ -1014,7 +1022,9 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         _isRebuildingDisplayRows = true;
         try
         {
-            List<object> target = StationLayoutPolicy.Flatten(_topLevelNodes, _sortMode);
+            List<object> target = _groupByMode != StationGroupByMode.None
+                ? StationGroupingPolicy.Flatten(StationLayoutPolicy.CollectStations(_topLevelNodes), _groupByMode, _groupByCache)
+                : StationLayoutPolicy.Flatten(_topLevelNodes, _sortMode);
 
             for (int i = 0; i < target.Count; i++)
             {
@@ -1091,10 +1101,18 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             if (value == _sortMode) return;
             _sortMode = value;
             SettingsService.StationSortMode = value;
+
+            // Mutually exclusive with "Group by": a flat sorted list and stations bucketed
+            // into folders cannot both be true of the list at once.
+            if (value != StationSortMode.Manual)
+                ClearGroupBy();
+
             RebuildDisplayRows();
             OnPropertyChanged();
             OnPropertyChanged(nameof(IsViewSorted));
             OnPropertyChanged(nameof(SortHintText));
+            OnPropertyChanged(nameof(IsViewArrangementActive));
+            OnPropertyChanged(nameof(ViewArrangementHintText));
         }
     }
 
@@ -1103,6 +1121,76 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
 
     /// <summary>The one-line explanation shown above the list while a view sort is active.</summary>
     public string SortHintText => StationSortPolicy.HintText(_sortMode);
+
+    /// <summary>
+    /// How the list is currently grouped into folders on screen.
+    /// <para>
+    /// The folder-shaped counterpart to <see cref="SortMode"/>: changing this re-renders and
+    /// never touches the saved folders, dividers or order, so switching back to
+    /// <see cref="StationGroupByMode.None"/> returns the user's own arrangement exactly.
+    /// </para>
+    /// </summary>
+    public StationGroupByMode GroupByMode
+    {
+        get => _groupByMode;
+        set
+        {
+            if (value == _groupByMode) return;
+            _groupByMode = value;
+            SettingsService.StationGroupByMode = value;
+
+            if (value == StationGroupByMode.None)
+                _groupByCache.Clear();
+            else if (_sortMode != StationSortMode.Manual)
+                ClearSort();
+
+            RebuildDisplayRows();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsGroupedView));
+            OnPropertyChanged(nameof(GroupByHintText));
+            OnPropertyChanged(nameof(IsViewArrangementActive));
+            OnPropertyChanged(nameof(ViewArrangementHintText));
+        }
+    }
+
+    /// <summary>True when the list is grouped by a field rather than showing the user's own folders.</summary>
+    public bool IsGroupedView => _groupByMode != StationGroupByMode.None;
+
+    /// <summary>The one-line explanation shown above the list while a view grouping is active.</summary>
+    public string GroupByHintText => StationGroupingPolicy.HintText(_groupByMode);
+
+    /// <summary>True while either a view sort or a view grouping is overriding the manual arrangement.</summary>
+    public bool IsViewArrangementActive => IsViewSorted || IsGroupedView;
+
+    /// <summary>The hint line for whichever view arrangement is currently active, if any.</summary>
+    public string ViewArrangementHintText => IsViewSorted ? SortHintText : GroupByHintText;
+
+    /// <summary>Turns "Group by" off without touching <see cref="SortMode"/>, for when the sort menu takes over.</summary>
+    private void ClearGroupBy()
+    {
+        if (_groupByMode == StationGroupByMode.None)
+            return;
+
+        _groupByMode = StationGroupByMode.None;
+        SettingsService.StationGroupByMode = StationGroupByMode.None;
+        _groupByCache.Clear();
+        OnPropertyChanged(nameof(GroupByMode));
+        OnPropertyChanged(nameof(IsGroupedView));
+        OnPropertyChanged(nameof(GroupByHintText));
+    }
+
+    /// <summary>Turns the view sort off without touching <see cref="GroupByMode"/>, for when "Group by" takes over.</summary>
+    private void ClearSort()
+    {
+        if (_sortMode == StationSortMode.Manual)
+            return;
+
+        _sortMode = StationSortMode.Manual;
+        SettingsService.StationSortMode = StationSortMode.Manual;
+        OnPropertyChanged(nameof(SortMode));
+        OnPropertyChanged(nameof(IsViewSorted));
+        OnPropertyChanged(nameof(SortHintText));
+    }
 
     /// <summary>
     /// Creates a folder and puts it at the end of the list.
