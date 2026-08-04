@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Volume is now remembered per station, so each station keeps its own level and restores it when selected (#16)
 
 ### Added
+- Groups: collapsible folders in the station list, created from the right-click menu and filled by dragging stations into them the same way stations are reordered. A folder remembers whether it is open. Deleting one keeps its stations, moving them back out to the top level; deleting a folder *and* its stations is a separate command that asks first
+- Dividers: a subtle line to break up a long list, with an optional caption. Insert one above any station from its right-click menu, or add one from the list's own menu, then drag it wherever it belongs
+- Sort by name, genre, country or date added. This is a view: your own order, folders and dividers are left exactly as they are and come straight back when you switch to Manual, so sorting to find a station never costs you the arrangement you built. While a sort is on, the list says so and dragging is switched off rather than quietly rewriting your order
+- Stations added from search now keep the genre, country, language, codec and bitrate that the search already knew, instead of discarding all of it — that is what the new sorting works on
+- "Refresh station info" looks up those details for stations that do not have them, for a single station or the whole list. It only ever runs when you ask, only your stations' stream addresses are sent, and it never overwrites a station's name, volume or buffer settings
 - Optional song change popup: a brief notification above the taskbar whenever the playing song changes, off by default and enabled in Settings
 - Song popup delay: many stations announce a track before it actually starts, so the popup can now be held back until it lines up with the audio. Set an app-wide default in Settings, override it per station in the station's Advanced settings, or right-click the popup itself to adjust the station that's playing. Left-clicking the popup dismisses it
 - "Allow PC to sleep" setting so the computer can sleep on its normal schedule while radio is playing (#82)
@@ -28,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Log entries keep the stream's port and path (query strings are still redacted), so stations sharing a host can be told apart when diagnosing a problem
 
 ### Fixed
+- Cancelling a drag in the station list no longer restarts the stream. Dropping a station outside the list, or pressing Escape mid-drag, was treated as a completed reorder and re-initialised playback of whatever was playing
+- The "No Stations Yet" panel now disappears as soon as the first station is added, instead of lingering until the page was reopened
 - Playback errors no longer appear for stations that are playing perfectly well. A failure reported while the fallback engine was still starting (or while stream diagnosis was probing the network) was raised against the hidden tray popup, where it waited and greeted the user the next time they opened the flyout. Errors are now held by a service that re-checks them against live playback — including the audio loopback, so an engine claiming to play while producing silence is still reported — and are dropped when playback recovers, when the station changes, or when they simply go unseen for too long. An error already on screen is taken down if the station starts playing behind it
 - "Copy diagnostics" now copies the current log. It was unable to open the active log file at all (a file-sharing mismatch with the log writer) and silently fell back to the previous rolled-over generation, and it did not wait for buffered lines to reach disk — so the most recent entries, the ones worth reporting, were the ones most likely to be missing
 

@@ -65,6 +65,7 @@ Get the code:
 - ⚙️ Customizable settings
 - 🔊 High-quality audio playback
 - 💾 Save and organize your favorite stations
+- 📁 Collapsible groups, dividers and non-destructive sorting for longer station lists
 - 🎵 Now playing information display
 - 🌙 Support for Windows 11 themes
 
