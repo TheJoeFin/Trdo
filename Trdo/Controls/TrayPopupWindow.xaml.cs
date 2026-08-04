@@ -98,6 +98,11 @@ public sealed partial class TrayPopupWindow : WindowEx
         Activate();
         SetForegroundWindow(WindowNative.GetWindowHandle(this));
 
+        // The hosted page stays loaded while the popup is hidden, so being subscribed is
+        // not the same as being able to show a dialog. Tell the error service when there
+        // is actually a window for one to appear on.
+        PlaybackErrorService.Instance.SetHostWindowVisible(true);
+
         // Once the window is back up, undo any deactivated (dimmed) title bar
         // visuals left over from the light-dismiss that hid it.
         DispatcherQueue.TryEnqueue(() => _shellPage?.RefreshTitleBarActivation());
@@ -113,6 +118,7 @@ public sealed partial class TrayPopupWindow : WindowEx
 
         _isPopupVisible = false;
         _lastDismissedAtUtc = DateTime.UtcNow;
+        PlaybackErrorService.Instance.SetHostWindowVisible(false);
         this.Hide();
     }
 

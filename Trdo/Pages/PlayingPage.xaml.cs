@@ -27,7 +27,14 @@ public sealed partial class PlayingPage : Page
     private const string OutlineStar = "\uE734";
 
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;
+    private readonly PlaybackErrorService _errorService = PlaybackErrorService.Instance;
     private readonly DispatcherQueueTimer _nowPlayingMarqueeDelayTimer;
+
+    /// <summary>
+    /// The playback error dialog currently on screen, kept so it can be taken back
+    /// down if the failure it describes stops being true while the user is reading it.
+    /// </summary>
+    private ContentDialog? _playbackErrorDialog;
 
     public PlayerViewModel ViewModel { get; }
     private ShellViewModel? _shellViewModel;
@@ -46,8 +53,11 @@ public sealed partial class PlayingPage : Page
         // Subscribe to property changes to update UI
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
 
-        // Subscribe to playback errors
-        ViewModel.PlaybackError += ViewModel_PlaybackError;
+        // Act as the presenter for playback errors. PlaybackErrorService only shows an
+        // error while something is subscribed here, so this pairs strictly with the
+        // unsubscribe in Unloaded.
+        _errorService.ErrorPresented += ErrorService_ErrorPresented;
+        _errorService.ErrorWithdrawn += ErrorService_ErrorWithdrawn;
 
         // Subscribe to favorites changes
         _favoritesService.FavoritesChanged += FavoritesService_FavoritesChanged;
@@ -113,7 +123,8 @@ public sealed partial class PlayingPage : Page
         _nowPlayingMarqueeDelayTimer.Tick -= NowPlayingMarqueeDelayTimer_Tick;
         NowPlayingMarqueeText.MarqueeCompleted -= NowPlayingMarqueeText_MarqueeCompleted;
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
-        ViewModel.PlaybackError -= ViewModel_PlaybackError;
+        _errorService.ErrorPresented -= ErrorService_ErrorPresented;
+        _errorService.ErrorWithdrawn -= ErrorService_ErrorWithdrawn;
         _favoritesService.FavoritesChanged -= FavoritesService_FavoritesChanged;
         SetNowPlayingScrolling(false);
     }
@@ -161,21 +172,27 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] Favorite button updated. IsFavorited: {isFavorited}");
     }
 
-    private async void ViewModel_PlaybackError(object? sender, string errorMessage)
+    /// <summary>
+    /// Puts a playback error on screen. Only ever reached once
+    /// <see cref="PlaybackErrorService"/> has established that the failure still
+    /// describes reality and that this window is visible, so no further checking
+    /// belongs here.
+    /// </summary>
+    private async void ErrorService_ErrorPresented(object? sender, string errorMessage)
     {
-        Debug.WriteLine($"[PlayingPage] PlaybackError event received: {errorMessage}");
+        Debug.WriteLine($"[PlayingPage] Presenting playback error: {errorMessage}");
 
-        // Display error to user using an InfoBar or ContentDialog
+        ContentDialog dialog = new()
+        {
+            Title = "Playback Error",
+            Content = errorMessage,
+            CloseButtonText = "OK",
+            XamlRoot = this.XamlRoot
+        };
+
         try
         {
-            ContentDialog dialog = new()
-            {
-                Title = "Playback Error",
-                Content = errorMessage,
-                CloseButtonText = "OK",
-                XamlRoot = this.XamlRoot
-            };
-
+            _playbackErrorDialog = dialog;
             await dialog.ShowAsync();
         }
         catch (Exception ex)
@@ -183,6 +200,28 @@ public sealed partial class PlayingPage : Page
             Debug.WriteLine($"[PlayingPage] EXCEPTION showing error dialog: {ex.Message}");
             // If dialog fails, silently ignore
         }
+        finally
+        {
+            // ShowAsync also returns when the service withdraws the dialog, which clears
+            // the field first. Only a genuine dismissal by the user leaves our dialog in
+            // place — reporting the other case would clear an error we never showed.
+            if (ReferenceEquals(_playbackErrorDialog, dialog))
+            {
+                _playbackErrorDialog = null;
+                _errorService.NotifyErrorDismissed();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Takes the error dialog down when the service decides it no longer makes sense —
+    /// the station recovered, or the user moved to another one.
+    /// </summary>
+    private void ErrorService_ErrorWithdrawn(object? sender, EventArgs e)
+    {
+        Debug.WriteLine("[PlayingPage] Withdrawing playback error dialog");
+        _playbackErrorDialog?.Hide();
+        _playbackErrorDialog = null;
     }
 
     private void UpdateStationSelection()

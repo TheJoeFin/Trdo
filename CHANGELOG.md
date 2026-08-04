@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Log entries keep the stream's port and path (query strings are still redacted), so stations sharing a host can be told apart when diagnosing a problem
 
 ### Fixed
+- Playback errors no longer appear for stations that are playing perfectly well. A failure reported while the fallback engine was still starting (or while stream diagnosis was probing the network) was raised against the hidden tray popup, where it waited and greeted the user the next time they opened the flyout. Errors are now held by a service that re-checks them against live playback — including the audio loopback, so an engine claiming to play while producing silence is still reported — and are dropped when playback recovers, when the station changes, or when they simply go unseen for too long. An error already on screen is taken down if the station starts playing behind it
 - "Copy diagnostics" now copies the current log. It was unable to open the active log file at all (a file-sharing mismatch with the log writer) and silently fell back to the previous rolled-over generation, and it did not wait for buffered lines to reach disk — so the most recent entries, the ones worth reporting, were the ones most likely to be missing
 
 ## [1.1.0] - 2025

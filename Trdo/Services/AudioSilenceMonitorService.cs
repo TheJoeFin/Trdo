@@ -20,7 +20,9 @@ public sealed partial class AudioSilenceMonitorService : IDisposable
 
     // RMS threshold below which audio is considered "silent".
     // 32-bit float samples: typical quiet system noise sits around 0.0001–0.001.
-    private const float SilenceRmsThreshold = 0.001f;
+    // Shared with PlaybackErrorService, which reads the same level updates to decide
+    // whether a playback error still matches what the speakers are doing.
+    internal const float SilenceRmsThreshold = 0.001f;
 
     // Throttle UI-facing level updates to ~30 fps for responsive visualisation
     private DateTime _lastLevelUpdate = DateTime.MinValue;

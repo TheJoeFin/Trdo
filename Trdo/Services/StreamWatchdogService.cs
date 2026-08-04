@@ -64,6 +64,13 @@ public sealed partial class StreamWatchdogService : IDisposable
     public event Action<float>? AudioLevelUpdated;
 
     /// <summary>
+    /// Whether the WASAPI loopback monitor is currently capturing. When it is not,
+    /// <see cref="AudioLevelUpdated"/> says nothing about whether audio is reaching the
+    /// speakers, and consumers must not read silence into its absence.
+    /// </summary>
+    public bool IsAudioMonitorRunning => _silenceMonitor.IsMonitoring;
+
+    /// <summary>
     /// Gets or sets the silence detection timeout in seconds.
     /// If the audio output is silent for longer than this while the stream is supposed to be playing,
     /// a recovery attempt is triggered. Persisted to local settings.

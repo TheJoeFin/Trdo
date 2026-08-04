@@ -37,7 +37,6 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     public static PlayerViewModel Shared => _instance.Value;
 
     public event PropertyChangedEventHandler? PropertyChanged;
-    public event EventHandler<string>? PlaybackError;
 
     public bool IsCurrentTrackFavorited
     {
@@ -59,12 +58,12 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         _player.NextStationRequested += (_, _) => SelectNextStation();
         _player.PreviousStationRequested += (_, _) => SelectPreviousStation();
 
-        // Surface playback failures raised by the service (e.g. no network) as in-app errors
+        // Failures raised by the player go straight to PlaybackErrorService, which decides
+        // whether they are still worth showing. Recorded here only so LastError reflects them.
         _player.PlaybackFailed += (_, message) =>
         {
             Debug.WriteLine($"[PlayerViewModel] PlaybackFailed from service: {message}");
             _lastError = message;
-            PlaybackError?.Invoke(this, message);
         };
 
         _player.PlaybackStateChanged += (_, _) =>
@@ -283,7 +282,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     _lastError = $"Invalid stream URL for {_selectedStation.Name}";
                     LogService.Error("PlayerViewModel", _lastError);
                     Debug.WriteLine($"[PlayerViewModel] ERROR: {_lastError}");
-                    PlaybackError?.Invoke(this, _lastError);
+                    PlaybackErrorService.Instance.Report(_lastError);
                     if (shouldResumePlayback)
                     {
                         Debug.WriteLine("[PlayerViewModel] Pausing player due to invalid URL");
@@ -302,7 +301,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                     _lastError = $"Failed to switch to {_selectedStation.Name}: {ex.Message}";
                     Debug.WriteLine($"[PlayerViewModel] EXCEPTION: {_lastError}");
                     Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
-                    PlaybackError?.Invoke(this, _lastError);
+                    PlaybackErrorService.Instance.Report(_lastError);
                 }
             }
             else
@@ -622,6 +621,11 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         try
         {
             CancelStationTransition();
+
+            // This attempt supersedes the last one, so an unseen error from it is now
+            // about history the user has already responded to by pressing play.
+            PlaybackErrorService.Instance.ClearPendingError();
+
             _player.TogglePlayPause();
             Debug.WriteLine($"[PlayerViewModel] TogglePlayPause called successfully. New IsPlaying: {IsPlaying}");
             _lastError = null;
@@ -632,7 +636,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             _lastError = $"Failed to play {stationName}: {ex.Message}";
             Debug.WriteLine($"[PlayerViewModel] EXCEPTION in Toggle: {_lastError}");
             Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
-            PlaybackError?.Invoke(this, _lastError);
+            PlaybackErrorService.Instance.Report(_lastError);
         }
 
         Debug.WriteLine("=== Toggle END ===");
@@ -662,7 +666,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             _lastError = $"Failed to pause {stationName}: {ex.Message}";
             Debug.WriteLine($"[PlayerViewModel] EXCEPTION in Pause: {_lastError}");
             Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
-            PlaybackError?.Invoke(this, _lastError);
+            PlaybackErrorService.Instance.Report(_lastError);
         }
 
         Debug.WriteLine("=== Pause END ===");
@@ -754,7 +758,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             _lastError = $"Failed to restore {stationName}: {ex.Message}";
             Debug.WriteLine($"[PlayerViewModel] EXCEPTION in RestoreSelectedStationPlaybackTarget: {_lastError}");
             Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
-            PlaybackError?.Invoke(this, _lastError);
+            PlaybackErrorService.Instance.Report(_lastError);
         }
 
         Debug.WriteLine("=== RestoreSelectedStationPlaybackTarget END ===");
@@ -868,7 +872,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 _lastError = $"Failed to update stream: {ex.Message}";
                 Debug.WriteLine($"[PlayerViewModel] EXCEPTION in SaveStations: {_lastError}");
                 Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
-                PlaybackError?.Invoke(this, _lastError);
+                PlaybackErrorService.Instance.Report(_lastError);
             }
         }
     }
@@ -914,7 +918,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 _lastError = $"Failed to initialize stream: {ex.Message}";
                 Debug.WriteLine($"[PlayerViewModel] EXCEPTION in InitializeStream: {_lastError}");
                 Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
-                PlaybackError?.Invoke(this, _lastError);
+                PlaybackErrorService.Instance.Report(_lastError);
             }
         }
         else
@@ -1006,7 +1010,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 _lastError = $"Failed to switch to {station.Name}: {ex.Message}";
                 Debug.WriteLine($"[PlayerViewModel] EXCEPTION: {_lastError}");
                 Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
-                PlaybackError?.Invoke(this, _lastError);
+                PlaybackErrorService.Instance.Report(_lastError);
             }
         }
         finally

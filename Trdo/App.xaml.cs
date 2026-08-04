@@ -64,6 +64,10 @@ public partial class App : Application
         // Initialize PlaylistHistoryService early so it captures metadata from the start
         PlaylistHistoryService.EnsureInitialized();
 
+        // Same for playback errors: the service has to be listening before the first
+        // failure, and it needs this (UI) thread's dispatcher for its review timer.
+        PlaybackErrorService.EnsureInitialized();
+
         // Subscribe to theme change events
         _uiSettings.ColorValuesChanged += OnColorValuesChanged;
 
