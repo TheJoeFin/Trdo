@@ -38,8 +38,10 @@
     <Compile Include="..\Trdo\Models\StationDivider.cs" Link="Models\StationDivider.cs" />
     <Compile Include="..\Trdo\Models\StationLayoutDocument.cs" Link="Models\StationLayoutDocument.cs" />
     <Compile Include="..\Trdo\Models\StationSortMode.cs" Link="Models\StationSortMode.cs" />
+    <Compile Include="..\Trdo\Models\StationGroupByMode.cs" Link="Models\StationGroupByMode.cs" />
     <Compile Include="..\Trdo\Services\StationLayoutPolicy.cs" Link="Services\StationLayoutPolicy.cs" />
     <Compile Include="..\Trdo\Services\StationSortPolicy.cs" Link="Services\StationSortPolicy.cs" />
+    <Compile Include="..\Trdo\Services\StationGroupingPolicy.cs" Link="Services\StationGroupingPolicy.cs" />
     <Compile Include="..\Trdo\Services\StationMetadataMatchPolicy.cs" Link="Services\StationMetadataMatchPolicy.cs" />
     <Compile Include="..\Trdo\Services\StationMetadataMergePolicy.cs" Link="Services\StationMetadataMergePolicy.cs" />
   </ItemGroup>
