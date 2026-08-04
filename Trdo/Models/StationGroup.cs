@@ -75,6 +75,14 @@ public sealed class StationGroup : INotifyPropertyChanged
     [JsonIgnore]
     public List<object> Children { get; } = [];
 
+    /// <summary>
+    /// True for a folder synthesized by "Group by" rather than one the user created. A virtual
+    /// folder exists only in memory for the current view: expanding or collapsing it is never
+    /// written to the layout file, and it never appears in the "move to group" menu.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsVirtual { get; init; }
+
     /// <summary>The chevron to draw on the header row.</summary>
     [JsonIgnore]
     public string ChevronGlyph => _isExpanded ? ExpandedGlyph : CollapsedGlyph;
