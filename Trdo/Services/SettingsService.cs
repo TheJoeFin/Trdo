@@ -24,6 +24,7 @@ public static class SettingsService
     private const string IsSongChangePopupEnabledKey = "IsSongChangePopupEnabled";
     private const string SongChangePopupDelaySecondsKey = "SongChangePopupDelaySeconds";
     private const string StationSortModeKey = "StationSortMode";
+    private const string StationGroupByModeKey = "StationGroupByMode";
 
     public static event EventHandler? MusicSearchServicesChanged;
 
@@ -246,6 +247,52 @@ public static class SettingsService
             }
 
             StationSortModeChanged?.Invoke(null, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets how the station list is grouped into folders on screen.
+    /// <para>
+    /// A view setting, not a data one, following the same reasoning as
+    /// <see cref="StationSortMode"/>: anything other than
+    /// <see cref="Models.StationGroupByMode.None"/> changes what is drawn and leaves the saved
+    /// folders, dividers and order untouched.
+    /// </para>
+    /// </summary>
+    public static Models.StationGroupByMode StationGroupByMode
+    {
+        get
+        {
+            try
+            {
+                if (ApplicationData.Current.LocalSettings.Values.TryGetValue(StationGroupByModeKey, out object? value))
+                {
+                    return value switch
+                    {
+                        int i when Enum.IsDefined(typeof(Models.StationGroupByMode), i) => (Models.StationGroupByMode)i,
+                        string s when int.TryParse(s, out int parsed) && Enum.IsDefined(typeof(Models.StationGroupByMode), parsed)
+                            => (Models.StationGroupByMode)parsed,
+                        _ => Models.StationGroupByMode.None
+                    };
+                }
+            }
+            catch
+            {
+                // Fall through to the default
+            }
+
+            return Models.StationGroupByMode.None;
+        }
+        set
+        {
+            try
+            {
+                ApplicationData.Current.LocalSettings.Values[StationGroupByModeKey] = (int)value;
+            }
+            catch
+            {
+                // Silently fail if unable to save
+            }
         }
     }
 
