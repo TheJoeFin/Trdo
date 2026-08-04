@@ -10,6 +10,9 @@ namespace Trdo.Services;
 /// </summary>
 [JsonSerializable(typeof(List<RadioStation>))]
 [JsonSerializable(typeof(RadioStation))]
+[JsonSerializable(typeof(StationLayoutDocument))]
+[JsonSerializable(typeof(StationLayoutRow))]
+[JsonSerializable(typeof(List<StationLayoutRow>))]
 [JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
 internal partial class RadioStationJsonContext : JsonSerializerContext
 {

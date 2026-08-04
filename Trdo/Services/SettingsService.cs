@@ -23,6 +23,7 @@ public static class SettingsService
     private const string AllowSleepWhilePlayingKey = "AllowSleepWhilePlaying";
     private const string IsSongChangePopupEnabledKey = "IsSongChangePopupEnabled";
     private const string SongChangePopupDelaySecondsKey = "SongChangePopupDelaySeconds";
+    private const string StationSortModeKey = "StationSortMode";
 
     public static event EventHandler? MusicSearchServicesChanged;
 
@@ -192,6 +193,59 @@ public static class SettingsService
             {
                 // Silently fail if unable to save
             }
+        }
+    }
+
+    /// <summary>
+    /// Raised when <see cref="StationSortMode"/> changes, so the station list can re-render
+    /// and switch dragging on or off.
+    /// </summary>
+    public static event EventHandler? StationSortModeChanged;
+
+    /// <summary>
+    /// Gets or sets how the station list is ordered on screen.
+    /// <para>
+    /// A view setting, not a data one: anything other than
+    /// <see cref="Models.StationSortMode.Manual"/> changes what is drawn and leaves the saved
+    /// order, folders and dividers untouched.
+    /// </para>
+    /// </summary>
+    public static Models.StationSortMode StationSortMode
+    {
+        get
+        {
+            try
+            {
+                if (ApplicationData.Current.LocalSettings.Values.TryGetValue(StationSortModeKey, out object? value))
+                {
+                    return value switch
+                    {
+                        int i when Enum.IsDefined(typeof(Models.StationSortMode), i) => (Models.StationSortMode)i,
+                        string s when int.TryParse(s, out int parsed) && Enum.IsDefined(typeof(Models.StationSortMode), parsed)
+                            => (Models.StationSortMode)parsed,
+                        _ => Models.StationSortMode.Manual
+                    };
+                }
+            }
+            catch
+            {
+                // Fall through to the default
+            }
+
+            return Models.StationSortMode.Manual;
+        }
+        set
+        {
+            try
+            {
+                ApplicationData.Current.LocalSettings.Values[StationSortModeKey] = (int)value;
+            }
+            catch
+            {
+                // Silently fail if unable to save
+            }
+
+            StationSortModeChanged?.Invoke(null, EventArgs.Empty);
         }
     }
 

@@ -76,8 +76,10 @@ public class RadioBrowserService
             Timeout = TimeSpan.FromSeconds(10)
         };
 
-        // Set a user agent as recommended by Radio Browser API
-        client.DefaultRequestHeaders.Add("User-Agent", "Trdo/1.0");
+        // Set a user agent as recommended by Radio Browser API. They ask for something
+        // identifiable, and that matters most when refreshing details for a whole station list
+        // in one go.
+        client.DefaultRequestHeaders.Add("User-Agent", "Traydio/2.0 (+https://github.com/joefinney/Trdo)");
 
         return client;
     }
@@ -139,6 +141,50 @@ public class RadioBrowserService
             Debug.WriteLine($"[RadioBrowserService] Error searching stations: {ex.Message}");
             Debug.WriteLine($"[RadioBrowserService] Stack trace: {ex.StackTrace}");
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Looks up directory entries matching a stream URL exactly.
+    /// <para>
+    /// Only ever called because the user asked for it. The app makes no unprompted requests
+    /// about the stations someone has saved.
+    /// </para>
+    /// </summary>
+    /// <returns>The candidate entries, or an empty list if the directory knows nothing about this URL.</returns>
+    public async Task<List<RadioBrowserStation>> LookupByUrlAsync(
+        string streamUrl,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(streamUrl))
+            return [];
+
+        try
+        {
+            // byurl takes the URL as a form parameter rather than in the path, which avoids
+            // having to escape a whole URL inside another URL.
+            using FormUrlEncodedContent body = new([new KeyValuePair<string, string>("url", streamUrl)]);
+            using HttpResponseMessage response =
+                await _httpClient.PostAsync("json/stations/byurl", body, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            string content = await response.Content.ReadAsStringAsync(cancellationToken);
+            List<RadioBrowserStation>? stations =
+                JsonSerializer.Deserialize<List<RadioBrowserStation>>(content, _jsonOptions);
+
+            Debug.WriteLine($"[RadioBrowserService] byurl returned {stations?.Count ?? 0} candidates");
+            return stations ?? [];
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // A lookup that fails is not an error worth surfacing on its own - the station
+            // simply keeps the details it already had. The batch reports the totals.
+            Debug.WriteLine($"[RadioBrowserService] byurl lookup failed: {ex.Message}");
+            return [];
         }
     }
 
