@@ -55,7 +55,6 @@ public sealed partial class SongChangePopupWindow : Window
     private const int ShowSlideDistance = 24;
     private const int HideSlideDistance = 12;
 
-    private static readonly TimeSpan AutoHideDelay = TimeSpan.FromMilliseconds(2500);
     private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(15);
     private const double ShowDurationMs = 250;
     private const double HideDurationMs = 180;
@@ -113,7 +112,6 @@ public sealed partial class SongChangePopupWindow : Window
         SystemBackdrop = new DesktopAcrylicBackdrop();
 
         _autoHideTimer = DispatcherQueue.CreateTimer();
-        _autoHideTimer.Interval = AutoHideDelay;
         _autoHideTimer.IsRepeating = false;
         _autoHideTimer.Tick += AutoHideTimer_Tick;
 
@@ -166,7 +164,17 @@ public sealed partial class SongChangePopupWindow : Window
 
         PlayShowAnimation(dpi);
 
+        StartAutoHideTimer();
+    }
+
+    /// <summary>
+    /// (Re)starts the auto-hide countdown, reading the dwell time each time rather than
+    /// caching it, so a change in Settings takes effect on the very next song.
+    /// </summary>
+    private void StartAutoHideTimer()
+    {
         _autoHideTimer.Stop();
+        _autoHideTimer.Interval = TimeSpan.FromSeconds(SettingsService.SongChangePopupDwellSeconds);
         _autoHideTimer.Start();
     }
 
@@ -263,10 +271,7 @@ public sealed partial class SongChangePopupWindow : Window
         // running: "Turn off song popups" dismisses from inside the menu, and _isVisible
         // stays true until that animation finishes.
         if (_isVisible && !_isHiding)
-        {
-            _autoHideTimer.Stop();
-            _autoHideTimer.Start();
-        }
+            StartAutoHideTimer();
     }
 
     private MenuFlyout BuildDelayMenu()

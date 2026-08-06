@@ -299,6 +299,31 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     /// <summary>Upper bound offered by the delay slider.</summary>
     public double MaxSongChangePopupDelaySeconds => SongChangeAnnouncementPolicy.MaxDelaySeconds;
 
+    /// <summary>
+    /// How long the popup stays on screen once it appears, in seconds. App-wide: this is
+    /// about reading speed rather than anything a station does, so there is no override.
+    /// </summary>
+    public double SongChangePopupDwellSeconds
+    {
+        get => SettingsService.SongChangePopupDwellSeconds;
+        set
+        {
+            double clamped = SongChangeAnnouncementPolicy.ClampDwell(value);
+            if (Math.Abs(clamped - SettingsService.SongChangePopupDwellSeconds) < 0.0001) return;
+            SettingsService.SongChangePopupDwellSeconds = clamped;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SongChangePopupDwellDescription));
+        }
+    }
+
+    public string SongChangePopupDwellDescription =>
+        SongChangeAnnouncementPolicy.DescribeDwell(SettingsService.SongChangePopupDwellSeconds);
+
+    /// <summary>Bounds offered by the dwell slider.</summary>
+    public double MinSongChangePopupDwellSeconds => SongChangeAnnouncementPolicy.MinDwellSeconds;
+
+    public double MaxSongChangePopupDwellSeconds => SongChangeAnnouncementPolicy.MaxDwellSeconds;
+
     public string SongChangePopupToggleText
     {
         get => _songChangePopupToggleText;

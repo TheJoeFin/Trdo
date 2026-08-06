@@ -96,4 +96,39 @@ public sealed class SongChangePopupDelayTests
             SongChangeAnnouncementPolicy.DescribeDelay(SongChangeAnnouncementPolicy.MaxDelaySeconds),
             SongChangeAnnouncementPolicy.DescribeDelay(500));
     }
+
+    /// <summary>
+    /// The dwell time — how long the pill stays up — is a separate axis from the delay:
+    /// the delay decides when the popup appears, the dwell how long there is to read it.
+    /// </summary>
+    [TestMethod]
+    public void DwellIsClampedToAReadableRange()
+    {
+        Assert.AreEqual(SongChangeAnnouncementPolicy.MaxDwellSeconds, SongChangeAnnouncementPolicy.ClampDwell(60));
+        Assert.AreEqual(SongChangeAnnouncementPolicy.MinDwellSeconds, SongChangeAnnouncementPolicy.ClampDwell(0));
+        Assert.AreEqual(SongChangeAnnouncementPolicy.MinDwellSeconds, SongChangeAnnouncementPolicy.ClampDwell(-4));
+        Assert.AreEqual(8, SongChangeAnnouncementPolicy.ClampDwell(8));
+    }
+
+    /// <summary>
+    /// Zero is a legitimate delay ("no delay") but never a legitimate dwell — a popup that
+    /// stays up for no time at all is just a flicker — so NaN falls back to the default
+    /// rather than to the bottom of the range.
+    /// </summary>
+    [TestMethod]
+    public void ClampDwell_MapsNaNToTheDefaultRatherThanTheMinimum()
+    {
+        Assert.AreEqual(
+            SongChangeAnnouncementPolicy.DefaultDwellSeconds,
+            SongChangeAnnouncementPolicy.ClampDwell(double.NaN));
+    }
+
+    [TestMethod]
+    public void DwellIsAlwaysDescribedAsADuration()
+    {
+        Assert.AreEqual("2.5 seconds", SongChangeAnnouncementPolicy.DescribeDwell(2.5));
+        Assert.AreEqual("1 second", SongChangeAnnouncementPolicy.DescribeDwell(1));
+        Assert.AreEqual("10 seconds", SongChangeAnnouncementPolicy.DescribeDwell(10));
+        Assert.AreEqual("15 seconds", SongChangeAnnouncementPolicy.DescribeDwell(99));
+    }
 }

@@ -23,6 +23,7 @@ public static class SettingsService
     private const string AllowSleepWhilePlayingKey = "AllowSleepWhilePlaying";
     private const string IsSongChangePopupEnabledKey = "IsSongChangePopupEnabled";
     private const string SongChangePopupDelaySecondsKey = "SongChangePopupDelaySeconds";
+    private const string SongChangePopupDwellSecondsKey = "SongChangePopupDwellSeconds";
     private const string StationSortModeKey = "StationSortMode";
     private const string StationGroupByModeKey = "StationGroupByMode";
 
@@ -392,6 +393,22 @@ public static class SettingsService
         set => SetDoubleSetting(
             SongChangePopupDelaySecondsKey,
             SongChangeAnnouncementPolicy.ClampDelay(value));
+    }
+
+    /// <summary>
+    /// Gets or sets how long the popup stays on screen once shown, in seconds. Unlike the
+    /// delay this is app-wide only: it is about how fast the user reads, not about anything
+    /// a particular station does.
+    /// </summary>
+    public static double SongChangePopupDwellSeconds
+    {
+        get => SongChangeAnnouncementPolicy.ClampDwell(
+            GetDoubleSetting(
+                SongChangePopupDwellSecondsKey,
+                defaultValue: SongChangeAnnouncementPolicy.DefaultDwellSeconds));
+        set => SetDoubleSetting(
+            SongChangePopupDwellSecondsKey,
+            SongChangeAnnouncementPolicy.ClampDwell(value));
     }
 
     private static double GetDoubleSetting(string key, double defaultValue)

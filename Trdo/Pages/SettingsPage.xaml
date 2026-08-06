@@ -177,6 +177,27 @@
                                 Style="{StaticResource SettingStatusStyle}"
                                 Text="{x:Bind ViewModel.SongChangePopupDelayDescription, Mode=OneWay}" />
                         </Grid>
+                        <TextBlock
+                            Style="{StaticResource SettingDescriptionStyle}"
+                            Text="How long the popup stays on screen before it fades away. Clicking it dismisses it sooner."
+                            TextWrapping="Wrap" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Slider
+                                Grid.Column="0"
+                                AutomationProperties.Name="How long the song popup stays on screen, in seconds"
+                                IsEnabled="{x:Bind ViewModel.IsSongChangePopupEnabled, Mode=OneWay}"
+                                Maximum="{x:Bind ViewModel.MaxSongChangePopupDwellSeconds}"
+                                Minimum="{x:Bind ViewModel.MinSongChangePopupDwellSeconds}"
+                                SnapsTo="StepValues"
+                                StepFrequency="0.5"
+                                Value="{x:Bind ViewModel.SongChangePopupDwellSeconds, Mode=TwoWay}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                MinWidth="92"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.SongChangePopupDwellDescription, Mode=OneWay}" />
+                        </Grid>
                     </StackPanel>
                 </Border>
 

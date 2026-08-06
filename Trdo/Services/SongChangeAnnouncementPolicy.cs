@@ -64,6 +64,47 @@ public static class SongChangeAnnouncementPolicy
     }
 
     /// <summary>
+    /// Shortest time the popup stays on screen. Below about a second the pill is gone before
+    /// a long title can be read, so the animations would be all the user saw.
+    /// </summary>
+    public const double MinDwellSeconds = 1;
+
+    /// <summary>
+    /// Longest time the popup stays on screen. A quarter of a minute is already long enough
+    /// to read anything a station sends; past that the pill starts to feel stuck rather than
+    /// generous, and it sits over whatever is behind it the whole time.
+    /// </summary>
+    public const double MaxDwellSeconds = 15;
+
+    /// <summary>
+    /// How long the popup stays up out of the box: long enough to read a track and artist,
+    /// short enough to stay out of the way.
+    /// </summary>
+    public const double DefaultDwellSeconds = 2.5;
+
+    /// <summary>Constrains a dwell time to the supported range, mapping NaN to the default.</summary>
+    public static double ClampDwell(double seconds)
+    {
+        if (double.IsNaN(seconds))
+            return DefaultDwellSeconds;
+
+        return Math.Clamp(seconds, MinDwellSeconds, MaxDwellSeconds);
+    }
+
+    /// <summary>
+    /// Formats a dwell time for display. Unlike a delay, this is never zero, so it always
+    /// reads as a duration.
+    /// </summary>
+    public static string DescribeDwell(double seconds)
+    {
+        double clamped = ClampDwell(seconds);
+
+        return Math.Abs(clamped - Math.Round(clamped)) < 0.05
+            ? $"{Math.Round(clamped):0} second{(Math.Round(clamped) == 1 ? "" : "s")}"
+            : $"{clamped:0.0} seconds";
+    }
+
+    /// <summary>
     /// Works out how long to wait before announcing, given the station's own override and
     /// the app-wide setting.
     /// <para>
