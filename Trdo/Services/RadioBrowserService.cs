@@ -223,8 +223,13 @@ public class RadioBrowserService
     /// <summary>
     /// Gets the most popular tags/genres (ordered by station count, most first), cached after first fetch.
     /// </summary>
-    /// <param name="limit">Maximum number of tags to return (the full list is very large)</param>
-    public async Task<List<RadioBrowserTag>> GetTagsAsync(int limit = 200, CancellationToken cancellationToken = default)
+    /// <param name="limit">
+    /// Maximum number of tags to return; the full list runs to tens of thousands, most of them
+    /// one-station typos. A thousand is generous now that the picker reaches a tag by typing
+    /// rather than by scrolling — a longer list costs nothing to search, and cutting it short
+    /// only loses genres someone might actually want.
+    /// </param>
+    public async Task<List<RadioBrowserTag>> GetTagsAsync(int limit = 1000, CancellationToken cancellationToken = default)
     {
         if (_cachedTags is not null)
         {

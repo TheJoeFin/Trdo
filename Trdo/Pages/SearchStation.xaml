@@ -3,6 +3,7 @@
     x:Class="Trdo.Pages.SearchStation"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Trdo.Controls"
     xmlns:converters="using:Trdo.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -16,7 +17,7 @@
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Page.Resources>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="12">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="12">
 
         <!--  Title  -->
         <TextBlock
@@ -38,85 +39,16 @@
 
             <!--  Filter toggle shares this cell with the search spinner  -->
             <Grid Grid.Column="1" VerticalAlignment="Center">
-                <DropDownButton
+                <ToggleButton
                     x:Name="FilterButton"
                     Height="32"
                     Padding="8,0"
+                    AutomationProperties.Name="Filters"
+                    Checked="FilterButton_Checked"
+                    IsChecked="{x:Bind ViewModel.IsFilterPanelOpen, Mode=TwoWay}"
                     ToolTipService.ToolTip="Filters">
                     <FontIcon FontSize="16" Glyph="&#xE71C;" />
-                    <DropDownButton.Flyout>
-                        <Flyout Opening="FilterFlyout_Opening">
-                            <StackPanel Width="280" Spacing="12">
-                                <TextBlock
-                                    FontWeight="SemiBold"
-                                    Text="Filters" />
-
-                                <ComboBox
-                                    Header="Country"
-                                    HorizontalAlignment="Stretch"
-                                    DisplayMemberPath="Display"
-                                    ItemsSource="{x:Bind ViewModel.Countries, Mode=OneWay}"
-                                    PlaceholderText="Any country"
-                                    SelectedItem="{x:Bind ViewModel.SelectedCountry, Mode=TwoWay}" />
-
-                                <ComboBox
-                                    Header="Language"
-                                    HorizontalAlignment="Stretch"
-                                    DisplayMemberPath="Display"
-                                    ItemsSource="{x:Bind ViewModel.Languages, Mode=OneWay}"
-                                    PlaceholderText="Any language"
-                                    SelectedItem="{x:Bind ViewModel.SelectedLanguage, Mode=TwoWay}" />
-
-                                <ComboBox
-                                    Header="Genre"
-                                    HorizontalAlignment="Stretch"
-                                    DisplayMemberPath="Display"
-                                    ItemsSource="{x:Bind ViewModel.Genres, Mode=OneWay}"
-                                    PlaceholderText="Any genre"
-                                    SelectedItem="{x:Bind ViewModel.SelectedGenre, Mode=TwoWay}" />
-
-                                <ComboBox
-                                    Header="Codec"
-                                    HorizontalAlignment="Stretch"
-                                    DisplayMemberPath="Display"
-                                    ItemsSource="{x:Bind ViewModel.Codecs}"
-                                    SelectedItem="{x:Bind ViewModel.SelectedCodec, Mode=TwoWay}" />
-
-                                <ComboBox
-                                    Header="Minimum bitrate"
-                                    HorizontalAlignment="Stretch"
-                                    DisplayMemberPath="Display"
-                                    ItemsSource="{x:Bind ViewModel.Bitrates}"
-                                    SelectedItem="{x:Bind ViewModel.SelectedBitrate, Mode=TwoWay}" />
-
-                                <ComboBox
-                                    Header="Sort by"
-                                    HorizontalAlignment="Stretch"
-                                    DisplayMemberPath="Display"
-                                    ItemsSource="{x:Bind ViewModel.SortOptions}"
-                                    SelectedItem="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
-
-                                <CheckBox
-                                    Content="Hide broken stations"
-                                    IsChecked="{x:Bind ViewModel.HideBroken, Mode=TwoWay}" />
-
-                                <Grid ColumnDefinitions="Auto,*">
-                                    <ProgressRing
-                                        Grid.Column="0"
-                                        Width="16"
-                                        Height="16"
-                                        HorizontalAlignment="Left"
-                                        IsActive="{x:Bind ViewModel.IsLoadingFilterOptions, Mode=OneWay}" />
-                                    <Button
-                                        Grid.Column="1"
-                                        HorizontalAlignment="Right"
-                                        Click="ClearFiltersButton_Click"
-                                        Content="Clear filters" />
-                                </Grid>
-                            </StackPanel>
-                        </Flyout>
-                    </DropDownButton.Flyout>
-                </DropDownButton>
+                </ToggleButton>
 
                 <!--  Dot indicating one or more filters are active  -->
                 <InfoBadge
@@ -139,17 +71,171 @@
             </Grid>
         </Grid>
 
+        <!--
+            Applied filters, as removable chips. Shown on the page rather than inside the
+            panel: what a search is narrowed by has to be readable while looking at the
+            results, not hidden behind the control that set it.
+        -->
+        <ItemsControl
+            Grid.Row="2"
+            ItemsSource="{x:Bind ViewModel.ActiveFilters, Mode=OneWay}"
+            Visibility="{x:Bind ViewModel.ActiveFilters.Count, Mode=OneWay, Converter={StaticResource HasItemsVisibilityConverter}}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <controls:WrapPanel ColumnSpacing="6" RowSpacing="6" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:StationFilterOption">
+                    <Button
+                        Padding="8,3"
+                        AutomationProperties.Name="{x:Bind ChipLabel}"
+                        Click="RemoveFilterButton_Click"
+                        CornerRadius="12"
+                        Tag="{x:Bind}"
+                        ToolTipService.ToolTip="Remove this filter">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock FontSize="12" Text="{x:Bind ChipLabel}" />
+                            <FontIcon
+                                FontSize="10"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE711;" />
+                        </StackPanel>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
         <!--  Error InfoBar  -->
         <InfoBar
             Title="Search Error"
-            Grid.Row="2"
+            Grid.Row="3"
             IsClosable="True"
             IsOpen="{x:Bind ViewModel.HasError, Mode=OneWay}"
             Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
             Severity="Error" />
 
+        <!--
+            Filter panel. Takes over the results area instead of opening as a flyout: the
+            values worth filtering by number in the hundreds, and a dropdown inside a 320px
+            window shows them through a keyhole. Full width and full height means a typed
+            query's matches are all on screen at once.
+        -->
+        <Grid
+            Grid.Row="4"
+            RowDefinitions="Auto,*,Auto"
+            RowSpacing="8"
+            Visibility="{x:Bind ViewModel.IsFilterPanelOpen, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+
+            <Grid
+                Grid.Row="0"
+                ColumnDefinitions="*,Auto"
+                ColumnSpacing="8">
+                <TextBox
+                    x:Name="FilterQueryTextBox"
+                    Grid.Column="0"
+                    AutomationProperties.Name="Find a country, language or genre"
+                    PlaceholderText="Country, language or genre..."
+                    Text="{x:Bind ViewModel.FilterQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <ProgressRing
+                    Grid.Column="1"
+                    Width="16"
+                    Height="16"
+                    IsActive="{x:Bind ViewModel.IsLoadingFilterOptions, Mode=OneWay}" />
+            </Grid>
+
+            <ListView
+                Grid.Row="1"
+                Padding="0"
+                IsItemClickEnabled="True"
+                ItemClick="FilterSuggestion_ItemClick"
+                ItemsSource="{x:Bind ViewModel.FilterSuggestions, Mode=OneWay}"
+                SelectionMode="None">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Padding" Value="8,4" />
+                        <Setter Property="MinHeight" Value="0" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="models:StationFilterOption">
+                        <Grid ColumnDefinitions="64,*,Auto" ColumnSpacing="8">
+                            <!--  Which attribute this narrows: the values alone would be ambiguous  -->
+                            <TextBlock
+                                Grid.Column="0"
+                                FontSize="11"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="{x:Bind FacetLabel}"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Text="{x:Bind Value}"
+                                TextTrimming="CharacterEllipsis"
+                                VerticalAlignment="Center" />
+                            <TextBlock
+                                Grid.Column="2"
+                                FontSize="11"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Text="{x:Bind CountLabel}"
+                                VerticalAlignment="Center" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <StackPanel Grid.Row="2" Spacing="8">
+                <TextBlock
+                    FontStyle="Italic"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="No country, language or genre matches that."
+                    TextAlignment="Center"
+                    Visibility="{x:Bind ViewModel.HasNoSuggestions, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                <!--  Short, fixed lists: a dropdown is the right control for these  -->
+                <Expander HorizontalAlignment="Stretch" Header="Quality and order">
+                    <StackPanel Spacing="10">
+                        <ComboBox
+                            DisplayMemberPath="Display"
+                            Header="Codec"
+                            HorizontalAlignment="Stretch"
+                            ItemsSource="{x:Bind ViewModel.Codecs}"
+                            SelectedItem="{x:Bind ViewModel.SelectedCodec, Mode=TwoWay}" />
+                        <ComboBox
+                            DisplayMemberPath="Display"
+                            Header="Minimum bitrate"
+                            HorizontalAlignment="Stretch"
+                            ItemsSource="{x:Bind ViewModel.Bitrates}"
+                            SelectedItem="{x:Bind ViewModel.SelectedBitrate, Mode=TwoWay}" />
+                        <ComboBox
+                            DisplayMemberPath="Display"
+                            Header="Sort by"
+                            HorizontalAlignment="Stretch"
+                            ItemsSource="{x:Bind ViewModel.SortOptions}"
+                            SelectedItem="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
+                        <CheckBox Content="Hide broken stations" IsChecked="{x:Bind ViewModel.HideBroken, Mode=TwoWay}" />
+                    </StackPanel>
+                </Expander>
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <Button
+                        Grid.Column="0"
+                        HorizontalAlignment="Stretch"
+                        Click="ClearFiltersButton_Click"
+                        Content="Clear all"
+                        IsEnabled="{x:Bind ViewModel.HasActiveFilters, Mode=OneWay}" />
+                    <Button
+                        Grid.Column="1"
+                        HorizontalAlignment="Stretch"
+                        Click="DoneFilteringButton_Click"
+                        Content="Show results"
+                        Style="{StaticResource AccentButtonStyle}" />
+                </Grid>
+            </StackPanel>
+        </Grid>
+
         <!--  Search Results  -->
-        <ScrollView Grid.Row="3">
+        <ScrollView Grid.Row="4" Visibility="{x:Bind ViewModel.AreResultsVisible, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
             <StackPanel Spacing="8">
                 <!--  Initial state  -->
                 <StackPanel Spacing="8" Visibility="{x:Bind ViewModel.ShowInitialState, Mode=OneWay}">
@@ -269,7 +355,7 @@
 
         <!--  Cancel Button  -->
         <Button
-            Grid.Row="4"
+            Grid.Row="5"
             HorizontalAlignment="Stretch"
             Click="CancelButton_Click">
             <StackPanel Orientation="Horizontal" Spacing="8">

@@ -221,10 +221,40 @@ public sealed partial class SearchStation : Page
         }
     }
 
-    private async void FilterFlyout_Opening(object sender, object e)
+    private async void FilterButton_Checked(object sender, RoutedEventArgs e)
     {
-        // Populate the country/language/genre dropdowns the first time the panel opens.
+        // Focus the picker's own box so the panel is ready to be typed into: reaching a value
+        // by typing is the whole point of the panel, and a click to focus first would undo it.
+        FilterQueryTextBox.Focus(FocusState.Programmatic);
+
+        // Fetch the country/language/genre lists the first time the panel opens.
         await ViewModel.LoadFilterOptionsAsync();
+    }
+
+    /// <summary>
+    /// Picking a suggestion applies it as a chip. The panel deliberately stays open: filters
+    /// are usually stacked ("Germany" then "jazz"), and closing after each one would mean
+    /// reopening to add the next.
+    /// </summary>
+    private void FilterSuggestion_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is StationFilterOption option)
+        {
+            ViewModel.AddFilter(option);
+        }
+    }
+
+    private void RemoveFilterButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is StationFilterOption option)
+        {
+            ViewModel.RemoveFilter(option);
+        }
+    }
+
+    private void DoneFilteringButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.IsFilterPanelOpen = false;
     }
 
     private void ClearFiltersButton_Click(object sender, RoutedEventArgs e)
