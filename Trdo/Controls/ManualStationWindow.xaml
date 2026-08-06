@@ -209,7 +209,7 @@
                                     Maximum="{x:Bind ViewModel.MaxSongPopupDelaySeconds}"
                                     Minimum="0"
                                     SnapsTo="StepValues"
-                                    StepFrequency="0.5"
+                                    StepFrequency="5"
                                     Value="{x:Bind ViewModel.SongPopupDelaySeconds,
                                                    Mode=TwoWay}" />
                                 <TextBlock

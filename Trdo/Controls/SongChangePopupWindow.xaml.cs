@@ -77,7 +77,8 @@ public sealed partial class SongChangePopupWindow : Window
 
     /// <summary>
     /// Delay presets offered on the popup's own menu. Chosen to cover the usual range of
-    /// encoder lead time; anything finer is available on the station editor's slider.
+    /// encoder lead time in one click; the station editor's slider reaches the rest of
+    /// the range, up to a minute.
     /// </summary>
     private static readonly double[] DelayPresetsSeconds = [0, 2, 5, 10, 15];
 

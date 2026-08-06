@@ -42,6 +42,18 @@ public sealed class SongChangePopupDelayTests
         Assert.AreEqual(SongChangeAnnouncementPolicy.MinDelaySeconds, SongChangeAnnouncementPolicy.ClampDelay(double.NaN));
     }
 
+    /// <summary>
+    /// The supported range runs to a full minute: a handful of stations lead the audio by
+    /// far more than the usual few seconds, and the old half-minute ceiling cut them off.
+    /// </summary>
+    [TestMethod]
+    public void DelaysUpToAMinuteAreSupported()
+    {
+        Assert.AreEqual(60, SongChangeAnnouncementPolicy.MaxDelaySeconds);
+        Assert.AreEqual(45, SongChangeAnnouncementPolicy.ClampDelay(45));
+        Assert.AreEqual(60, SongChangeAnnouncementPolicy.ResolveDelaySeconds(60, 0));
+    }
+
     [TestMethod]
     public void OutOfRangeValuesAreClampedWhenResolving()
     {
@@ -60,6 +72,14 @@ public sealed class SongChangePopupDelayTests
     {
         Assert.AreEqual("1 second", SongChangeAnnouncementPolicy.DescribeDelay(1));
         Assert.AreEqual("5 seconds", SongChangeAnnouncementPolicy.DescribeDelay(5));
+    }
+
+    /// <summary>The top of the range is a round minute, and reads better said that way.</summary>
+    [TestMethod]
+    public void TheLongestDelay_IsDescribedAsAMinute()
+    {
+        Assert.AreEqual("1 minute", SongChangeAnnouncementPolicy.DescribeDelay(60));
+        Assert.AreEqual("55 seconds", SongChangeAnnouncementPolicy.DescribeDelay(55));
     }
 
     [TestMethod]

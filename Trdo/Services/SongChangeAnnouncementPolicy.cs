@@ -48,11 +48,11 @@ public static class SongChangeAnnouncementPolicy
     public const double MinDelaySeconds = 0;
 
     /// <summary>
-    /// Upper bound on the announcement delay. Stations that run metadata more than
-    /// half a minute ahead of the audio are broken in a way a delay cannot paper over,
-    /// and an unbounded value would let a popup outlive the song it describes.
+    /// Upper bound on the announcement delay. A minute covers even the worst offenders,
+    /// and stopping there keeps an unbounded value from letting a popup outlive the song
+    /// it describes.
     /// </summary>
-    public const double MaxDelaySeconds = 30;
+    public const double MaxDelaySeconds = 60;
 
     /// <summary>Constrains a delay to the supported range, mapping NaN to no delay.</summary>
     public static double ClampDelay(double seconds)
@@ -90,6 +90,10 @@ public static class SongChangeAnnouncementPolicy
 
         if (clamped <= 0)
             return "No delay";
+
+        // The top of the range reads better as a minute than as 60 seconds.
+        if (clamped >= MaxDelaySeconds)
+            return "1 minute";
 
         // Whole seconds read better than "5.0s" for the common preset values.
         return Math.Abs(clamped - Math.Round(clamped)) < 0.05

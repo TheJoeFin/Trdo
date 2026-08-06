@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stations added from search now keep the genre, country, language, codec and bitrate that the search already knew, instead of discarding all of it — that is what the new sorting works on
 - "Refresh station info" looks up those details for stations that do not have them, for a single station or the whole list. It only ever runs when you ask, only your stations' stream addresses are sent, and it never overwrites a station's name, volume or buffer settings
 - Optional song change popup: a brief notification above the taskbar whenever the playing song changes, off by default and enabled in Settings
-- Song popup delay: many stations announce a track before it actually starts, so the popup can now be held back until it lines up with the audio. Set an app-wide default in Settings, override it per station in the station's Advanced settings, or right-click the popup itself to adjust the station that's playing. Left-clicking the popup dismisses it
+- Song popup delay: many stations announce a track before it actually starts, so the popup can now be held back by up to a minute until it lines up with the audio. Set an app-wide default in Settings, override it per station in the station's Advanced settings, or right-click the popup itself to adjust the station that's playing. Left-clicking the popup dismisses it
 - "Allow PC to sleep" setting so the computer can sleep on its normal schedule while radio is playing (#82)
 - "Native preferred" playback engine mode preserving the pre-2.0 native-first behavior
 - Network awareness: playback is not attempted when offline, and a station that fails because there is no internet connection now shows an in-app error (#102)
