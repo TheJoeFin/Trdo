@@ -637,8 +637,33 @@ public sealed partial class RadioPlayerService
 
     private async Task TryFallbackPlaybackCoreAsync()
     {
-        bool wasPlaying = ActiveBackend.IsPlaying;
-        LogService.Warn("RadioPlayerService", $"Trying playback fallback (wasPlaying={wasPlaying})");
+        try
+        {
+            await TryFallbackPlaybackUnguardedAsync();
+        }
+        catch (Exception ex)
+        {
+            // Nothing above this is awaited - HandleBackendFailure starts the fallback and
+            // walks away - so an escaping exception would otherwise vanish, leaving the user
+            // on "Buffering..." with no error: the very symptom of issue #109, on the path
+            // taken by every first-play failure.
+            LogService.Error("RadioPlayerService", "Playback fallback threw", ex);
+            Debug.WriteLine($"[RadioPlayerService] EXCEPTION in playback fallback: {ex}");
+            SetManualBuffering(false);
+            await ReportPlaybackFailureWithDiagnosisAsync(ex.Message, tooManyAttempts: true);
+        }
+    }
+
+    private async Task TryFallbackPlaybackUnguardedAsync()
+    {
+        // Not ActiveBackend.IsPlaying: we get here *because* a backend just failed, so on the
+        // very first play it has already dropped out of Playing and that test is always false.
+        // It left the fallback engine prepared but never started, so the user sat on
+        // "Buffering..." forever with no error - see issue #109. What matters is whether the
+        // user still wants audio, which an in-flight play attempt says just as well as an
+        // already-playing stream does.
+        bool wantsPlayback = IsPlaybackWanted;
+        LogService.Warn("RadioPlayerService", $"Trying playback fallback (wantsPlayback={wantsPlayback})");
         PlaybackPrepareResult result = await _playbackEngineSelector.RetryWithFallbackAsync(_streamUrl!);
         _lastPrepareError = result.Success ? null : result.ErrorMessage;
 
@@ -652,26 +677,37 @@ public sealed partial class RadioPlayerService
         }
 
         SyncActiveBackendVolume();
-        if (wasPlaying)
-        {
-            await PlayActiveBackendWithFadeInAsync(CancellationToken.None);
-            StartMetadataForActiveBackend();
-            _watchdog.NotifyUserIntentionToPlay();
 
-            // The fallback engine is fire-and-forget too, so verify it rather than assuming
-            // the switch worked - otherwise a stream neither engine can play looks like it
-            // recovered and the user is left with silence and no explanation.
-            if (!await WaitForPlaybackConfirmedAsync(PlaybackConfirmationTimeout, CancellationToken.None))
-            {
-                LogService.Error("RadioPlayerService",
-                    $"Fallback to {ActivePlaybackBackend} did not reach playback ({DescribeActiveBackendState()})");
-                _playbackEngineSelector.RecordBackendFailure(_streamUrl, ActivePlaybackBackend);
-                SetManualBuffering(false);
-                await ReportPlaybackFailureWithDiagnosisAsync(
-                    $"neither engine could play the stream (last tried {ActivePlaybackBackend})",
-                    tooManyAttempts: true);
-            }
+        // Re-check rather than trusting the value from before the prepare: preparing a backend
+        // takes time, and the user may have paused or stopped during it.
+        if (!wantsPlayback || !IsPlaybackWanted)
+        {
+            // Paused or stopped mid-failure: leave the fallback prepared and ready to resume,
+            // but don't start audio the user did not ask for.
+            SetManualBuffering(false);
+            return;
         }
+
+        await PlayActiveBackendWithFadeInAsync(CancellationToken.None);
+        StartMetadataForActiveBackend();
+        _watchdog.NotifyUserIntentionToPlay();
+
+        // The fallback engine is fire-and-forget too, so verify it rather than assuming
+        // the switch worked - otherwise a stream neither engine can play looks like it
+        // recovered and the user is left with silence and no explanation.
+        if (await WaitForPlaybackConfirmedAsync(PlaybackConfirmationTimeout, CancellationToken.None))
+        {
+            SetManualBuffering(false);
+            return;
+        }
+
+        LogService.Error("RadioPlayerService",
+            $"Fallback to {ActivePlaybackBackend} did not reach playback ({DescribeActiveBackendState()})");
+        _playbackEngineSelector.RecordBackendFailure(_streamUrl!, ActivePlaybackBackend);
+        SetManualBuffering(false);
+        await ReportPlaybackFailureWithDiagnosisAsync(
+            $"neither engine could play the stream (last tried {ActivePlaybackBackend})",
+            tooManyAttempts: true);
     }
 
     private void OnLibVlcPlaybackStateChanged(object? sender, bool isPlaying)

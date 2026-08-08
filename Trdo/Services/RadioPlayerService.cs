@@ -346,6 +346,12 @@ public sealed partial class RadioPlayerService : IDisposable
                             _wasExternalPause = true;
                             Debug.WriteLine("[RadioPlayerService] Marked as external pause - will refresh stream on next play");
 
+                            // An external pause is the user asking for silence just as much as
+                            // Pause() is, so drop any in-flight play attempt with it. Otherwise
+                            // it stays live as evidence of intent and a later recovery restarts
+                            // audio the user had already stopped.
+                            CancelPendingPlayAttempt();
+
                             // Stop metadata polling when paused
                             StopMetadata();
                             Debug.WriteLine("[RadioPlayerService] Stopped metadata after external pause");
@@ -705,6 +711,19 @@ public sealed partial class RadioPlayerService : IDisposable
 
         Debug.WriteLine($"=== Play END ===");
     }
+
+    /// <summary>
+    /// Whether the user currently wants audio: either a backend is already playing, or a play
+    /// attempt started by <see cref="Play"/> is still in flight. Pause and Stop cancel that
+    /// attempt, so this turns false as soon as the user backs out.
+    /// <para>
+    /// Recovery paths need this rather than <c>ActiveBackend.IsPlaying</c>: they run because a
+    /// backend just failed, and a backend that failed on the first play never reached Playing
+    /// at all.
+    /// </para>
+    /// </summary>
+    private bool IsPlaybackWanted =>
+        ActiveBackend.IsPlaying || _playAttemptCts is { IsCancellationRequested: false };
 
     /// <summary>
     /// Cancels an in-flight play attempt started by Play(), if one is pending.
