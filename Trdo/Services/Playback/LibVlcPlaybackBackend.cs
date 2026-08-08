@@ -20,6 +20,9 @@ public sealed class LibVlcPlaybackBackend : IPlaybackBackend
     private Media? _currentMedia;
     private bool _isBuffering;
     private string? _currentStreamUrl;
+    private readonly object _eventChainLock = new();
+    private Task _eventChain = Task.CompletedTask;
+    private bool _isDisposed;
 
     public LibVlcPlaybackBackend(LibVLC libVlc, LibVlcLogCapture? logCapture = null)
     {
@@ -32,10 +35,10 @@ public sealed class LibVlcPlaybackBackend : IPlaybackBackend
     {
         VlcMediaPlayer player = new(_libVlc);
 
-        player.Playing += OnPlayerStateChanged;
-        player.Paused += OnPlayerStateChanged;
-        player.Stopped += OnPlayerStateChanged;
-        player.EndReached += OnPlayerStateChanged;
+        player.Playing += OnPlayerPlaying;
+        player.Paused += OnPlayerStopped;
+        player.Stopped += OnPlayerStopped;
+        player.EndReached += OnPlayerStopped;
         player.Buffering += OnPlayerBuffering;
         player.EncounteredError += OnPlayerEncounteredError;
 
@@ -44,36 +47,114 @@ public sealed class LibVlcPlaybackBackend : IPlaybackBackend
 
     private void DetachMediaPlayer(VlcMediaPlayer player)
     {
-        player.Playing -= OnPlayerStateChanged;
-        player.Paused -= OnPlayerStateChanged;
-        player.Stopped -= OnPlayerStateChanged;
-        player.EndReached -= OnPlayerStateChanged;
+        player.Playing -= OnPlayerPlaying;
+        player.Paused -= OnPlayerStopped;
+        player.Stopped -= OnPlayerStopped;
+        player.EndReached -= OnPlayerStopped;
         player.Buffering -= OnPlayerBuffering;
         player.EncounteredError -= OnPlayerEncounteredError;
     }
 
-    private void OnPlayerStateChanged(object? sender, EventArgs e) => RaiseStateChanged();
+    // The event tells us the new state, so it is carried across to the dispatch rather than
+    // re-read from the player there: by the time a queued Playing is delivered the player may
+    // already have failed, and reporting that back would flip the UI to the wrong state.
+    private void OnPlayerPlaying(object? sender, EventArgs e) => RaiseStateChanged(isPlaying: true);
+
+    private void OnPlayerStopped(object? sender, EventArgs e) => RaiseStateChanged(isPlaying: false);
 
     private void OnPlayerBuffering(object? sender, MediaPlayerBufferingEventArgs e)
     {
-        _isBuffering = e.Cache < 100f;
-        BufferingStateChanged?.Invoke(this, _isBuffering);
+        bool isBuffering = e.Cache < 100f;
+        _isBuffering = isBuffering;
+        RaiseOffVlcThread(() => BufferingStateChanged?.Invoke(this, isBuffering));
     }
 
     private void OnPlayerEncounteredError(object? sender, EventArgs e)
     {
-        // The event itself carries no payload, so the reason has to come from LibVLC's log.
+        // Read the reason here, while the capture still describes this attempt: the fallback
+        // that follows re-prepares a backend and resets it. Everything that touches the media
+        // player itself waits until the dispatch has left LibVLC's thread.
         string reason = DescribeLastError();
 
         Debug.WriteLine($"[LibVlcPlaybackBackend] EncounteredError: {reason}");
-        LogService.Error("LibVlcPlaybackBackend",
-            $"LibVLC failed on {LogService.Redact(_currentStreamUrl)}: {reason} (state={DescribeState()})");
         _logCapture?.DumpTo("LibVLC playback error");
 
-        PlaybackFailed?.Invoke(this, new PlaybackFailureEventArgs(
-            PlaybackBackendKind.LibVlc,
-            reason,
-            canRetryWithFallback: true));
+        RaiseOffVlcThread(() =>
+        {
+            LogService.Error("LibVlcPlaybackBackend",
+                $"LibVLC failed on {LogService.Redact(_currentStreamUrl)}: {reason} (state={DescribeState()})");
+
+            PlaybackFailed?.Invoke(this, new PlaybackFailureEventArgs(
+                PlaybackBackendKind.LibVlc,
+                reason,
+                canRetryWithFallback: true));
+        });
+    }
+
+    private void RaiseStateChanged(bool isPlaying)
+    {
+        bool isBuffering = _isBuffering;
+        RaiseOffVlcThread(() =>
+        {
+            PlaybackStateChanged?.Invoke(this, isPlaying);
+            BufferingStateChanged?.Invoke(this, isBuffering);
+        });
+    }
+
+    /// <summary>
+    /// Hands an event on from the thread pool rather than from the LibVLC thread that raised it.
+    /// <para>
+    /// LibVLC forbids calling back into libvlc from inside one of its event callbacks: the
+    /// callback runs with the media player's lock held, so <c>Stop</c> or assigning
+    /// <c>Media</c> waits on a lock only the caller could release, and the process deadlocks.
+    /// Our subscribers do exactly that — a playback failure switches engines, which clears
+    /// this player's source — so nothing LibVLC raises may reach them on LibVLC's own thread
+    /// (see issue #109).
+    /// </para>
+    /// <para>
+    /// Events are chained rather than each queued independently so they still arrive in the
+    /// order LibVLC produced them; a Stopped overtaking the Playing before it would leave the
+    /// UI showing the wrong state. Deferring them does open a window in which
+    /// <see cref="Recycle"/> replaces the player, so the one that raised the event is captured
+    /// here — this runs on the raising thread, before any recycle could have swapped it — and
+    /// anything from a player we have since moved off is dropped rather than reported as the
+    /// current one's state. LibVLCSharp's own <c>sender</c> is the event manager rather than
+    /// the player, so it cannot be used for this.
+    /// </para>
+    /// </summary>
+    private void RaiseOffVlcThread(Action raise)
+    {
+        VlcMediaPlayer origin = _mediaPlayer;
+
+        lock (_eventChainLock)
+        {
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _eventChain = _eventChain.ContinueWith(
+                _ =>
+                {
+                    try
+                    {
+                        if (_isDisposed || !ReferenceEquals(origin, _mediaPlayer))
+                        {
+                            return;
+                        }
+
+                        raise();
+                    }
+                    catch (Exception ex)
+                    {
+                        LogService.Error("LibVlcPlaybackBackend", "Error dispatching LibVLC event", ex);
+                        Debug.WriteLine($"[LibVlcPlaybackBackend] Error dispatching LibVLC event: {ex}");
+                    }
+                },
+                CancellationToken.None,
+                TaskContinuationOptions.None,
+                TaskScheduler.Default);
+        }
     }
 
     /// <summary>
@@ -239,14 +320,13 @@ public sealed class LibVlcPlaybackBackend : IPlaybackBackend
         _isBuffering = false;
     }
 
-    private void RaiseStateChanged()
-    {
-        PlaybackStateChanged?.Invoke(this, _mediaPlayer.IsPlaying);
-        BufferingStateChanged?.Invoke(this, _isBuffering);
-    }
-
     public void Dispose()
     {
+        lock (_eventChainLock)
+        {
+            _isDisposed = true;
+        }
+
         ClearSource();
         _mediaPlayer.Dispose();
     }
