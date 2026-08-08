@@ -99,22 +99,6 @@
                                     Height="32"
                                     Padding="0"
                                     VerticalAlignment="Top"
-                                    AutomationProperties.Name="Refresh track info"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Click="RefreshMetadataButton_Click"
-                                    IsEnabled="{x:Bind ViewModel.CanRefreshMetadata, Mode=OneWay}"
-                                    ToolTipService.ToolTip="Refresh track info">
-                                    <FontIcon
-                                        FontSize="16"
-                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                        Glyph="&#xE72C;" />
-                                </Button>
-                                <Button
-                                    Width="32"
-                                    Height="32"
-                                    Padding="0"
-                                    VerticalAlignment="Top"
                                     AutomationProperties.Name="{x:Bind ViewModel.MiniPlayerFavoriteButtonText,
                                                                        Mode=OneWay}"
                                     Background="Transparent"
