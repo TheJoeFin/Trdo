@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace Trdo.Models;
 
@@ -36,6 +37,18 @@ public class FavoriteTrack
     /// When this track was favorited.
     /// </summary>
     public DateTime FavoritedAt { get; set; } = DateTime.Now;
+
+    /// <summary>
+    /// When this track was last included in an export that archived it.
+    /// Null means the track has never been exported.
+    /// </summary>
+    public DateTime? ExportedAt { get; set; }
+
+    /// <summary>
+    /// Whether this track has already been exported and archived.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsArchived => ExportedAt.HasValue;
 
     /// <summary>
     /// Gets a display-friendly string for the track.
