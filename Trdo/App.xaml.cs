@@ -28,6 +28,14 @@ public partial class App : Application
     private DispatcherQueueTimer? _songChangeDelayTimer;
     private string? _pendingSongChangeText;
     private string? _lastKnownNowPlayingDisplayText;
+
+    /// <summary>
+    /// When the current station started playing, or null once a metadata observation has
+    /// consumed it. An announcement inside
+    /// <see cref="SongChangeAnnouncementPolicy.StationStartGrace"/> of it describes a track
+    /// that is already audible, so it skips the popup delay.
+    /// </summary>
+    private DateTimeOffset? _stationStartedAtUtc;
     private readonly PlayerViewModel _playerVm = PlayerViewModel.Shared;
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
@@ -116,12 +124,20 @@ public partial class App : Application
 
         _lastKnownNowPlayingDisplayText = displayText;
 
+        // Whatever this observation was — an announcement or just a new baseline — it was the
+        // track already playing when the station started. Anything after it is a real
+        // mid-stream change that the delay is meant for.
+        bool isFirstSinceStart = SongChangeAnnouncementPolicy.IsWithinStationStartGrace(
+            _stationStartedAtUtc, DateTimeOffset.UtcNow);
+        _stationStartedAtUtc = null;
+
         if (!shouldAnnounce)
             return;
 
         double delaySeconds = SongChangeAnnouncementPolicy.ResolveDelaySeconds(
             _playerVm.SelectedStation?.SongPopupDelaySeconds,
-            SettingsService.SongChangePopupDelaySeconds);
+            SettingsService.SongChangePopupDelaySeconds,
+            isFirstSinceStart);
 
         if (delaySeconds <= 0)
         {
@@ -343,6 +359,13 @@ public partial class App : Application
     {
         if (e.PropertyName == nameof(PlayerViewModel.IsPlaying))
         {
+            if (_playerVm.IsPlaying)
+            {
+                // The track playing when a station starts is already audible, so its
+                // announcement must not be held back by the metadata-lead delay.
+                _stationStartedAtUtc = DateTimeOffset.UtcNow;
+            }
+
             UpdatePlayPauseCommandText();
             // Update tray icon to reflect play/pause state
             _ = UpdateTrayIconAsync();
@@ -373,6 +396,7 @@ public partial class App : Application
             // first metadata establishes it rather than announcing immediately.
             CancelPendingSongChangePopup();
             _lastKnownNowPlayingDisplayText = null;
+            _stationStartedAtUtc = DateTimeOffset.UtcNow;
         }
     }
 

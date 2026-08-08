@@ -1,3 +1,4 @@
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Trdo.Services;
 
@@ -52,6 +53,61 @@ public sealed class SongChangePopupDelayTests
         Assert.AreEqual(60, SongChangeAnnouncementPolicy.MaxDelaySeconds);
         Assert.AreEqual(45, SongChangeAnnouncementPolicy.ClampDelay(45));
         Assert.AreEqual(60, SongChangeAnnouncementPolicy.ResolveDelaySeconds(60, 0));
+    }
+
+    /// <summary>
+    /// The delay compensates for metadata arriving ahead of the audio, which only makes
+    /// sense for a track that has not started playing yet. The first track heard after
+    /// starting a station is already mid-play, so waiting would land the popup after the
+    /// song it names — up to a minute late on a station with a long override.
+    /// </summary>
+    [TestMethod]
+    public void TheFirstAnnouncementAfterStartingAStation_IgnoresTheDelay()
+    {
+        Assert.AreEqual(0, SongChangeAnnouncementPolicy.ResolveDelaySeconds(30, 10, isFirstAnnouncementSinceStart: true));
+        Assert.AreEqual(0, SongChangeAnnouncementPolicy.ResolveDelaySeconds(null, 60, isFirstAnnouncementSinceStart: true));
+    }
+
+    [TestMethod]
+    public void LaterAnnouncements_StillWaitOutTheDelay()
+    {
+        Assert.AreEqual(30, SongChangeAnnouncementPolicy.ResolveDelaySeconds(30, 10, isFirstAnnouncementSinceStart: false));
+        Assert.AreEqual(60, SongChangeAnnouncementPolicy.ResolveDelaySeconds(null, 60, isFirstAnnouncementSinceStart: false));
+    }
+
+    /// <summary>
+    /// The "just started" window has to close on its own rather than waiting to be consumed by
+    /// a metadata change: resuming part-way through a track produces no metadata change at all,
+    /// so a one-shot flag would still be set when the next real track arrived — and would strip
+    /// the delay from the one announcement that needs it.
+    /// </summary>
+    [TestMethod]
+    public void TheStationStartWindow_ExpiresOnItsOwn()
+    {
+        DateTimeOffset started = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+
+        Assert.IsTrue(SongChangeAnnouncementPolicy.IsWithinStationStartGrace(started, started));
+        Assert.IsTrue(SongChangeAnnouncementPolicy.IsWithinStationStartGrace(
+            started, started + TimeSpan.FromSeconds(5)));
+        Assert.IsFalse(SongChangeAnnouncementPolicy.IsWithinStationStartGrace(
+            started, started + SongChangeAnnouncementPolicy.StationStartGrace + TimeSpan.FromSeconds(1)));
+    }
+
+    [TestMethod]
+    public void NoStationStart_MeansNoGrace()
+    {
+        Assert.IsFalse(SongChangeAnnouncementPolicy.IsWithinStationStartGrace(
+            null, DateTimeOffset.UtcNow));
+    }
+
+    /// <summary>A clock that steps backwards must not be read as a station that started ahead of now.</summary>
+    [TestMethod]
+    public void AStartInTheFuture_IsNotTreatedAsInsideTheWindow()
+    {
+        DateTimeOffset now = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
+
+        Assert.IsFalse(SongChangeAnnouncementPolicy.IsWithinStationStartGrace(
+            now + TimeSpan.FromMinutes(1), now));
     }
 
     [TestMethod]

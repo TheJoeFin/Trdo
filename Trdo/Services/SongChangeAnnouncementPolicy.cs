@@ -44,6 +44,30 @@ public static class SongChangeAnnouncementPolicy
             StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// How long after a station starts an announcement still counts as "the track that was
+    /// already playing". Metadata for a stream that has just opened arrives within a few
+    /// seconds, so half a minute is generous; the bound matters because the window has to
+    /// close on its own. Resuming mid-track produces no metadata change at all — the
+    /// orchestrator dedupes it — so a one-shot flag would survive until the next real track
+    /// change and rob it of the delay it needs.
+    /// </summary>
+    public static readonly TimeSpan StationStartGrace = TimeSpan.FromSeconds(30);
+
+    /// <summary>
+    /// Whether an announcement made at <paramref name="nowUtc"/> is still close enough to the
+    /// station starting at <paramref name="startedAtUtc"/> to describe a track the listener can
+    /// already hear. A null start means no station start is pending.
+    /// </summary>
+    public static bool IsWithinStationStartGrace(DateTimeOffset? startedAtUtc, DateTimeOffset nowUtc)
+    {
+        if (startedAtUtc is not { } startedAt)
+            return false;
+
+        TimeSpan elapsed = nowUtc - startedAt;
+        return elapsed >= TimeSpan.Zero && elapsed <= StationStartGrace;
+    }
+
     /// <summary>No delay — the popup appears as soon as the metadata changes.</summary>
     public const double MinDelaySeconds = 0;
 
@@ -119,6 +143,33 @@ public static class SongChangeAnnouncementPolicy
     public static double ResolveDelaySeconds(double? stationDelaySeconds, double globalDelaySeconds)
     {
         return ClampDelay(stationDelaySeconds ?? globalDelaySeconds);
+    }
+
+    /// <summary>
+    /// Works out how long to wait before announcing, taking into account whether the station
+    /// has only just been started.
+    /// <para>
+    /// The delay exists to cancel out the lead a station's metadata has on its audio, which
+    /// only applies to a track that has not begun playing yet. The first track heard after
+    /// starting a station is already mid-play by the time the listener hears anything, so
+    /// holding its announcement back would push the popup past the song it describes — up to
+    /// a minute late on stations with a long override. That first announcement therefore
+    /// ignores the delay entirely; every later track change compensates as usual.
+    /// </para>
+    /// </summary>
+    /// <param name="stationDelaySeconds">The station's override, or null to follow the app setting.</param>
+    /// <param name="globalDelaySeconds">The app-wide delay.</param>
+    /// <param name="isFirstAnnouncementSinceStart">
+    /// Whether this is the first announcement since playback of the station started.
+    /// </param>
+    public static double ResolveDelaySeconds(
+        double? stationDelaySeconds,
+        double globalDelaySeconds,
+        bool isFirstAnnouncementSinceStart)
+    {
+        return isFirstAnnouncementSinceStart
+            ? MinDelaySeconds
+            : ResolveDelaySeconds(stationDelaySeconds, globalDelaySeconds);
     }
 
     /// <summary>
