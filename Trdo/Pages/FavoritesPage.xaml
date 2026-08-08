@@ -15,16 +15,58 @@
         <converters:CountToHasItemsVisibilityConverter x:Key="CountToHasItemsVisibilityConverter" />
     </Page.Resources>
 
-    <Grid RowDefinitions="Auto,*" RowSpacing="8">
-        <!--  Page Title  -->
-        <TextBlock
-            Grid.Row="0"
-            FontSize="16"
-            FontWeight="SemiBold"
-            Text="Favorite Songs" />
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+        <!--  Page Title and Export Commands  -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <TextBlock
+                FontSize="16"
+                FontWeight="SemiBold"
+                Text="Favorite Songs"
+                VerticalAlignment="Center" />
+
+            <StackPanel
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="4"
+                Visibility="{x:Bind ViewModel.Favorites.Count,
+                                    Mode=OneWay,
+                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}">
+                <Button
+                    Click="ExportButton_Click"
+                    ToolTipService.ToolTip="Export favorites to a playlist file">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="14" Glyph="&#xEDE1;" />
+                        <TextBlock Text="Export…" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    AutomationProperties.Name="More favorites options"
+                    Padding="8"
+                    ToolTipService.ToolTip="More options">
+                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem
+                                Click="ClearExportHistory_Click"
+                                IsEnabled="{x:Bind ViewModel.HasArchivedFavorites, Mode=OneWay}"
+                                Text="Clear export history">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE7A7;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <InfoBar
+            x:Name="ExportInfoBar"
+            Grid.Row="1"
+            IsOpen="False" />
 
         <!--  Content  -->
-        <Grid Grid.Row="1" Padding="0,0,0,0">
+        <Grid Grid.Row="2" Padding="0,0,0,0">
 
             <!--  Empty State  -->
             <StackPanel
@@ -78,6 +120,19 @@
                             Padding="12"
                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             CornerRadius="8">
+                            <Grid.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem
+                                        Click="ClearArchivedForTrack_Click"
+                                        IsEnabled="{x:Bind IsArchived}"
+                                        Tag="{x:Bind}"
+                                        Text="Include in next export">
+                                        <MenuFlyoutItem.Icon>
+                                            <FontIcon Glyph="&#xE7A7;" />
+                                        </MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                </MenuFlyout>
+                            </Grid.ContextFlyout>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
@@ -111,6 +166,18 @@
                                             Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                             Text="{x:Bind StationName}"
                                             TextTrimming="CharacterEllipsis" />
+                                        <Border
+                                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                            CornerRadius="4"
+                                            Padding="6,1"
+                                            ToolTipService.ToolTip="Already exported. Right-click to include it in the next export."
+                                            Visibility="{x:Bind IsArchived,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <TextBlock
+                                                FontSize="10"
+                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                Text="Exported" />
+                                        </Border>
                                     </StackPanel>
                                 </StackPanel>
 

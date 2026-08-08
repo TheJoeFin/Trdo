@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stream diagnosis on failure: when a station won't play, Traydio probes the stream and explains why — server offline, address not found, HTTP error, or the address being a playlist file rather than a stream (in which case it names the URL to use instead)
 - LibVLC's own log is now captured into the app log, so a LibVLC failure records the actual reason rather than a generic "LibVLC playback error"; Media Foundation failures now include a decoded HRESULT
 - Log entries keep the stream's port and path (query strings are still redacted), so stations sharing a host can be told apart when diagnosing a problem
+- Export favorite songs from the Favorites page as a CSV file (the format playlist transfer services like Soundiiz and TuneMyMusic take to build a Spotify or Apple Music playlist) or as an XSPF playlist for players such as VLC. Radio metadata has no track URL, so the formats that carry artist and title alone are the ones that actually import somewhere
+- Exports can archive what they send: archived songs stay in the favorites list, marked "Exported", and are skipped by later exports, so running an export every so often only ever hands over what is new. Archiving is a checkbox on the export, an export can be switched back to the full list at any time, and a song — or the whole history — can be un-archived to send it again
 
 ### Fixed
 - Cancelling a drag in the station list no longer restarts the stream. Dropping a station outside the list, or pressing Escape mid-drag, was treated as a completed reorder and re-initialised playback of whatever was playing
