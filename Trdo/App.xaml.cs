@@ -59,7 +59,6 @@ public partial class App : Application
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
     private EventWaitHandle? _trayIconRestoreEvent;
-    private TaskbarCreatedMonitor? _taskbarCreatedMonitor;
     private DispatcherQueue? _uiDispatcherQueue;
     private DispatcherQueueTimer? _restoreEventMonitorTimer;
 #if DEBUG
@@ -394,22 +393,11 @@ public partial class App : Application
             // The watchdog timer will still provide periodic restoration
         }
 
-        try
-        {
-            _taskbarCreatedMonitor = new TaskbarCreatedMonitor();
-            _taskbarCreatedMonitor.TaskbarCreated += OnTaskbarCreated;
-        }
-        catch (Win32Exception ex)
-        {
-            Debug.WriteLine($"[App] Failed to register TaskbarCreated monitor: {ex.Message}");
-        }
-
         _uiDispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         InitializeTrayIcon();
         await UpdateTrayIconAsync();
         UpdatePlayPauseCommandText(forceTooltip: true);
-        StartRestoreEventMonitor();
 
 #if DEBUG
         StartSongChangePopupPreviewIfRequested();
@@ -781,39 +769,6 @@ public partial class App : Application
         }
 
         Apply();
-    }
-
-    private void StartRestoreEventMonitor()
-    {
-        // Only start monitoring if the event handle was created successfully
-        if (_trayIconRestoreEvent is null)
-            return;
-
-        // Get the dispatcher queue for the current thread
-        DispatcherQueue? dispatcherQueue = DispatcherQueue.GetForCurrentThread();
-        if (dispatcherQueue is null)
-            return;
-
-        // Create a timer that checks for restore signals frequently (every 2 seconds)
-        _restoreEventMonitorTimer = dispatcherQueue.CreateTimer();
-        _restoreEventMonitorTimer.Interval = TimeSpan.FromSeconds(2);
-        _restoreEventMonitorTimer.Tick += async (sender, args) =>
-        {
-            try
-            {
-                // Check if the event was signaled without blocking
-                if (_trayIconRestoreEvent?.WaitOne(0) == true)
-                {
-                    // Another instance requested tray icon restoration
-                    await EnsureTrayIconVisibleAsync();
-                }
-            }
-            catch
-            {
-                // Ignore any errors checking the event
-            }
-        };
-        _restoreEventMonitorTimer.Start();
     }
 
     private async void OnTaskbarCreated(object? sender, EventArgs e)
