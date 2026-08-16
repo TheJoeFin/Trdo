@@ -1,10 +1,14 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
-using System;
+using System.Drawing;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Windows.Graphics;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Graphics.Gdi;
+using Windows.Win32.UI.Shell;
 using WinUIEx;
 
 namespace Trdo.Services;
@@ -19,7 +23,7 @@ internal static partial class WindowPlacementService
 
     public static void CapturePointerAnchor()
     {
-        if (GetCursorPos(out POINT point))
+        if (PInvoke.GetCursorPos(out Point point))
             _lastAnchorPoint = new PointInt32(point.X, point.Y);
     }
 
@@ -56,8 +60,8 @@ internal static partial class WindowPlacementService
         // offset from the cursor — matches native Windows tray flyout behavior.
         bool trayIconAvailable = TryGetTrayIconRect(out RECT iconRect);
         bool pointerIsOverTrayIcon = usePointerPlacement && trayIconAvailable
-            && anchor.X >= iconRect.Left && anchor.X <= iconRect.Right
-            && anchor.Y >= iconRect.Top && anchor.Y <= iconRect.Bottom;
+            && anchor.X >= iconRect.left && anchor.X <= iconRect.right
+            && anchor.Y >= iconRect.top && anchor.Y <= iconRect.bottom;
 
         if (usePointerPlacement && !pointerIsOverTrayIcon)
         {
@@ -69,55 +73,55 @@ internal static partial class WindowPlacementService
         }
         else if (trayIconAvailable)
         {
-            int iconCenterX = (iconRect.Left + iconRect.Right) / 2;
+            int iconCenterX = (iconRect.left + iconRect.right) / 2;
             x = iconCenterX - (physWidth / 2);
 
             if (TryGetTaskbarRect(out RECT taskbarRect, out uint taskbarEdge))
             {
                 y = taskbarEdge switch
                 {
-                    ABE_BOTTOM => taskbarRect.Top - physHeight,
-                    ABE_TOP => taskbarRect.Bottom,
-                    _ => iconRect.Top >= workArea.Y + (workArea.Height / 2)
-                        ? iconRect.Top - physHeight - WindowMargin
-                        : iconRect.Bottom + WindowMargin
+                    ABE_BOTTOM => taskbarRect.top - physHeight,
+                    ABE_TOP => taskbarRect.bottom,
+                    _ => iconRect.top >= workArea.Y + (workArea.Height / 2)
+                        ? iconRect.top - physHeight - WindowMargin
+                        : iconRect.bottom + WindowMargin
                 };
             }
             else
             {
-                bool iconOnBottomHalf = iconRect.Top >= workArea.Y + (workArea.Height / 2);
+                bool iconOnBottomHalf = iconRect.top >= workArea.Y + (workArea.Height / 2);
                 y = iconOnBottomHalf
-                    ? iconRect.Top - physHeight - WindowMargin
-                    : iconRect.Bottom + WindowMargin;
+                    ? iconRect.top - physHeight - WindowMargin
+                    : iconRect.bottom + WindowMargin;
             }
         }
         else if (TryGetTaskbarRect(out RECT taskbarRect, out uint taskbarEdge))
         {
             bool isRtl = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
-            int taskbarMidY = taskbarRect.Top + ((taskbarRect.Bottom - taskbarRect.Top) / 2);
+            int taskbarMidY = taskbarRect.top + ((taskbarRect.bottom - taskbarRect.top) / 2);
 
             x = taskbarEdge switch
             {
                 ABE_BOTTOM or ABE_TOP => isRtl
-                    ? taskbarRect.Left + WindowMargin
-                    : taskbarRect.Right - WindowMargin - physWidth,
+                    ? taskbarRect.left + WindowMargin
+                    : taskbarRect.right - WindowMargin - physWidth,
                 _ => workArea.X + (workArea.Width / 2) - (physWidth / 2)
             };
 
             y = taskbarEdge switch
             {
-                ABE_BOTTOM => taskbarRect.Top - physHeight,
-                ABE_TOP => taskbarRect.Bottom,
+                ABE_BOTTOM => taskbarRect.top - physHeight,
+                ABE_TOP => taskbarRect.bottom,
                 ABE_LEFT => taskbarMidY - (physHeight / 2),
                 ABE_RIGHT => taskbarMidY - (physHeight / 2),
-                _ => taskbarRect.Top - physHeight
+                _ => taskbarRect.top - physHeight
             };
 
             if (taskbarEdge is ABE_LEFT or ABE_RIGHT)
             {
                 x = taskbarEdge == ABE_LEFT
-                    ? taskbarRect.Right + WindowMargin
-                    : taskbarRect.Left - physWidth - WindowMargin;
+                    ? taskbarRect.right + WindowMargin
+                    : taskbarRect.left - physWidth - WindowMargin;
             }
         }
         else
@@ -174,8 +178,8 @@ internal static partial class WindowPlacementService
         if (TryGetTaskbarRect(out RECT taskbarRect, out _))
         {
             PointInt32 taskbarPoint = new(
-                (taskbarRect.Left + taskbarRect.Right) / 2,
-                (taskbarRect.Top + taskbarRect.Bottom) / 2);
+                (taskbarRect.left + taskbarRect.right) / 2,
+                (taskbarRect.top + taskbarRect.bottom) / 2);
             DisplayArea? taskbarDisplay = DisplayArea.GetFromPoint(taskbarPoint, DisplayAreaFallback.Nearest);
             workArea = taskbarDisplay?.WorkArea ?? DisplayArea.Primary.WorkArea;
             dpiProbePoint = taskbarPoint;
@@ -220,16 +224,16 @@ internal static partial class WindowPlacementService
 
     private static uint GetDpiForAnchor(PointInt32 anchor, Window window)
     {
-        POINT point = new() { X = anchor.X, Y = anchor.Y };
-        nint monitor = MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST);
+        Point point = new() { X = anchor.X, Y = anchor.Y };
+        nint monitor = PInvoke.MonitorFromPoint(point, MONITOR_FROM_FLAGS.MONITOR_DEFAULTTONEAREST);
         if (monitor != 0
-            && GetDpiForMonitor(monitor, MDT_EFFECTIVE_DPI, out uint dpiX, out _) == 0
+            && PInvoke.GetDpiForMonitor((HMONITOR)monitor, MDT_EFFECTIVE_DPI, out uint dpiX, out _) == 0
             && dpiX != 0)
         {
             return dpiX;
         }
 
-        uint dpi = GetDpiForWindow(window.GetWindowHandle());
+        uint dpi = PInvoke.GetDpiForWindow((HWND)window.GetWindowHandle());
         return dpi == 0 ? 96u : dpi;
     }
 
@@ -259,8 +263,8 @@ internal static partial class WindowPlacementService
         }
 
         anchor = new PointInt32(
-            (iconRect.Left + iconRect.Right) / 2,
-            (iconRect.Top + iconRect.Bottom) / 2);
+            (iconRect.left + iconRect.right) / 2,
+            (iconRect.top + iconRect.bottom) / 2);
         return true;
     }
 
@@ -271,14 +275,15 @@ internal static partial class WindowPlacementService
         if (!_hasTrayIconSource || _trayIconWindowHandle == 0)
             return false;
 
+
         NOTIFYICONIDENTIFIER identifier = new()
         {
-            cbSize = Marshal.SizeOf<NOTIFYICONIDENTIFIER>(),
-            hWnd = _trayIconWindowHandle,
+            cbSize = (uint)Marshal.SizeOf<NOTIFYICONIDENTIFIER>(),
+            hWnd = (HWND)_trayIconWindowHandle,
             uID = _trayIconId,
         };
 
-        return Shell_NotifyIconGetRect(ref identifier, out iconRect) == 0;
+        return PInvoke.Shell_NotifyIconGetRect(in identifier, out iconRect) == 0;
     }
 
     private static bool TryGetTrayIconWindowHandle(TrayIcon trayIcon, out nint hwnd)
@@ -309,10 +314,10 @@ internal static partial class WindowPlacementService
     {
         APPBARDATA appBarData = new()
         {
-            cbSize = Marshal.SizeOf<APPBARDATA>()
+            cbSize = (uint)Marshal.SizeOf<APPBARDATA>()
         };
 
-        if (SHAppBarMessage(ABM_GETTASKBARPOS, ref appBarData) == 0)
+        if (PInvoke.SHAppBarMessage(ABM_GETTASKBARPOS, ref appBarData) == 0)
         {
             rc = default;
             edge = 0;
@@ -333,25 +338,25 @@ internal static partial class WindowPlacementService
         }
 
         bool isRtl = CultureInfo.CurrentUICulture.TextInfo.IsRightToLeft;
-        int taskbarMidY = taskbarRect.Top + ((taskbarRect.Bottom - taskbarRect.Top) / 2);
+        int taskbarMidY = taskbarRect.top + ((taskbarRect.bottom - taskbarRect.top) / 2);
 
         anchor = edge switch
         {
             ABE_BOTTOM => new PointInt32(
-                isRtl ? taskbarRect.Left + WindowMargin : taskbarRect.Right - WindowMargin,
+                isRtl ? taskbarRect.left + WindowMargin : taskbarRect.right - WindowMargin,
                 taskbarMidY),
             ABE_TOP => new PointInt32(
-                isRtl ? taskbarRect.Left + WindowMargin : taskbarRect.Right - WindowMargin,
-                taskbarRect.Bottom - WindowMargin),
+                isRtl ? taskbarRect.left + WindowMargin : taskbarRect.right - WindowMargin,
+                taskbarRect.bottom - WindowMargin),
             ABE_LEFT => new PointInt32(
-                taskbarRect.Right - WindowMargin,
-                taskbarRect.Bottom - WindowMargin),
+                taskbarRect.right - WindowMargin,
+                taskbarRect.bottom - WindowMargin),
             ABE_RIGHT => new PointInt32(
-                taskbarRect.Left + WindowMargin,
-                taskbarRect.Bottom - WindowMargin),
+                taskbarRect.left + WindowMargin,
+                taskbarRect.bottom - WindowMargin),
             _ => new PointInt32(
-                isRtl ? taskbarRect.Left + WindowMargin : taskbarRect.Right - WindowMargin,
-                taskbarRect.Bottom - WindowMargin)
+                isRtl ? taskbarRect.left + WindowMargin : taskbarRect.right - WindowMargin,
+                taskbarRect.bottom - WindowMargin)
         };
 
         return true;
@@ -365,58 +370,4 @@ internal static partial class WindowPlacementService
     private const uint ABE_RIGHT = 2;
     private const uint ABE_BOTTOM = 3;
 
-    [StructLayout(LayoutKind.Sequential)]
-    private struct POINT
-    {
-        public int X;
-        public int Y;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT
-    {
-        public int Left;
-        public int Top;
-        public int Right;
-        public int Bottom;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct NOTIFYICONIDENTIFIER
-    {
-        public int cbSize;
-        public nint hWnd;
-        public uint uID;
-        public Guid guidItem;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct APPBARDATA
-    {
-        public int cbSize;
-        public nint hWnd;
-        public uint uCallbackMessage;
-        public uint uEdge;
-        public RECT rc;
-        public nint lParam;
-    }
-
-    [LibraryImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static partial bool GetCursorPos(out POINT point);
-
-    [LibraryImport("user32.dll")]
-    private static partial uint GetDpiForWindow(nint hwnd);
-
-    [LibraryImport("user32.dll")]
-    private static partial nint MonitorFromPoint(POINT pt, uint dwFlags);
-
-    [LibraryImport("shcore.dll")]
-    private static partial int GetDpiForMonitor(nint hMonitor, uint dpiType, out uint dpiX, out uint dpiY);
-
-    [LibraryImport("shell32.dll")]
-    private static partial uint SHAppBarMessage(uint dwMessage, ref APPBARDATA pData);
-
-    [DllImport("shell32.dll", SetLastError = true)]
-    private static extern int Shell_NotifyIconGetRect(ref NOTIFYICONIDENTIFIER identifier, out RECT iconLocation);
 }

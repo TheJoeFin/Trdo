@@ -5,14 +5,14 @@ using Microsoft.UI.Xaml.Controls;
 using Trdo.Services;
 using Trdo.Services.Playback;
 using Trdo.ViewModels;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Win32;
+
 
 namespace Trdo.Pages;
 
 public sealed partial class SettingsPage : Page
 {
-    [DllImport("user32.dll")]
-    private static extern nint GetActiveWindow();
-
     private float _displayLevel;
     private bool _isUpdatingAutoPlayToggle;
 
@@ -95,7 +95,7 @@ public sealed partial class SettingsPage : Page
     {
         try
         {
-            nint hwnd = GetActiveWindow();
+            nint hwnd = PInvoke.GetActiveWindow();
             int count = await ViewModel.ImportStationsAsync(hwnd);
 
             if (count > 0)
@@ -123,7 +123,7 @@ public sealed partial class SettingsPage : Page
     {
         try
         {
-            nint hwnd = GetActiveWindow();
+            nint hwnd = PInvoke.GetActiveWindow();
             bool exported = await ViewModel.ExportStationsAsync(hwnd);
 
             if (exported)
@@ -190,7 +190,7 @@ public sealed partial class SettingsPage : Page
     {
         try
         {
-            var store = new EngineHealthStore(new LocalSettingsEngineHealthStorage());
+            EngineHealthStore store = new(new LocalSettingsEngineHealthStorage());
             int removed = store.Clear();
 
             LogService.Info("SettingsPage", $"User reset engine memory ({removed} record(s) removed)");
@@ -215,9 +215,9 @@ public sealed partial class SettingsPage : Page
         {
             string diagnostics = LogService.ReadRecentText();
 
-            var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            DataPackage package = new();
             package.SetText(diagnostics);
-            Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+            Clipboard.SetContent(package);
 
             DiagnosticsInfoBar.Severity = InfoBarSeverity.Success;
             DiagnosticsInfoBar.Message = "Copied recent diagnostics to the clipboard.";

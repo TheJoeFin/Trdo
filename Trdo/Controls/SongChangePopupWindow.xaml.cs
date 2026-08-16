@@ -8,12 +8,15 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using Trdo.Models;
 using Trdo.Services;
 using Trdo.ViewModels;
 using Windows.Graphics;
 using WinRT.Interop;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Graphics.Dwm;
+using Windows.Win32.UI.WindowsAndMessaging;
 
 namespace Trdo.Controls;
 
@@ -58,17 +61,6 @@ public sealed partial class SongChangePopupWindow : Window
     private static readonly TimeSpan FrameInterval = TimeSpan.FromMilliseconds(15);
     private const double ShowDurationMs = 250;
     private const double HideDurationMs = 180;
-
-    private const int GWL_EXSTYLE = -20;
-    private const int WS_EX_TOOLWINDOW = 0x00000080;
-    private const int WS_EX_TRANSPARENT = 0x00000020;
-    private const int WS_EX_NOACTIVATE = 0x08000000;
-    private const int WS_EX_LAYERED = 0x00080000;
-    private const uint LWA_ALPHA = 0x00000002;
-    private const int SW_SHOWNA = 8;
-    private const int SW_HIDE = 0;
-    private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
-    private const int DWMWCP_ROUND = 2;
 
     private readonly DispatcherQueueTimer _autoHideTimer;
     private readonly DispatcherQueueTimer _animationTimer;
@@ -208,7 +200,7 @@ public sealed partial class SongChangePopupWindow : Window
 
         if (_hwnd != 0)
         {
-            _ = ShowWindow(_hwnd, SW_HIDE);
+            _ = PInvoke.ShowWindow((HWND)_hwnd, SHOW_WINDOW_CMD.SW_HIDE);
         }
     }
 
@@ -249,7 +241,7 @@ public sealed partial class SongChangePopupWindow : Window
         // when the user clicks away.
         _isMenuOpen = true;
         _autoHideTimer.Stop();
-        _ = SetForegroundWindow(_hwnd);
+        _ = PInvoke.SetForegroundWindow((HWND)_hwnd);
 
         flyout.Closed += OnDelayMenuClosed;
         flyout.ShowAt(RootGrid, new FlyoutShowOptions
@@ -276,7 +268,7 @@ public sealed partial class SongChangePopupWindow : Window
 
     private MenuFlyout BuildDelayMenu()
     {
-        var flyout = new MenuFlyout();
+        MenuFlyout flyout = new();
 
         RadioStation? station = PlayerViewModel.Shared.SelectedStation;
         double globalDelay = SettingsService.SongChangePopupDelaySeconds;
@@ -299,7 +291,7 @@ public sealed partial class SongChangePopupWindow : Window
             foreach (double preset in DelayPresetsSeconds)
             {
                 double value = preset;
-                var item = new ToggleMenuFlyoutItem
+                ToggleMenuFlyoutItem item = new()
                 {
                     Text = SongChangeAnnouncementPolicy.DescribeDelay(value),
                     IsChecked = stationDelay is not null && Math.Abs(stationDelay.Value - value) < 0.05
@@ -308,7 +300,7 @@ public sealed partial class SongChangePopupWindow : Window
                 flyout.Items.Add(item);
             }
 
-            var followApp = new ToggleMenuFlyoutItem
+            ToggleMenuFlyoutItem followApp = new()
             {
                 Text = $"Use app setting ({SongChangeAnnouncementPolicy.DescribeDelay(globalDelay)})",
                 IsChecked = stationDelay is null
@@ -327,7 +319,7 @@ public sealed partial class SongChangePopupWindow : Window
             });
         }
 
-        var turnOff = new MenuFlyoutItem { Text = "Turn off song popups" };
+        MenuFlyoutItem turnOff = new() { Text = "Turn off song popups" };
         turnOff.Click += (_, _) =>
         {
             SettingsService.IsSongChangePopupEnabled = false;
@@ -407,14 +399,14 @@ public sealed partial class SongChangePopupWindow : Window
     private (int Width, int Height) GetFrameThickness()
     {
         if (_hwnd == 0
-            || !GetWindowRect(_hwnd, out RECT window)
-            || !GetClientRect(_hwnd, out RECT client))
+            || !PInvoke.GetWindowRect((HWND)_hwnd, out RECT window)
+            || !PInvoke.GetClientRect((HWND)_hwnd, out RECT client))
         {
             return (0, 0);
         }
 
-        int width = (window.Right - window.Left) - (client.Right - client.Left);
-        int height = (window.Bottom - window.Top) - (client.Bottom - client.Top);
+        int width = (window.right - window.left) - (client.right - client.left);
+        int height = (window.bottom - window.top) - (client.bottom - client.top);
 
         return (Math.Max(0, width), Math.Max(0, height));
     }
@@ -451,14 +443,23 @@ public sealed partial class SongChangePopupWindow : Window
         // beneath it — which is why a left click dismisses it, turning an intercepted
         // click into the action the user most likely wanted. Once hidden the HWND is
         // SW_HIDE'd, so it intercepts nothing the rest of the time.
-        int exStyle = GetWindowLong(_hwnd, GWL_EXSTYLE);
-        _ = SetWindowLong(
-            _hwnd,
-            GWL_EXSTYLE,
-            exStyle | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_LAYERED);
+        int exStyle = (int)PInvoke.GetWindowLong((HWND)_hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
+        _ = PInvoke.SetWindowLong(
+            (HWND)_hwnd,
+            WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE,
+            exStyle | (int)(WINDOW_EX_STYLE.WS_EX_TOOLWINDOW
+            | WINDOW_EX_STYLE.WS_EX_NOACTIVATE
+            | WINDOW_EX_STYLE.WS_EX_LAYERED));
 
-        int cornerPreference = DWMWCP_ROUND;
-        _ = DwmSetWindowAttribute(_hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref cornerPreference, sizeof(int));
+        DWM_WINDOW_CORNER_PREFERENCE cornerPreference = DWM_WINDOW_CORNER_PREFERENCE.DWMWCP_ROUND;
+        unsafe
+        {
+            _ = PInvoke.DwmSetWindowAttribute(
+                (HWND)_hwnd,
+                DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE,
+                &cornerPreference,
+                (uint)sizeof(DWM_WINDOW_CORNER_PREFERENCE));
+        }
 
         // WinUI only creates and renders the XAML content once the window has
         // been activated; SW_SHOWNA alone leaves it blank, and DesiredSize
@@ -467,7 +468,7 @@ public sealed partial class SongChangePopupWindow : Window
         // theft) and alpha is pinned to 0, so nothing flashes on screen.
         SetAlpha(0);
         Activate();
-        _ = ShowWindow(_hwnd, SW_HIDE);
+        _ = PInvoke.ShowWindow((HWND)_hwnd, SHOW_WINDOW_CMD.SW_HIDE);
     }
 
     private void PlayShowAnimation(uint dpi)
@@ -486,7 +487,7 @@ public sealed partial class SongChangePopupWindow : Window
         _isVisible = true;
 
         // Show without activating/stealing focus, then animate in.
-        _ = ShowWindow(_hwnd, SW_SHOWNA);
+        _ = PInvoke.ShowWindow((HWND)_hwnd, SHOW_WINDOW_CMD.SW_SHOWNA);
 
         _animationClock.Restart();
         _animationTimer.Start();
@@ -494,7 +495,7 @@ public sealed partial class SongChangePopupWindow : Window
 
     private void PlayHideAnimation()
     {
-        uint dpi = GetDpiForWindow(_hwnd);
+        uint dpi = PInvoke.GetDpiForWindow((HWND)_hwnd);
         if (dpi == 0)
             dpi = 96;
 
@@ -542,7 +543,7 @@ public sealed partial class SongChangePopupWindow : Window
 
             if (_hwnd != 0)
             {
-                _ = ShowWindow(_hwnd, SW_HIDE);
+                _ = PInvoke.ShowWindow((HWND)_hwnd, SHOW_WINDOW_CMD.SW_HIDE);
             }
         }
     }
@@ -562,46 +563,8 @@ public sealed partial class SongChangePopupWindow : Window
     private void SetAlpha(double opacity)
     {
         byte alpha = (byte)Math.Clamp(Math.Round(opacity * 255), 0, 255);
-        _ = SetLayeredWindowAttributes(_hwnd, 0, alpha, LWA_ALPHA);
+        _ = PInvoke.SetLayeredWindowAttributes((HWND)_hwnd, new COLORREF(0), alpha, LAYERED_WINDOW_ATTRIBUTES_FLAGS.LWA_ALPHA);
     }
 
     private static int ScaleForDpi(int logical, uint dpi) => (int)Math.Round(logical * dpi / 96.0);
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RECT
-    {
-        public int Left;
-        public int Top;
-        public int Right;
-        public int Bottom;
-    }
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetWindowRect(nint hWnd, out RECT rect);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetClientRect(nint hWnd, out RECT rect);
-
-    [DllImport("user32.dll")]
-    private static extern int GetWindowLong(nint hWnd, int nIndex);
-
-    [DllImport("user32.dll")]
-    private static extern int SetWindowLong(nint hWnd, int nIndex, int dwNewLong);
-
-    [DllImport("user32.dll")]
-    private static extern bool ShowWindow(nint hWnd, int nCmdShow);
-
-    [DllImport("user32.dll")]
-    private static extern bool SetLayeredWindowAttributes(nint hwnd, uint crKey, byte bAlpha, uint dwFlags);
-
-    [DllImport("user32.dll")]
-    private static extern uint GetDpiForWindow(nint hwnd);
-
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(nint hWnd);
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(nint hwnd, int attribute, ref int value, int size);
 }

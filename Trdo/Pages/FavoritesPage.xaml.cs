@@ -3,12 +3,11 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Trdo.Models;
 using Trdo.Services;
 using Trdo.ViewModels;
 using Windows.System;
+using Windows.Win32;
 
 namespace Trdo.Pages;
 
@@ -17,9 +16,6 @@ namespace Trdo.Pages;
 /// </summary>
 public sealed partial class FavoritesPage : Page
 {
-    [DllImport("user32.dll")]
-    private static extern nint GetActiveWindow();
-
     private ListViewItem? _previouslySelectedContainer;
     private ShellViewModel? _shellViewModel;
     private static bool HasEnabledMusicServices =>
@@ -132,7 +128,7 @@ public sealed partial class FavoritesPage : Page
 
         try
         {
-            FavoritesExportResult result = await ViewModel.ExportAsync(GetActiveWindow(), exportAll, archive);
+            FavoritesExportResult result = await ViewModel.ExportAsync(PInvoke.GetActiveWindow(), exportAll, archive);
 
             if (!result.Succeeded)
                 return;

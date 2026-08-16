@@ -4,11 +4,13 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Input;
 using System;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Text;
 using Trdo.Pages;
 using Trdo.Services;
 using Windows.Graphics;
+using Windows.Win32;
+using Windows.Win32.Foundation;
+using Windows.Win32.Graphics.Dwm;
+using Windows.Win32.UI.WindowsAndMessaging;
 using WinRT.Interop;
 using WinUIEx;
 
@@ -55,7 +57,7 @@ public sealed partial class TrayPopupWindow : WindowEx
     private readonly DispatcherQueueTimer _hideTimer;
     private readonly DispatcherQueueTimer _animationTimer;
     private readonly Stopwatch _animationClock = new();
-    private readonly nint _hwnd;
+    private readonly HWND _hwnd;
     private ShellPage? _shellPage;
     private bool _isShowing;
     private bool _isPopupVisible;
@@ -82,7 +84,7 @@ public sealed partial class TrayPopupWindow : WindowEx
     {
         InitializeComponent();
 
-        _hwnd = WindowNative.GetWindowHandle(this);
+        _hwnd = (HWND)WindowNative.GetWindowHandle(this);
 
         AppWindow.SetIcon("Assets\\Radio.ico");
         ConfigurePresenter();
@@ -137,14 +139,14 @@ public sealed partial class TrayPopupWindow : WindowEx
         _isShowing = true;
         _isPopupVisible = true;
 
-        uint dpi = GetDpiForWindow(_hwnd);
+        uint dpi = PInvoke.GetDpiForWindow(_hwnd);
         if (dpi == 0)
             dpi = 96;
         PlayShowAnimation(dpi);
 
         this.Show();
         Activate();
-        SetForegroundWindow(_hwnd);
+        PInvoke.SetForegroundWindow(_hwnd);
 
         // The hosted page stays loaded while the popup is hidden, so being subscribed is
         // not the same as being able to show a dialog. Tell the error service when there
@@ -189,7 +191,7 @@ public sealed partial class TrayPopupWindow : WindowEx
 
     private void PlayHideAnimation()
     {
-        uint dpi = GetDpiForWindow(_hwnd);
+        uint dpi = PInvoke.GetDpiForWindow(_hwnd);
         if (dpi == 0)
             dpi = 96;
 
@@ -250,7 +252,8 @@ public sealed partial class TrayPopupWindow : WindowEx
     private void SetAlpha(double opacity)
     {
         byte alpha = (byte)Math.Clamp(Math.Round(opacity * 255), 0, 255);
-        _ = SetLayeredWindowAttributes(_hwnd, 0, alpha, LWA_ALPHA);
+        COLORREF cOLORREF = new(0); // Color is ignored when using LWA_ALPHA
+        _ = PInvoke.SetLayeredWindowAttributes(_hwnd, cOLORREF, alpha, LAYERED_WINDOW_ATTRIBUTES_FLAGS.LWA_ALPHA);
     }
 
     private static int ScaleForDpi(int logical, uint dpi) => (int)Math.Round(logical * dpi / 96.0);
@@ -277,29 +280,35 @@ public sealed partial class TrayPopupWindow : WindowEx
         AppWindow.SetPresenter(presenter);
         AppWindow.IsShownInSwitchers = false;
 
-        int cornerPreference = DWMWCP_ROUND;
-        _ = DwmSetWindowAttribute(_hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref cornerPreference, sizeof(int));
+        unsafe
+        {
+            uint cornerPreference = DWMWCP_ROUND;
+            _ = PInvoke.DwmSetWindowAttribute(_hwnd, DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE, &cornerPreference, sizeof(int));
+        }
 
         // WS_EX_LAYERED enables the per-window alpha the entrance/exit fade drives.
-        int exStyle = GetWindowLong(_hwnd, GWL_EXSTYLE);
-        _ = SetWindowLong(_hwnd, GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
+        int exStyle = PInvoke.GetWindowLong(_hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
+        _ = PInvoke.SetWindowLong(_hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, exStyle | WS_EX_LAYERED);
     }
 
     private void ConfigureToolWindow()
     {
         // No taskbar button, no Alt-Tab entry.
-        nint hwnd = WindowNative.GetWindowHandle(this);
-        int exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-        _ = SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
+        HWND hwnd = (HWND)WindowNative.GetWindowHandle(this);
+        int exStyle = PInvoke.GetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
+        _ = PInvoke.SetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, exStyle | WS_EX_TOOLWINDOW);
 
         // The presenter's SetBorderAndTitleBar(false, false) can leave the
         // caption/resize-frame styles behind, which DWM renders as a visible
         // frame around the popup. Strip them and the 1px DWM border directly.
-        int style = GetWindowLong(hwnd, GWL_STYLE);
-        _ = SetWindowLong(hwnd, GWL_STYLE, style & ~(WS_CAPTION | WS_THICKFRAME));
+        int style = PInvoke.GetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE);
+        _ = PInvoke.SetWindowLong(hwnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, style & ~(WS_CAPTION | WS_THICKFRAME));
 
-        int borderColor = DWMWA_COLOR_NONE;
-        _ = DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, ref borderColor, sizeof(int));
+        unsafe
+        {
+            uint cornerPreference = DWMWCP_ROUND;
+            _ = PInvoke.DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_WINDOW_CORNER_PREFERENCE, &cornerPreference, sizeof(int));
+        }
     }
 
     private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
@@ -325,14 +334,14 @@ public sealed partial class TrayPopupWindow : WindowEx
         if (!_isPopupVisible)
             return;
 
-        nint foreground = GetForegroundWindow();
+        HWND foreground = PInvoke.GetForegroundWindow();
         if (ShouldRemainVisible(foreground))
             return;
 
         HidePopup();
     }
 
-    private bool ShouldRemainVisible(nint foregroundWindow)
+    private bool ShouldRemainVisible(HWND foregroundWindow)
     {
         if (foregroundWindow == 0)
             return false;
@@ -341,7 +350,7 @@ public sealed partial class TrayPopupWindow : WindowEx
         if (foregroundWindow == windowHandle)
             return true;
 
-        if (GetAncestor(foregroundWindow, GA_ROOT) == windowHandle)
+        if (PInvoke.GetAncestor(foregroundWindow, GET_ANCESTOR_FLAGS.GA_ROOT) == windowHandle)
             return true;
 
         // WinUI MenuFlyouts/ComboBox dropdowns open in separate popup HWNDs;
@@ -349,10 +358,10 @@ public sealed partial class TrayPopupWindow : WindowEx
         return IsTransientPopupWindow(foregroundWindow);
     }
 
-    private static bool IsTransientPopupWindow(nint hwnd)
+    private static bool IsTransientPopupWindow(HWND hwnd)
     {
-        StringBuilder className = new(64);
-        if (GetClassName(hwnd, className, className.Capacity) == 0)
+        System.Span<Char> className = [];
+        if (PInvoke.GetClassName(hwnd, className) == 0)
             return false;
 
         string name = className.ToString();
@@ -365,31 +374,4 @@ public sealed partial class TrayPopupWindow : WindowEx
         args.Handled = true;
         HidePopup();
     }
-
-    [DllImport("user32.dll")]
-    private static extern int GetWindowLong(nint hWnd, int nIndex);
-
-    [DllImport("user32.dll")]
-    private static extern int SetWindowLong(nint hWnd, int nIndex, int dwNewLong);
-
-    [DllImport("user32.dll")]
-    private static extern bool SetForegroundWindow(nint hWnd);
-
-    [DllImport("user32.dll")]
-    private static extern nint GetForegroundWindow();
-
-    [DllImport("user32.dll")]
-    private static extern nint GetAncestor(nint hWnd, uint gaFlags);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern int GetClassName(nint hWnd, StringBuilder className, int maxCount);
-
-    [DllImport("user32.dll")]
-    private static extern bool SetLayeredWindowAttributes(nint hwnd, uint crKey, byte bAlpha, uint dwFlags);
-
-    [DllImport("user32.dll")]
-    private static extern uint GetDpiForWindow(nint hwnd);
-
-    [DllImport("dwmapi.dll")]
-    private static extern int DwmSetWindowAttribute(nint hwnd, int attribute, ref int value, int size);
 }
