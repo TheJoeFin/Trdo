@@ -59,6 +59,7 @@
                         <ComboBox
                             HorizontalAlignment="Stretch"
                             SelectedIndex="{x:Bind ViewModel.LanguageSelectionIndex, Mode=TwoWay}">
+                            <ComboBoxItem x:Uid="SettingsPage_Language_System" />
                             <ComboBoxItem x:Uid="SettingsPage_Language_English" />
                             <ComboBoxItem x:Uid="SettingsPage_Language_Spanish" />
                         </ComboBox>

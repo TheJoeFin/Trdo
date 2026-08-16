@@ -84,15 +84,15 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     {
         get
         {
-            int index = Array.IndexOf(LocalizationService.SupportedLanguages, SettingsService.AppLanguage);
+            int index = Array.IndexOf(LocalizationService.LanguagePickerOptions, SettingsService.AppLanguage);
             return index < 0 ? 0 : index;
         }
         set
         {
-            string[] languages = LocalizationService.SupportedLanguages;
+            string[] languages = LocalizationService.LanguagePickerOptions;
             string languageTag = value >= 0 && value < languages.Length
                 ? languages[value]
-                : LocalizationService.DefaultLanguage;
+                : LocalizationService.SystemLanguage;
 
             if (languageTag == SettingsService.AppLanguage) return;
 

@@ -13,10 +13,22 @@ public static class LocalizationService
     public const string DefaultLanguage = "en-US";
 
     /// <summary>
+    /// Sentinel stored/selected when the app should follow the OS-configured language instead of
+    /// overriding it.
+    /// </summary>
+    public const string SystemLanguage = "system";
+
+    /// <summary>
     /// UI languages that ship with a Strings\&lt;tag&gt;\Resources.resw file, in the same order as
-    /// the language picker on the settings page.
+    /// the language picker on the settings page (excluding the "System" option).
     /// </summary>
     public static string[] SupportedLanguages { get; } = ["en-US", "es-ES"];
+
+    /// <summary>
+    /// All selectable options in the settings page language picker, in display order: "System"
+    /// followed by each supported language tag.
+    /// </summary>
+    public static string[] LanguagePickerOptions { get; } = [SystemLanguage, .. SupportedLanguages];
 
     private static readonly ResourceLoader _loader = new();
 
@@ -43,18 +55,17 @@ public static class LocalizationService
     /// </summary>
     public static void ApplyLanguage(string languageTag)
     {
-        if (string.IsNullOrWhiteSpace(languageTag))
-        {
-            languageTag = DefaultLanguage;
-        }
-
         try
         {
-            ApplicationLanguages.PrimaryLanguageOverride = languageTag;
+            // An empty override tells the platform to use the OS-configured language.
+            ApplicationLanguages.PrimaryLanguageOverride =
+                string.IsNullOrWhiteSpace(languageTag) || languageTag == SystemLanguage
+                    ? string.Empty
+                    : languageTag;
         }
         catch
         {
-            // Ignore invalid culture tags and fall back to the default language.
+            // Ignore invalid culture tags and fall back to the system language.
         }
     }
 }

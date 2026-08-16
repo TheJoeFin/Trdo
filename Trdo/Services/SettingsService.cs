@@ -95,13 +95,13 @@ public static class SettingsService
                 // Fall through to the default language.
             }
 
-            return LocalizationService.DefaultLanguage;
+            return LocalizationService.SystemLanguage;
         }
         set
         {
             try
             {
-                string normalized = string.IsNullOrWhiteSpace(value) ? LocalizationService.DefaultLanguage : value;
+                string normalized = string.IsNullOrWhiteSpace(value) ? LocalizationService.SystemLanguage : value;
                 ApplicationData.Current.LocalSettings.Values[AppLanguageKey] = normalized;
                 LocalizationService.ApplyLanguage(normalized);
             }

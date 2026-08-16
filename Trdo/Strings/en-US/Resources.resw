@@ -446,6 +446,9 @@
   <data name="SettingsPage_Language_English.Content" xml:space="preserve">
     <value>English</value>
   </data>
+  <data name="SettingsPage_Language_System.Content" xml:space="preserve">
+    <value>System</value>
+  </data>
   <data name="SettingsPage_Language_Spanish.Content" xml:space="preserve">
     <value>Español</value>
   </data>
