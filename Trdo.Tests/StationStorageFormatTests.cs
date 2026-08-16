@@ -32,7 +32,7 @@ public sealed class StationStorageFormatTests
     {
         List<RadioStation> stations = StationStorageFormat.ParseStations(LegacyJson);
 
-        Assert.AreEqual(2, stations.Count);
+        Assert.HasCount(2, stations);
         Assert.AreEqual("Jazz FM", stations[0].Name);
         Assert.AreEqual("http://example.com/jazz", stations[0].StreamUrl);
         Assert.AreEqual("http://jazz.example", stations[0].Homepage);
@@ -68,7 +68,7 @@ public sealed class StationStorageFormatTests
         List<RadioStation> parsed = StationStorageFormat.ParseStations(
             StationStorageFormat.SerializeStations([original]));
 
-        Assert.AreEqual(1, parsed.Count);
+        Assert.HasCount(1, parsed);
         RadioStation copy = parsed[0];
         Assert.AreEqual(original.Id, copy.Id);
         Assert.AreEqual(original.Name, copy.Name);
@@ -100,10 +100,10 @@ public sealed class StationStorageFormatTests
 
         // Grouping lives in the layout file and selection lives in settings. Writing either
         // here would create a second, silently diverging source of truth.
-        StringAssert.DoesNotMatch(json, new System.Text.RegularExpressions.Regex("GroupId"));
-        StringAssert.DoesNotMatch(json, new System.Text.RegularExpressions.Regex("IsSelectedStation"));
-        StringAssert.DoesNotMatch(json, new System.Text.RegularExpressions.Regex("PrimaryGenre"));
-        StringAssert.DoesNotMatch(json, new System.Text.RegularExpressions.Regex("TagList"));
+        Assert.DoesNotMatchRegex(new System.Text.RegularExpressions.Regex("GroupId"), json);
+        Assert.DoesNotMatchRegex(new System.Text.RegularExpressions.Regex("IsSelectedStation"), json);
+        Assert.DoesNotMatchRegex(new System.Text.RegularExpressions.Regex("PrimaryGenre"), json);
+        Assert.DoesNotMatchRegex(new System.Text.RegularExpressions.Regex("TagList"), json);
     }
 
     [TestMethod]
@@ -117,16 +117,16 @@ public sealed class StationStorageFormatTests
 
         List<RadioStation> stations = StationStorageFormat.ParseStations(futureJson);
 
-        Assert.AreEqual(1, stations.Count);
+        Assert.HasCount(1, stations);
         Assert.AreEqual("Future FM", stations[0].Name);
     }
 
     [TestMethod]
     public void ParseStations_ReturnsEmpty_ForEmptyInput()
     {
-        Assert.AreEqual(0, StationStorageFormat.ParseStations(null).Count);
-        Assert.AreEqual(0, StationStorageFormat.ParseStations("").Count);
-        Assert.AreEqual(0, StationStorageFormat.ParseStations("   ").Count);
+        Assert.IsEmpty(StationStorageFormat.ParseStations(null));
+        Assert.IsEmpty(StationStorageFormat.ParseStations(""));
+        Assert.IsEmpty(StationStorageFormat.ParseStations("   "));
     }
 
     [TestMethod]
@@ -134,7 +134,7 @@ public sealed class StationStorageFormatTests
     {
         // Deliberately not swallowed here: only the caller knows whether it is safe to treat
         // an unreadable file as "no stations" and overwrite it.
-        Assert.ThrowsException<JsonException>(() => StationStorageFormat.ParseStations("{not json"));
+        Assert.Throws<JsonException>(() => StationStorageFormat.ParseStations("{not json"));
     }
 
     private static RadioStation NewStation() => new()
