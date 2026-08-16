@@ -7,7 +7,7 @@
     xmlns:ex="using:WinUIEx"
     xmlns:local="using:Trdo.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Traydio First Run Window"
+    Title="Traydio"
     Width="400"
     Height="600"
     IsMaximizable="False"
@@ -24,7 +24,7 @@
             <RowDefinition Height="auto" />
         </Grid.RowDefinitions>
 
-        <TitleBar x:Name="ModernTitlebar" Title="Traydio">
+        <TitleBar x:Name="ModernTitlebar" x:Uid="TutorialWindow_TitleBar">
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="/Assets/Radio.ico" />
             </TitleBar.IconSource>
@@ -47,14 +47,14 @@
                         HorizontalAlignment="Center"
                         Source="/Assets/Radio.ico" />
                     <TextBlock
+                        x:Uid="TutorialWindow_WelcomeTitle"
                         HorizontalAlignment="Center"
-                        Style="{StaticResource TitleLargeTextBlockStyle}"
-                        Text="Welcome to Traydio!" />
+                        Style="{StaticResource TitleLargeTextBlockStyle}" />
                     <TextBlock
+                        x:Uid="TutorialWindow_Intro"
                         HorizontalAlignment="Center"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Style="{StaticResource SubheaderTextBlockStyle}"
-                        Text="Your tiny tray radio for Windows"
                         TextAlignment="Center" />
                 </StackPanel>
 
@@ -64,9 +64,9 @@
                     Orientation="Vertical"
                     Spacing="16">
                     <TextBlock
+                        x:Uid="TutorialWindow_QuickStart"
                         FontSize="18"
-                        Style="{StaticResource BodyStrongTextBlockStyle}"
-                        Text="Quick Start Guide" />
+                        Style="{StaticResource BodyStrongTextBlockStyle}" />
 
                     <!--  Step 1  -->
                     <Border
@@ -100,10 +100,10 @@
                                 VerticalAlignment="Center"
                                 Orientation="Vertical"
                                 Spacing="4">
-                                <TextBlock FontWeight="SemiBold" Text="Pin the Tray Icon" />
+                                <TextBlock x:Uid="TutorialWindow_Step_Pin_Title" FontWeight="SemiBold" />
                                 <TextBlock
+                                    x:Uid="TutorialWindow_Step_Pin_Desc"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Text="Make sure the Traydio icon is always visible in your system tray"
                                     TextWrapping="Wrap" />
                             </StackPanel>
                         </Grid>
@@ -141,10 +141,10 @@
                                 VerticalAlignment="Center"
                                 Orientation="Vertical"
                                 Spacing="4">
-                                <TextBlock FontWeight="SemiBold" Text="Left Click to Play/Pause" />
+                                <TextBlock x:Uid="TutorialWindow_Step_Play_Title" FontWeight="SemiBold" />
                                 <TextBlock
+                                    x:Uid="TutorialWindow_Step_Play_Desc"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Text="Quick and easy playback control at your fingertips"
                                     TextWrapping="Wrap" />
                             </StackPanel>
                         </Grid>
@@ -182,10 +182,10 @@
                                 VerticalAlignment="Center"
                                 Orientation="Vertical"
                                 Spacing="4">
-                                <TextBlock FontWeight="SemiBold" Text="Right Click for More Options" />
+                                <TextBlock x:Uid="TutorialWindow_Step_Options_Title" FontWeight="SemiBold" />
                                 <TextBlock
+                                    x:Uid="TutorialWindow_Step_Options_Desc"
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Text="Browse stations, adjust settings, and explore all features"
                                     TextWrapping="Wrap" />
                             </StackPanel>
                         </Grid>
@@ -211,22 +211,22 @@
                     Margin="0,8,0,0"
                     Orientation="Vertical"
                     Spacing="8">
-                    <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="✨ What makes Traydio special:" />
+                    <TextBlock x:Uid="TutorialWindow_FeaturesTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
                     <TextBlock
+                        x:Uid="TutorialWindow_Feature_1"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="• Lightweight and minimalistic design"
                         TextWrapping="Wrap" />
                     <TextBlock
+                        x:Uid="TutorialWindow_Feature_2"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="• Access thousands of radio stations worldwide"
                         TextWrapping="Wrap" />
                     <TextBlock
+                        x:Uid="TutorialWindow_Feature_3"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="• Beautiful Mica backdrop and modern UI"
                         TextWrapping="Wrap" />
                     <TextBlock
+                        x:Uid="TutorialWindow_Feature_4"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="• Lives quietly in your system tray"
                         TextWrapping="Wrap" />
                 </StackPanel>
             </StackPanel>
@@ -247,7 +247,7 @@
                 Style="{StaticResource AccentButtonStyle}">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock FontSize="18" Text="🚀" />
-                    <TextBlock FontWeight="SemiBold" Text="Let's Get Started!" />
+                    <TextBlock x:Uid="TutorialWindow_StartButton" FontWeight="SemiBold" />
                 </StackPanel>
             </Button>
         </Border>

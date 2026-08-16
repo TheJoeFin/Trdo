@@ -12,10 +12,10 @@
     <Grid RowDefinitions="Auto,*" RowSpacing="24">
         <!--  About Title  -->
         <TextBlock
+            x:Uid="AboutPage_Title"
             Grid.Row="0"
             FontSize="24"
-            FontWeight="SemiBold"
-            Text="About" />
+            FontWeight="SemiBold" />
 
         <!--  About Content  -->
         <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Auto">
@@ -50,7 +50,7 @@
                         TextAlignment="Left"
                         TextWrapping="Wrap">
                         <Run>Traydio</Run><LineBreak />
-                        <Run FontSize="14" FontWeight="Light">Formerly Trdo</Run>
+                        <Run x:Uid="AboutPage_Formerly" FontSize="14" FontWeight="Light" />
                     </TextBlock>
 
                     <TextBlock
@@ -77,14 +77,14 @@
                 <!--  Review Section  -->
                 <StackPanel Spacing="8">
                     <TextBlock
+                        x:Uid="AboutPage_EnjoyingPrompt"
                         FontSize="16"
                         FontWeight="SemiBold"
-                        Text="Enjoying Traydio?"
                         TextWrapping="Wrap" />
 
                     <TextBlock
+                        x:Uid="AboutPage_RateLabel"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Rate your experience with the app:"
                         TextWrapping="Wrap" />
 
                     <!--  Star Rating  -->
@@ -157,9 +157,9 @@
 
                     <!--  Contact Developer Section (shown for 3 or fewer stars)  -->
                     <TextBlock
+                        x:Uid="AboutPage_IssuePrompt"
                         Margin="0,8,0,0"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Having an issue or have a suggestion?"
                         TextAlignment="Center"
                         TextWrapping="Wrap"
                         Visibility="{x:Bind ViewModel.ShowContactDeveloper,
@@ -175,7 +175,7 @@
                                             Mode=OneWay}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon FontSize="16" Glyph="&#xE715;" />
-                            <TextBlock Text="Contact the Developer" TextWrapping="Wrap" />
+                            <TextBlock x:Uid="AboutPage_ContactDeveloper" TextWrapping="Wrap" />
                         </StackPanel>
                     </Button>
                 </StackPanel>
@@ -183,14 +183,14 @@
                 <!--  Buy Me a Coffee Section  -->
                 <StackPanel Spacing="8">
                     <TextBlock
+                        x:Uid="AboutPage_SupportTitle"
                         FontSize="16"
                         FontWeight="SemiBold"
-                        Text="Support the Developer"
                         TextWrapping="Wrap" />
 
                     <TextBlock
+                        x:Uid="AboutPage_SupportBody"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="If you enjoy Traydio, consider buying me a coffee!"
                         TextWrapping="Wrap" />
 
                     <HyperlinkButton Margin="0,8,0,0" Click="BuyMeACoffeeButton_Click">
@@ -204,14 +204,14 @@
                 <!--  GitHub Section  -->
                 <StackPanel Spacing="8">
                     <TextBlock
+                        x:Uid="AboutPage_OpenSourceTitle"
                         FontSize="16"
                         FontWeight="SemiBold"
-                        Text="Open Source"
                         TextWrapping="Wrap" />
 
                     <TextBlock
+                        x:Uid="AboutPage_OpenSourceBody"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="This app is open source and available on GitHub."
                         TextWrapping="Wrap" />
 
                     <HyperlinkButton
@@ -223,9 +223,9 @@
                 <!--  Developer Section  -->
                 <StackPanel Spacing="8">
                     <TextBlock
+                        x:Uid="AboutPage_DeveloperTitle"
                         FontSize="16"
                         FontWeight="SemiBold"
-                        Text="Developer"
                         TextWrapping="Wrap" />
 
                     <TextBlock
@@ -234,16 +234,16 @@
                         TextWrapping="Wrap" />
 
                     <HyperlinkButton Margin="0,8,0,0" Click="DeveloperGitHubButton_Click">
-                        <TextBlock Text="Visit Developer's GitHub" TextWrapping="Wrap" />
+                        <TextBlock x:Uid="AboutPage_VisitDeveloperGitHub" TextWrapping="Wrap" />
                     </HyperlinkButton>
                 </StackPanel>
 
                 <!--  Features Section  -->
                 <StackPanel Spacing="8">
                     <TextBlock
+                        x:Uid="AboutPage_FeaturesTitle"
                         FontSize="16"
                         FontWeight="SemiBold"
-                        Text="Features"
                         TextWrapping="Wrap" />
 
                     <StackPanel Spacing="8">
@@ -255,9 +255,9 @@
                                 Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                                 Glyph="&#xE73E;" />
                             <TextBlock
+                                x:Uid="AboutPage_Feature_SystemTray"
                                 Grid.Column="1"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="System tray integration for easy access"
                                 TextWrapping="Wrap" />
                         </Grid>
 
@@ -269,9 +269,9 @@
                                 Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                                 Glyph="&#xE73E;" />
                             <TextBlock
+                                x:Uid="AboutPage_Feature_MultiStations"
                                 Grid.Column="1"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Multiple radio station support"
                                 TextWrapping="Wrap" />
                         </Grid>
 
@@ -283,9 +283,9 @@
                                 Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                                 Glyph="&#xE73E;" />
                             <TextBlock
+                                x:Uid="AboutPage_Feature_Watchdog"
                                 Grid.Column="1"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Stream watchdog for automatic reconnection"
                                 TextWrapping="Wrap" />
                         </Grid>
 
@@ -297,9 +297,9 @@
                                 Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                                 Glyph="&#xE73E;" />
                             <TextBlock
+                                x:Uid="AboutPage_Feature_StartWithWindows"
                                 Grid.Column="1"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Start with Windows option"
                                 TextWrapping="Wrap" />
                         </Grid>
                     </StackPanel>
@@ -308,9 +308,9 @@
                 <!--  Radio Browser Section  -->
                 <StackPanel Spacing="8">
                     <TextBlock
+                        x:Uid="AboutPage_RadioDatabaseTitle"
                         FontSize="16"
                         FontWeight="SemiBold"
-                        Text="Radio Database"
                         TextWrapping="Wrap" />
 
                     <TextBlock
@@ -329,14 +329,14 @@
                 <!--  Open Source Libraries Section  -->
                 <StackPanel Spacing="8">
                     <TextBlock
+                        x:Uid="AboutPage_BuiltWithOpenSourceTitle"
                         FontSize="16"
                         FontWeight="SemiBold"
-                        Text="Built With Open Source"
                         TextWrapping="Wrap" />
 
                     <TextBlock
+                        x:Uid="AboutPage_BuiltWithOpenSourceBody"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="This app uses the following open source libraries:"
                         TextWrapping="Wrap" />
 
                     <StackPanel Margin="0,8,0,0" Spacing="4">
@@ -359,14 +359,14 @@
                 <!--  Tutorial Section  -->
                 <StackPanel Spacing="8">
                     <TextBlock
+                        x:Uid="AboutPage_HelpTitle"
                         FontSize="16"
                         FontWeight="SemiBold"
-                        Text="Need Help?"
                         TextWrapping="Wrap" />
 
                     <TextBlock
+                        x:Uid="AboutPage_HelpBody"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="View the tutorial again to learn how to use Trdo."
                         TextWrapping="Wrap" />
 
                     <Button
@@ -375,7 +375,7 @@
                         Click="TutorialButton_Click">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon FontSize="16" Glyph="&#xE8F1;" />
-                            <TextBlock Text="View Tutorial" TextWrapping="Wrap" />
+                            <TextBlock x:Uid="AboutPage_ViewTutorial" TextWrapping="Wrap" />
                         </StackPanel>
                     </Button>
                 </StackPanel>

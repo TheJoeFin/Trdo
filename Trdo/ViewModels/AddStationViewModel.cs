@@ -16,7 +16,7 @@ public class AddStationViewModel : INotifyPropertyChanged
     private string? _faviconUrl;
     private bool _hasValidationError;
     private string _validationMessage = string.Empty;
-    private string _pageTitle = "Add Radio Station";
+    private string _pageTitle = LocalizationService.GetString("AddStation_AddPageTitle", "Add Radio Station");
     private PlayerViewModel? _playerViewModel;
     private RadioStation? _editingStation;
     /// <summary>
@@ -68,7 +68,7 @@ public class AddStationViewModel : INotifyPropertyChanged
         HasSongPopupDelayOverride = station.SongPopupDelaySeconds is not null;
         SongPopupDelaySeconds = station.SongPopupDelaySeconds ?? GlobalSongPopupDelaySeconds;
 
-        PageTitle = "Edit Radio Station";
+        PageTitle = LocalizationService.GetString("AddStation_EditPageTitle", "Edit Radio Station");
     }
 
     public void LoadFromSearchResult(RadioBrowserStation searchStation)
@@ -78,7 +78,7 @@ public class AddStationViewModel : INotifyPropertyChanged
         StreamUrl = searchStation.GetStreamUrl();
         Homepage = !string.IsNullOrWhiteSpace(searchStation.Homepage) ? searchStation.Homepage : null;
         FaviconUrl = !string.IsNullOrWhiteSpace(searchStation.Favicon) ? searchStation.Favicon : null;
-        PageTitle = "Add Radio Station";
+        PageTitle = LocalizationService.GetString("AddStation_AddPageTitle", "Add Radio Station");
     }
 
     public string PageTitle
@@ -334,17 +334,17 @@ public class AddStationViewModel : INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(StationName))
         {
             HasValidationError = true;
-            ValidationMessage = "Station name is required.";
+            ValidationMessage = LocalizationService.GetString("AddStation_NameRequired", "Station name is required.");
         }
         else if (string.IsNullOrWhiteSpace(StreamUrl))
         {
             HasValidationError = true;
-            ValidationMessage = "Stream URL is required.";
+            ValidationMessage = LocalizationService.GetString("AddStation_UrlRequired", "Stream URL is required.");
         }
         else if (!IsValidUrl(StreamUrl))
         {
             HasValidationError = true;
-            ValidationMessage = "Please enter a valid HTTP or HTTPS URL.";
+            ValidationMessage = LocalizationService.GetString("AddStation_InvalidUrl", "Please enter a valid HTTP or HTTPS URL.");
         }
 
         OnPropertyChanged(nameof(CanSave));

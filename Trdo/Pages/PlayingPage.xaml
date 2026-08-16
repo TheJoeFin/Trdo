@@ -33,47 +33,47 @@
                     -->
                     <MenuFlyout Opening="StationContextMenu_Opening">
                         <MenuFlyoutItem
+                            x:Uid="PlayingPage_VisitWebsite"
                             Click="VisitSite_Click"
-                            Tag="{x:Bind}"
-                            Text="Visit Website">
+                            Tag="{x:Bind}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xEB41;" />
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
                         <MenuFlyoutItem
+                            x:Uid="PlayingPage_Edit"
                             Click="EditStation_Click"
-                            Tag="{x:Bind}"
-                            Text="Edit">
+                            Tag="{x:Bind}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE70F;" />
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
                         <MenuFlyoutItem
+                            x:Uid="PlayingPage_Remove"
                             Click="RemoveStation_Click"
-                            Tag="{x:Bind}"
-                            Text="Remove">
+                            Tag="{x:Bind}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE74D;" />
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
                         <MenuFlyoutSeparator />
-                        <MenuFlyoutSubItem x:Name="MoveToGroupSubItem" Text="Move to group">
+                        <MenuFlyoutSubItem x:Name="MoveToGroupSubItem" x:Uid="PlayingPage_MoveToGroup">
                             <MenuFlyoutSubItem.Icon>
                                 <FontIcon Glyph="&#xE8DE;" />
                             </MenuFlyoutSubItem.Icon>
                         </MenuFlyoutSubItem>
                         <MenuFlyoutItem
+                            x:Uid="PlayingPage_InsertDividerAbove"
                             Click="InsertDividerAbove_Click"
-                            Tag="{x:Bind}"
-                            Text="Insert divider above">
+                            Tag="{x:Bind}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE738;" />
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
                         <MenuFlyoutItem
+                            x:Uid="PlayingPage_RefreshStationInfo"
                             Click="RefreshStationInfo_Click"
-                            Tag="{x:Bind}"
-                            Text="Refresh station info">
+                            Tag="{x:Bind}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE72C;" />
                             </MenuFlyoutItem.Icon>
@@ -143,9 +143,9 @@
                 <Grid.ContextFlyout>
                     <MenuFlyout>
                         <MenuFlyoutItem
+                            x:Uid="PlayingPage_Rename"
                             Click="RenameGroup_Click"
-                            Tag="{x:Bind}"
-                            Text="Rename">
+                            Tag="{x:Bind}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE8AC;" />
                             </MenuFlyoutItem.Icon>
@@ -157,17 +157,17 @@
                             away is a separate, explicitly worded command that does confirm.
                         -->
                         <MenuFlyoutItem
+                            x:Uid="PlayingPage_DeleteGroup"
                             Click="DeleteGroup_Click"
-                            Tag="{x:Bind}"
-                            Text="Delete group">
+                            Tag="{x:Bind}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE74D;" />
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
                         <MenuFlyoutItem
+                            x:Uid="PlayingPage_DeleteGroupAndStations"
                             Click="DeleteGroupAndStations_Click"
-                            Tag="{x:Bind}"
-                            Text="Delete group and its stations" />
+                            Tag="{x:Bind}" />
                     </MenuFlyout>
                 </Grid.ContextFlyout>
                 <FontIcon
@@ -204,17 +204,17 @@
                 <Grid.ContextFlyout>
                     <MenuFlyout>
                         <MenuFlyoutItem
+                            x:Uid="PlayingPage_EditLabel"
                             Click="EditDividerLabel_Click"
-                            Tag="{x:Bind}"
-                            Text="Edit label">
+                            Tag="{x:Bind}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE70F;" />
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
                         <MenuFlyoutItem
+                            x:Uid="PlayingPage_RemoveDivider"
                             Click="RemoveDivider_Click"
-                            Tag="{x:Bind}"
-                            Text="Remove divider">
+                            Tag="{x:Bind}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE74D;" />
                             </MenuFlyoutItem.Icon>
@@ -293,27 +293,27 @@
             <MenuFlyout x:Name="PageContextMenu" Opening="PageContextMenu_Opening">
                 <MenuFlyoutItem
                     x:Name="NewGroupMenuItem"
-                    Click="NewGroup_Click"
-                    Text="New Group">
+                    x:Uid="PlayingPage_NewGroup"
+                    Click="NewGroup_Click">
                     <MenuFlyoutItem.Icon>
                         <FontIcon Glyph="&#xE8B7;" />
                     </MenuFlyoutItem.Icon>
                 </MenuFlyoutItem>
                 <MenuFlyoutItem
                     x:Name="NewDividerMenuItem"
-                    Click="NewDivider_Click"
-                    Text="New Divider">
+                    x:Uid="PlayingPage_NewDivider"
+                    Click="NewDivider_Click">
                     <MenuFlyoutItem.Icon>
                         <FontIcon Glyph="&#xE738;" />
                     </MenuFlyoutItem.Icon>
                 </MenuFlyoutItem>
                 <MenuFlyoutSeparator />
-                <MenuFlyoutSubItem x:Name="SortBySubItem" Text="Sort by">
+                <MenuFlyoutSubItem x:Name="SortBySubItem" x:Uid="PlayingPage_SortBy">
                     <MenuFlyoutSubItem.Icon>
                         <FontIcon Glyph="&#xE8CB;" />
                     </MenuFlyoutSubItem.Icon>
                 </MenuFlyoutSubItem>
-                <MenuFlyoutSubItem x:Name="GroupBySubItem" Text="Group by">
+                <MenuFlyoutSubItem x:Name="GroupBySubItem" x:Uid="PlayingPage_GroupBy">
                     <MenuFlyoutSubItem.Icon>
                         <FontIcon Glyph="&#xF168;" />
                     </MenuFlyoutSubItem.Icon>
@@ -321,8 +321,8 @@
                 <MenuFlyoutSeparator />
                 <MenuFlyoutItem
                     x:Name="RefreshAllInfoMenuItem"
-                    Click="RefreshAllStationInfo_Click"
-                    Text="Refresh info for all stations">
+                    x:Uid="PlayingPage_RefreshAllInfo"
+                    Click="RefreshAllStationInfo_Click">
                     <MenuFlyoutItem.Icon>
                         <FontIcon Glyph="&#xE72C;" />
                     </MenuFlyoutItem.Icon>
@@ -330,8 +330,8 @@
                 <MenuFlyoutSeparator />
                 <MenuFlyoutItem
                     x:Name="ShowVolumeMenuItem"
-                    Click="ToggleVolumeSlider_Click"
-                    Text="Show Volume Slider">
+                    x:Uid="PlayingPage_ShowVolume"
+                    Click="ToggleVolumeSlider_Click">
                     <MenuFlyoutItem.Icon>
                         <FontIcon Glyph="&#xE767;" />
                     </MenuFlyoutItem.Icon>
@@ -355,43 +355,43 @@
                 Click="AddStationButton_Click">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon FontSize="16" Glyph="&#xE710;" />
-                    <TextBlock Text="Station" />
+                    <TextBlock x:Uid="PlayingPage_StationButton" />
                 </StackPanel>
             </Button>
 
             <!--  Favorites Icon Button (Subtle)  -->
             <Button
+                x:Uid="PlayingPage_Favorites"
                 Grid.Column="2"
                 Padding="8"
                 VerticalAlignment="Center"
                 Background="Transparent"
                 BorderBrush="Transparent"
-                Click="FavoritesButton_Click"
-                ToolTipService.ToolTip="Favorite Songs">
+                Click="FavoritesButton_Click">
                 <FontIcon FontSize="16" Glyph="&#xE728;" />
             </Button>
 
             <!--  Info Icon Button (Subtle)  -->
             <Button
+                x:Uid="PlayingPage_About"
                 Grid.Column="3"
                 Padding="8"
                 VerticalAlignment="Center"
                 Background="Transparent"
                 BorderBrush="Transparent"
-                Click="InfoButton_Click"
-                ToolTipService.ToolTip="About Traydio">
+                Click="InfoButton_Click">
                 <FontIcon FontSize="16" Glyph="&#xE946;" />
             </Button>
 
             <!--  Settings Icon Button (Subtle)  -->
             <Button
+                x:Uid="PlayingPage_Settings"
                 Grid.Column="4"
                 Padding="8"
                 VerticalAlignment="Center"
                 Background="Transparent"
                 BorderBrush="Transparent"
-                Click="SettingsButton_Click"
-                ToolTipService.ToolTip="Settings">
+                Click="SettingsButton_Click">
                 <FontIcon FontSize="16" Glyph="&#xE713;" />
             </Button>
         </Grid>
@@ -402,10 +402,10 @@
             Margin="0,12,0,0"
             ColumnDefinitions="Auto,*">
             <TextBlock
+                x:Uid="PlayingPage_StationsHeader"
                 Grid.Column="0"
                 FontSize="16"
-                FontWeight="SemiBold"
-                Text="Stations" />
+                FontWeight="SemiBold" />
 
             <!--
                 Only shown while a view sort or a view grouping is active. Names all the
@@ -426,10 +426,10 @@
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                     Text="{x:Bind ViewModel.ViewArrangementHintText, Mode=OneWay}" />
                 <HyperlinkButton
+                    x:Uid="PlayingPage_Manual"
                     Padding="4,0"
                     VerticalAlignment="Center"
                     Click="ResetSort_Click"
-                    Content="Manual"
                     FontSize="11" />
             </StackPanel>
         </Grid>
@@ -476,17 +476,17 @@
 
                     <!--  Welcome Message  -->
                     <TextBlock
+                        x:Uid="PlayingPage_EmptyTitle"
                         HorizontalAlignment="Center"
                         FontSize="18"
                         FontWeight="SemiBold"
-                        Text="No Stations Yet"
                         TextAlignment="Center" />
 
                     <!--  Description  -->
                     <TextBlock
+                        x:Uid="PlayingPage_EmptySubtitle"
                         HorizontalAlignment="Center"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="Get started by adding your favorite radio station to begin listening."
                         TextAlignment="Center"
                         TextWrapping="Wrap" />
 
@@ -497,7 +497,7 @@
                         Style="{StaticResource AccentButtonStyle}">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon FontSize="16" Glyph="&#xE710;" />
-                            <TextBlock Text="Add Your First Station" />
+                            <TextBlock x:Uid="PlayingPage_AddFirstStation" />
                         </StackPanel>
                     </Button>
                 </StackPanel>

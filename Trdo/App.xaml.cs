@@ -85,6 +85,7 @@ public partial class App : Application
 
     public App()
     {
+        LocalizationService.ApplyLanguage(SettingsService.AppLanguage);
         InitializeComponent();
         _playerVm.PropertyChanged += PlayerVmOnPropertyChanged;
 

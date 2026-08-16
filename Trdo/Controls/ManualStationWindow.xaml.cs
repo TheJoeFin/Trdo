@@ -20,6 +20,7 @@ public sealed partial class ManualStationWindow : WindowEx
         ViewModel = new AddStationViewModel();
         ViewModel.SetPlayerViewModel(PlayerViewModel.Shared);
 
+        Title = LocalizationService.GetString("ManualStationWindow_Title", "Traydio");
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(ModernTitlebar);
 

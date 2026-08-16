@@ -16,7 +16,7 @@
 
         <TitleBar
             x:Name="SimpleTitleBar"
-            Title="Traydio"
+            x:Uid="ShellPage_TitleBar"
             BackRequested="TitleBar_BackRequested"
             IsBackButtonVisible="{x:Bind ViewModel.CanGoBack,
                                          Mode=OneWay}">

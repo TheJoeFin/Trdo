@@ -11,6 +11,7 @@ public sealed partial class TutorialWindow : WindowEx
     {
         InitializeComponent();
 
+        Title = LocalizationService.GetString("TutorialWindow_Title", "Traydio");
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(ModernTitlebar);
         Activated += TutorialWindow_Activated;

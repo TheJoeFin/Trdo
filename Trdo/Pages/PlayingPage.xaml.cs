@@ -536,8 +536,8 @@ public sealed partial class PlayingPage : Page
         // worked while the menu held exactly one item. Now that it carries the list commands,
         // the volume entry just flips its own wording instead.
         ShowVolumeMenuItem.Text = VolumeControlGrid.Visibility == Visibility.Visible
-            ? "Hide Volume Slider"
-            : "Show Volume Slider";
+            ? LocalizationService.GetString("PlayingPage_HideVolumeSlider", "Hide Volume Slider")
+            : LocalizationService.GetString("PlayingPage_ShowVolume.Text", "Show Volume Slider");
 
         // A sorted or grouped list has no meaningful place to put a new folder or divider: the
         // user is not the one deciding positions while either is on.

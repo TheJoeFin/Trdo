@@ -7,7 +7,7 @@
     xmlns:ex="using:WinUIEx"
     xmlns:local="using:Trdo.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Traydio - Add Station"
+    Title="Traydio"
     Width="400"
     Height="620"
     IsMaximizable="False"
@@ -42,61 +42,51 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="{StaticResource ControlCornerRadius}"
-                    Visibility="{x:Bind ViewModel.HasHeroImage,
-                                        Mode=OneWay}">
+                    Visibility="{x:Bind ViewModel.HasHeroImage, Mode=OneWay}">
                     <Image
                         Margin="12"
                         AutomationProperties.AccessibilityView="Raw"
                         ImageFailed="HeroImage_ImageFailed"
-                        Source="{x:Bind ViewModel.HeroImageSource,
-                                        Mode=OneWay}"
+                        Source="{x:Bind ViewModel.HeroImageSource, Mode=OneWay}"
                         Stretch="Uniform" />
                 </Border>
 
                 <!--  Station Name Input  -->
                 <StackPanel Spacing="4">
-                    <TextBlock FontWeight="SemiBold" Text="Station Name" />
+                    <TextBlock x:Uid="AddStation_StationNameLabel" FontWeight="SemiBold" />
                     <TextBox
                         x:Name="StationNameTextBox"
-                        PlaceholderText="e.g., WYMS - Hometown radio"
-                        Text="{x:Bind ViewModel.StationName,
-                                      Mode=TwoWay,
-                                      UpdateSourceTrigger=PropertyChanged}" />
+                        x:Uid="AddStation_StationNamePlaceholder"
+                        Text="{x:Bind ViewModel.StationName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 </StackPanel>
 
                 <!--  Stream URL Input  -->
                 <StackPanel Spacing="4">
-                    <TextBlock FontWeight="SemiBold" Text="Stream URL" />
+                    <TextBlock x:Uid="AddStation_StreamUrlLabel" FontWeight="SemiBold" />
                     <TextBox
                         x:Name="StreamUrlTextBox"
-                        PlaceholderText="e.g., https://example.com/stream"
-                        Text="{x:Bind ViewModel.StreamUrl,
-                                      Mode=TwoWay,
-                                      UpdateSourceTrigger=PropertyChanged}"
+                        x:Uid="AddStation_StreamUrlPlaceholder"
+                        Text="{x:Bind ViewModel.StreamUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         TextWrapping="Wrap" />
                 </StackPanel>
 
                 <!--  Homepage URL Input  -->
                 <StackPanel Spacing="4">
-                    <TextBlock FontWeight="SemiBold" Text="Homepage (Optional)" />
+                    <TextBlock x:Uid="AddStation_HomepageLabel" FontWeight="SemiBold" />
                     <TextBox
                         x:Name="HomepageTextBox"
-                        PlaceholderText="e.g., https://example.com"
-                        Text="{x:Bind ViewModel.Homepage,
-                                      Mode=TwoWay,
-                                      UpdateSourceTrigger=PropertyChanged}"
+                        x:Uid="AddStation_HomepagePlaceholder"
+                        Text="{x:Bind ViewModel.Homepage, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         TextWrapping="Wrap" />
                 </StackPanel>
 
                 <!--  Favicon URL Input  -->
                 <StackPanel Spacing="4">
-                    <TextBlock FontWeight="SemiBold" Text="Station Logo/Icon URL (Optional)" />
+                    <TextBlock x:Uid="AddStation_LogoUrlLabel" FontWeight="SemiBold" />
                     <TextBox
                         x:Name="FaviconUrlTextBox"
-                        PlaceholderText="e.g., https://example.com/logo.png"
-                        Text="{x:Bind ViewModel.FaviconUrl,
-                                      Mode=TwoWay,
-                                      UpdateSourceTrigger=PropertyChanged}"
+                        x:Uid="AddStation_LogoUrlPlaceholder"
+                        Text="{x:Bind ViewModel.FaviconUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         TextWrapping="Wrap" />
                 </StackPanel>
 
@@ -107,17 +97,15 @@
                     HorizontalContentAlignment="Stretch">
                     <Expander.Header>
                         <StackPanel Spacing="2">
-                            <TextBlock FontWeight="SemiBold" Text="Advanced" />
+                            <TextBlock x:Uid="ManualStationWindow_Advanced" FontWeight="SemiBold" />
                             <TextBlock
-                                Style="{StaticResource CaptionTextBlockStyle}"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="{x:Bind ViewModel.BufferSummary,
-                                              Mode=OneWay}" />
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ViewModel.BufferSummary, Mode=OneWay}" />
                             <TextBlock
-                                Style="{StaticResource CaptionTextBlockStyle}"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="{x:Bind ViewModel.SongPopupDelaySummary,
-                                              Mode=OneWay}" />
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ViewModel.SongPopupDelaySummary, Mode=OneWay}" />
                         </StackPanel>
                     </Expander.Header>
 
@@ -125,11 +113,11 @@
 
                         <!--  Per-station volume  -->
                         <StackPanel Spacing="4">
-                            <TextBlock FontWeight="SemiBold" Text="Volume" />
+                            <TextBlock x:Uid="ManualStationWindow_Volume" FontWeight="SemiBold" />
                             <TextBlock
-                                Style="{StaticResource CaptionTextBlockStyle}"
+                                x:Uid="ManualStationWindow_VolumeDescription"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Remembered for this station, so it stays level when you switch away and back."
+                                Style="{StaticResource CaptionTextBlockStyle}"
                                 TextWrapping="Wrap" />
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <Slider
@@ -138,86 +126,72 @@
                                     Maximum="200"
                                     Minimum="0"
                                     StepFrequency="1"
-                                    Value="{x:Bind ViewModel.VolumePercent,
-                                                   Mode=TwoWay}" />
+                                    Value="{x:Bind ViewModel.VolumePercent, Mode=TwoWay}" />
                                 <TextBlock
                                     Grid.Column="1"
                                     MinWidth="48"
                                     VerticalAlignment="Center"
-                                    Text="{x:Bind ViewModel.VolumeDescription,
-                                                  Mode=OneWay}" />
+                                    Text="{x:Bind ViewModel.VolumeDescription, Mode=OneWay}" />
                             </Grid>
                         </StackPanel>
 
                         <!--  Per-station buffer override  -->
                         <StackPanel Spacing="4">
-                            <TextBlock FontWeight="SemiBold" Text="Buffer level" />
+                            <TextBlock x:Uid="ManualStationWindow_BufferLevel" FontWeight="SemiBold" />
                             <TextBlock
-                                Style="{StaticResource CaptionTextBlockStyle}"
+                                x:Uid="ManualStationWindow_BufferLevelDescription"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Higher buffer levels help on unstable connections, but they add a little more playback delay. Override this only for a station that needs it."
+                                Style="{StaticResource CaptionTextBlockStyle}"
                                 TextWrapping="Wrap" />
                             <ToggleSwitch
+                                x:Uid="ManualStationWindow_BufferOverrideToggle"
                                 Margin="0,4,0,0"
-                                AutomationProperties.Name="Override buffer level for this station"
-                                IsOn="{x:Bind ViewModel.HasBufferOverride,
-                                              Mode=TwoWay}"
-                                OffContent="Following the app setting"
-                                OnContent="Override for this station" />
+                                IsOn="{x:Bind ViewModel.HasBufferOverride, Mode=TwoWay}" />
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <Slider
                                     Grid.Column="0"
                                     AutomationProperties.Name="Station buffer level"
-                                    IsEnabled="{x:Bind ViewModel.HasBufferOverride,
-                                                       Mode=OneWay}"
+                                    IsEnabled="{x:Bind ViewModel.HasBufferOverride, Mode=OneWay}"
                                     Maximum="3"
                                     Minimum="0"
                                     SnapsTo="StepValues"
                                     StepFrequency="0.1"
-                                    Value="{x:Bind ViewModel.BufferLevel,
-                                                   Mode=TwoWay}" />
+                                    Value="{x:Bind ViewModel.BufferLevel, Mode=TwoWay}" />
                                 <TextBlock
                                     Grid.Column="1"
                                     MinWidth="92"
                                     VerticalAlignment="Center"
-                                    Text="{x:Bind ViewModel.BufferLevelDescription,
-                                                  Mode=OneWay}" />
+                                    Text="{x:Bind ViewModel.BufferLevelDescription, Mode=OneWay}" />
                             </Grid>
                         </StackPanel>
 
                         <!--  Per-station song change popup delay  -->
                         <StackPanel Spacing="4">
-                            <TextBlock FontWeight="SemiBold" Text="Song popup delay" />
+                            <TextBlock x:Uid="ManualStationWindow_SongPopupDelay" FontWeight="SemiBold" />
                             <TextBlock
-                                Style="{StaticResource CaptionTextBlockStyle}"
+                                x:Uid="ManualStationWindow_SongPopupDelayDescription"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="Some stations announce the next track before it actually starts. Delay the popup so it appears when you hear the song. How far ahead a station runs is a property of its encoder, so set this per station."
+                                Style="{StaticResource CaptionTextBlockStyle}"
                                 TextWrapping="Wrap" />
                             <ToggleSwitch
+                                x:Uid="ManualStationWindow_SongPopupDelayOverride"
                                 Margin="0,4,0,0"
-                                AutomationProperties.Name="Override song popup delay for this station"
-                                IsOn="{x:Bind ViewModel.HasSongPopupDelayOverride,
-                                              Mode=TwoWay}"
-                                OffContent="Following the app setting"
-                                OnContent="Override for this station" />
+                                IsOn="{x:Bind ViewModel.HasSongPopupDelayOverride, Mode=TwoWay}" />
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <Slider
                                     Grid.Column="0"
                                     AutomationProperties.Name="Station song popup delay in seconds"
-                                    IsEnabled="{x:Bind ViewModel.HasSongPopupDelayOverride,
-                                                       Mode=OneWay}"
+                                    IsEnabled="{x:Bind ViewModel.HasSongPopupDelayOverride, Mode=OneWay}"
                                     Maximum="{x:Bind ViewModel.MaxSongPopupDelaySeconds}"
                                     Minimum="0"
                                     SnapsTo="StepValues"
                                     StepFrequency="5"
-                                    Value="{x:Bind ViewModel.SongPopupDelaySeconds,
-                                                   Mode=TwoWay}" />
+                                    Value="{x:Bind ViewModel.SongPopupDelaySeconds, Mode=TwoWay}" />
                                 <TextBlock
                                     Grid.Column="1"
                                     MinWidth="92"
                                     VerticalAlignment="Center"
-                                    Text="{x:Bind ViewModel.SongPopupDelayDescription,
-                                                  Mode=OneWay}" />
+                                    Text="{x:Bind ViewModel.SongPopupDelayDescription, Mode=OneWay}" />
                             </Grid>
                         </StackPanel>
 
@@ -254,8 +228,7 @@
                     Grid.Column="1"
                     HorizontalAlignment="Stretch"
                     Click="SaveButton_Click"
-                    IsEnabled="{x:Bind ViewModel.CanSave,
-                                       Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.CanSave, Mode=OneWay}"
                     Style="{StaticResource AccentButtonStyle}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontSize="16" Glyph="&#xE74E;" />

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -18,17 +18,18 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     private readonly PlayerViewModel _playerViewModel;
     private bool _isStartupEnabled;
     private bool _isStartupToggleEnabled = true;
-    private string _startupToggleText = "Off";
-    private string _watchdogToggleText = "Off";
-    private string _autoBufferToggleText = "Off";
-    private string _autoPlayOnStartupToggleText = "Off";
-    private string _spotifyToggleText = "On";
-    private string _discogsToggleText = "On";
-    private string _appleMusicToggleText = "On";
-    private string _youtubeMusicToggleText = "On";
-    private string _songChangePopupToggleText = "Off";
+    private string _startupToggleText = LocalizationService.GetString("Toggle_Off", "Off");
+    private string _watchdogToggleText = LocalizationService.GetString("Toggle_Off", "Off");
+    private string _autoBufferToggleText = LocalizationService.GetString("Toggle_Off", "Off");
+    private string _autoPlayOnStartupToggleText = LocalizationService.GetString("Toggle_Off", "Off");
+    private string _spotifyToggleText = LocalizationService.GetString("Toggle_On", "On");
+    private string _discogsToggleText = LocalizationService.GetString("Toggle_On", "On");
+    private string _appleMusicToggleText = LocalizationService.GetString("Toggle_On", "On");
+    private string _youtubeMusicToggleText = LocalizationService.GetString("Toggle_On", "On");
+    private string _songChangePopupToggleText = LocalizationService.GetString("Toggle_Off", "Off");
     private StartupTask? _startupTask;
     private bool _initDone;
+    private bool _isLanguageRestartPending;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -75,7 +76,48 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         _ = InitializeStartupTaskAsync();
     }
 
-    private static string GetToggleText(bool enabled) => enabled ? "On" : "Off";
+    private static string GetToggleText(bool enabled) => enabled
+        ? LocalizationService.GetString("Toggle_On", "On")
+        : LocalizationService.GetString("Toggle_Off", "Off");
+
+    public int LanguageSelectionIndex
+    {
+        get
+        {
+            int index = Array.IndexOf(LocalizationService.SupportedLanguages, SettingsService.AppLanguage);
+            return index < 0 ? 0 : index;
+        }
+        set
+        {
+            string[] languages = LocalizationService.SupportedLanguages;
+            string languageTag = value >= 0 && value < languages.Length
+                ? languages[value]
+                : LocalizationService.DefaultLanguage;
+
+            if (languageTag == SettingsService.AppLanguage) return;
+
+            SettingsService.AppLanguage = languageTag;
+            OnPropertyChanged();
+
+            // x:Uid resources are resolved while each XAML tree loads, so already-created UI keeps
+            // the old language until the app starts again.
+            IsLanguageRestartPending = true;
+        }
+    }
+
+    /// <summary>
+    /// True once the language has been changed in this session, so the UI can ask for a restart.
+    /// </summary>
+    public bool IsLanguageRestartPending
+    {
+        get => _isLanguageRestartPending;
+        private set
+        {
+            if (value == _isLanguageRestartPending) return;
+            _isLanguageRestartPending = value;
+            OnPropertyChanged();
+        }
+    }
 
     public bool IsStartupEnabled
     {

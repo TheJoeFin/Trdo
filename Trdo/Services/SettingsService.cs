@@ -12,6 +12,7 @@ public static class SettingsService
     private const string IsFirstRunKey = "IsFirstRun";
     private const string IsVolumeSliderVisibleKey = "IsVolumeSliderVisible";
     private const string AutoPlayOnStartupKey = "AutoPlayOnStartup";
+    private const string AppLanguageKey = "AppLanguage";
     private const string IsSpotifyEnabledKey = "IsSpotifyEnabled";
     private const string IsDiscogsEnabledKey = "IsDiscogsEnabled";
     private const string IsAppleMusicEnabledKey = "IsAppleMusicEnabled";
@@ -67,6 +68,42 @@ public static class SettingsService
             try
             {
                 ApplicationData.Current.LocalSettings.Values[AutoPlayOnStartupKey] = value;
+            }
+            catch
+            {
+                // Silently fail if unable to save
+            }
+        }
+    }
+
+    public static string AppLanguage
+    {
+        get
+        {
+            try
+            {
+                if (ApplicationData.Current.LocalSettings.Values.TryGetValue(AppLanguageKey, out object? value))
+                {
+                    if (value is string language && !string.IsNullOrWhiteSpace(language))
+                    {
+                        return language;
+                    }
+                }
+            }
+            catch
+            {
+                // Fall through to the default language.
+            }
+
+            return LocalizationService.DefaultLanguage;
+        }
+        set
+        {
+            try
+            {
+                string normalized = string.IsNullOrWhiteSpace(value) ? LocalizationService.DefaultLanguage : value;
+                ApplicationData.Current.LocalSettings.Values[AppLanguageKey] = normalized;
+                LocalizationService.ApplyLanguage(normalized);
             }
             catch
             {

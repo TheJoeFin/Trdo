@@ -19,9 +19,9 @@
         <!--  Page Title and Export Commands  -->
         <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
             <TextBlock
+                x:Uid="FavoritesPage_Title"
                 FontSize="16"
                 FontWeight="SemiBold"
-                Text="Favorite Songs"
                 VerticalAlignment="Center" />
 
             <StackPanel
@@ -32,17 +32,17 @@
                                     Mode=OneWay,
                                     Converter={StaticResource CountToHasItemsVisibilityConverter}}">
                 <Button
-                    Click="ExportButton_Click"
-                    ToolTipService.ToolTip="Export favorites to a playlist file">
+                    x:Uid="FavoritesPage_Export"
+                    Click="ExportButton_Click">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon FontSize="14" Glyph="&#xEDE1;" />
-                        <TextBlock Text="Export…" />
+                        <TextBlock x:Uid="FavoritesPage_ExportLabel" />
                     </StackPanel>
                 </Button>
                 <Button
+                    x:Uid="FavoritesPage_Options"
                     AutomationProperties.Name="More favorites options"
-                    Padding="8"
-                    ToolTipService.ToolTip="More options">
+                    Padding="8">
                     <FontIcon FontSize="14" Glyph="&#xE712;" />
                     <Button.Flyout>
                         <MenuFlyout>
@@ -82,16 +82,16 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Glyph="&#xE735;" />
                 <TextBlock
+                    x:Uid="FavoritesPage_EmptyTitle"
                     HorizontalAlignment="Center"
                     FontSize="16"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="No favorite songs yet"
                     TextAlignment="Center" />
                 <TextBlock
+                    x:Uid="FavoritesPage_EmptySubtitle"
                     HorizontalAlignment="Center"
                     FontSize="12"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                    Text="Tap the star icon on songs you love to save them here"
                     TextAlignment="Center"
                     TextWrapping="Wrap" />
             </StackPanel>
@@ -123,10 +123,10 @@
                             <Grid.ContextFlyout>
                                 <MenuFlyout>
                                     <MenuFlyoutItem
+                                        x:Uid="FavoritesPage_IncludeInNextExport"
                                         Click="ClearArchivedForTrack_Click"
                                         IsEnabled="{x:Bind IsArchived}"
-                                        Tag="{x:Bind}"
-                                        Text="Include in next export">
+                                        Tag="{x:Bind}">
                                         <MenuFlyoutItem.Icon>
                                             <FontIcon Glyph="&#xE7A7;" />
                                         </MenuFlyoutItem.Icon>
@@ -183,14 +183,14 @@
 
                                 <!--  Remove Button  -->
                                 <Button
+                                    x:Uid="FavoritesPage_Remove"
                                     Grid.Column="1"
                                     Padding="8"
                                     VerticalAlignment="Top"
                                     Background="Transparent"
                                     BorderThickness="0"
                                     Click="RemoveFavorite_Click"
-                                    Tag="{x:Bind}"
-                                    ToolTipService.ToolTip="Remove from favorites">
+                                    Tag="{x:Bind}">
                                     <FontIcon
                                         FontSize="16"
                                         Foreground="{ThemeResource AccentFillColorDefaultBrush}"

@@ -19,10 +19,10 @@
     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
         <!--  Page Title  -->
         <TextBlock
+            x:Uid="NowPlayingPage_Title"
             Grid.Row="0"
             FontSize="16"
-            FontWeight="SemiBold"
-            Text="Now Playing" />
+            FontWeight="SemiBold" />
 
         <!--  Current Track Card  -->
         <Grid Grid.Row="1" Padding="0,0,0,0">
@@ -42,16 +42,16 @@
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Glyph="&#xE8D6;" />
                 <TextBlock
+                    x:Uid="NowPlayingPage_IdleTitle"
                     HorizontalAlignment="Center"
                     FontSize="16"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="No station playing"
                     TextAlignment="Center" />
                 <TextBlock
+                    x:Uid="NowPlayingPage_IdleSubtitle"
                     HorizontalAlignment="Center"
                     FontSize="12"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                    Text="Start playback to see title and artist information"
                     TextAlignment="Center"
                     TextWrapping="Wrap" />
             </StackPanel>
@@ -90,9 +90,9 @@
                                 Spacing="4">
                                 <StackPanel Spacing="2">
                                     <TextBlock
+                                        x:Uid="NowPlayingPage_Label_Title"
                                         FontSize="10"
-                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                        Text="Title" />
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                     <TextBlock
                                         FontSize="14"
                                         FontWeight="SemiBold"
@@ -103,9 +103,9 @@
                                 </StackPanel>
                                 <StackPanel Spacing="2">
                                     <TextBlock
+                                        x:Uid="NowPlayingPage_Label_Artist"
                                         FontSize="10"
-                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                        Text="Artist" />
+                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                     <TextBlock
                                         FontSize="12"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -118,14 +118,14 @@
 
                             <!--  Favorite Button  -->
                             <Button
+                                x:Uid="NowPlayingPage_Tooltip_Favorite"
                                 Grid.Column="2"
                                 Margin="8,0,0,0"
                                 Padding="8"
                                 VerticalAlignment="Center"
                                 Background="Transparent"
                                 BorderThickness="0"
-                                Click="FavoriteCurrentTrack_Click"
-                                ToolTipService.ToolTip="Favorite Song">
+                                Click="FavoriteCurrentTrack_Click">
                                 <FontIcon
                                     FontSize="20"
                                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
@@ -228,14 +228,14 @@
                             </Border>
 
                             <Button
+                                x:Uid="NowPlayingPage_Tooltip_SearchSettings"
                                 Grid.Column="1"
                                 Padding="8"
                                 VerticalAlignment="Center"
                                 Background="Transparent"
                                 BorderThickness="0"
                                 Click="SettingsButton_Click"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                ToolTipService.ToolTip="Music search settings">
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}">
                                 <FontIcon FontSize="14" Glyph="&#xE713;" />
                             </Button>
                         </Grid>
@@ -253,12 +253,12 @@
 
             <!--  History Header  -->
             <TextBlock
+                x:Uid="NowPlayingPage_RecentTracks"
                 Grid.Row="0"
                 Margin="0,0,0,8"
                 FontSize="14"
                 FontWeight="SemiBold"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Text="Recent Tracks"
                 Visibility="{x:Bind ViewModel.PlaylistHistory.Count,
                                     Mode=OneWay,
                                     Converter={StaticResource CountToHasItemsVisibilityConverter}}" />

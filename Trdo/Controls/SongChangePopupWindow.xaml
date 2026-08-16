@@ -17,16 +17,15 @@
     -->
     <Grid
         x:Name="RootGrid"
+        x:Uid="SongChangePopup_Surface"
         Padding="18,14"
         AutomationProperties.AutomationId="SongChangePopupSurface"
         AutomationProperties.LiveSetting="Polite"
-        AutomationProperties.Name="Now playing"
         Background="Transparent"
         ColumnDefinitions="Auto,*"
         ColumnSpacing="14"
         RightTapped="RootGrid_RightTapped"
-        Tapped="RootGrid_Tapped"
-        ToolTipService.ToolTip="Click to dismiss, right-click to adjust the delay">
+        Tapped="RootGrid_Tapped">
         <FontIcon
             Grid.Column="0"
             VerticalAlignment="Center"
@@ -39,9 +38,9 @@
             VerticalAlignment="Center"
             Spacing="2">
             <TextBlock
+                x:Uid="SongChangePopup_Title"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Style="{StaticResource CaptionTextBlockStyle}"
-                Text="Now playing" />
+                Style="{StaticResource CaptionTextBlockStyle}" />
             <TextBlock
                 x:Name="SongText"
                 MaxLines="2"

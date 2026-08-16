@@ -12,6 +12,7 @@
             <!--  Modern Commands with Fluent Icons  -->
             <XamlUICommand
                 x:Key="ShowHideWindowCommand"
+                x:Uid="App_ShowHideWindowCommand"
                 Description="Show or hide the main window"
                 Label="Show Window">
                 <XamlUICommand.IconSource>
@@ -21,6 +22,7 @@
 
             <XamlUICommand
                 x:Key="ExitApplicationCommand"
+                x:Uid="App_ExitApplicationCommand"
                 Description="Exit Traydio"
                 Label="Exit">
                 <XamlUICommand.IconSource>
@@ -30,6 +32,7 @@
 
             <XamlUICommand
                 x:Key="PlayPauseCommand"
+                x:Uid="App_PlayPauseCommand"
                 Description="Play or pause radio"
                 Label="xPlay">
                 <XamlUICommand.IconSource>

@@ -1,0 +1,617 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+    Microsoft ResX Schema
+
+    Version 2.0
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
+    associated with the data types.
+
+    Example:
+
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+  -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="1" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AboutPage_BuiltWithOpenSourceBody.Text" xml:space="preserve">
+    <value>Esta aplicación usa las siguientes bibliotecas de código abierto:</value>
+  </data>
+  <data name="AboutPage_BuiltWithOpenSourceTitle.Text" xml:space="preserve">
+    <value>Hecho con software libre</value>
+  </data>
+  <data name="AboutPage_ContactDeveloper.Text" xml:space="preserve">
+    <value>Contactar al desarrollador</value>
+  </data>
+  <data name="AboutPage_DeveloperTitle.Text" xml:space="preserve">
+    <value>Desarrollador</value>
+  </data>
+  <data name="AboutPage_EnjoyingPrompt.Text" xml:space="preserve">
+    <value>¿Disfrutas Traydio?</value>
+  </data>
+  <data name="AboutPage_Feature_MultiStations.Text" xml:space="preserve">
+    <value>Soporte para varias estaciones de radio</value>
+  </data>
+  <data name="AboutPage_Feature_StartWithWindows.Text" xml:space="preserve">
+    <value>Opción de inicio con Windows</value>
+  </data>
+  <data name="AboutPage_Feature_SystemTray.Text" xml:space="preserve">
+    <value>Integración con la bandeja del sistema para un acceso fácil</value>
+  </data>
+  <data name="AboutPage_Feature_Watchdog.Text" xml:space="preserve">
+    <value>Vigila la transmisión para reconectar automáticamente</value>
+  </data>
+  <data name="AboutPage_FeaturesTitle.Text" xml:space="preserve">
+    <value>Funciones</value>
+  </data>
+  <data name="AboutPage_Formerly.Text" xml:space="preserve">
+    <value>Antes era Trdo</value>
+  </data>
+  <data name="AboutPage_HelpBody.Text" xml:space="preserve">
+    <value>Vuelve a ver el tutorial para aprender a usar Trdo.</value>
+  </data>
+  <data name="AboutPage_HelpTitle.Text" xml:space="preserve">
+    <value>¿Necesitas ayuda?</value>
+  </data>
+  <data name="AboutPage_IssuePrompt.Text" xml:space="preserve">
+    <value>¿Tienes un problema o una sugerencia?</value>
+  </data>
+  <data name="AboutPage_OpenSourceBody.Text" xml:space="preserve">
+    <value>Esta aplicación es de código abierto y está disponible en GitHub.</value>
+  </data>
+  <data name="AboutPage_OpenSourceTitle.Text" xml:space="preserve">
+    <value>Código abierto</value>
+  </data>
+  <data name="AboutPage_RadioDatabaseTitle.Text" xml:space="preserve">
+    <value>Base de datos de radio</value>
+  </data>
+  <data name="AboutPage_RateLabel.Text" xml:space="preserve">
+    <value>Valora tu experiencia con la aplicación:</value>
+  </data>
+  <data name="AboutPage_SupportBody.Text" xml:space="preserve">
+    <value>Si disfrutas Traydio, ¡considera invitarme a un café!</value>
+  </data>
+  <data name="AboutPage_SupportTitle.Text" xml:space="preserve">
+    <value>Apoya al desarrollador</value>
+  </data>
+  <data name="AboutPage_Title.Text" xml:space="preserve">
+    <value>Acerca de</value>
+  </data>
+  <data name="AboutPage_ViewTutorial.Text" xml:space="preserve">
+    <value>Ver tutorial</value>
+  </data>
+  <data name="AboutPage_VisitDeveloperGitHub.Text" xml:space="preserve">
+    <value>Visitar el GitHub del desarrollador</value>
+  </data>
+  <data name="Action_Cancel.Text" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="Action_Save.Text" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="AddStation_AddPageTitle" xml:space="preserve">
+    <value>Agregar emisora de radio</value>
+  </data>
+  <data name="AddStation_EditPageTitle" xml:space="preserve">
+    <value>Editar emisora de radio</value>
+  </data>
+  <data name="AddStation_HomepageLabel.Text" xml:space="preserve">
+    <value>Página web (opcional)</value>
+  </data>
+  <data name="AddStation_HomepagePlaceholder.PlaceholderText" xml:space="preserve">
+    <value>p. ej., https://example.com</value>
+  </data>
+  <data name="AddStation_LogoUrlLabel.Text" xml:space="preserve">
+    <value>URL del logotipo/icono de la estación (opcional)</value>
+  </data>
+  <data name="AddStation_LogoUrlPlaceholder.PlaceholderText" xml:space="preserve">
+    <value>p. ej., https://example.com/logo.png</value>
+  </data>
+  <data name="AddStation_InvalidUrl" xml:space="preserve">
+    <value>Escribe una URL HTTP o HTTPS válida.</value>
+  </data>
+  <data name="AddStation_NameRequired" xml:space="preserve">
+    <value>El nombre de la emisora es obligatorio.</value>
+  </data>
+  <data name="AddStation_PageTitle.Text" xml:space="preserve">
+    <value>Añadir estación</value>
+  </data>
+  <data name="AddStation_StationNameLabel.Text" xml:space="preserve">
+    <value>Nombre de la estación</value>
+  </data>
+  <data name="AddStation_StationNamePlaceholder.PlaceholderText" xml:space="preserve">
+    <value>p. ej., WYMS - Hometown radio</value>
+  </data>
+  <data name="AddStation_StreamUrlLabel.Text" xml:space="preserve">
+    <value>URL de la transmisión</value>
+  </data>
+  <data name="AddStation_StreamUrlPlaceholder.PlaceholderText" xml:space="preserve">
+    <value>p. ej., https://example.com/stream</value>
+  </data>
+  <data name="AddStation_UrlRequired" xml:space="preserve">
+    <value>La URL de transmisión es obligatoria.</value>
+  </data>
+  <data name="App_ExitApplicationCommand.Description" xml:space="preserve">
+    <value>Salir de Traydio</value>
+  </data>
+  <data name="App_ExitApplicationCommand.Label" xml:space="preserve">
+    <value>Salir</value>
+  </data>
+  <data name="App_PlayPauseCommand.Description" xml:space="preserve">
+    <value>Reproducir o pausar la radio</value>
+  </data>
+  <data name="App_PlayPauseCommand.Label" xml:space="preserve">
+    <value>Reproducir</value>
+  </data>
+  <data name="App_ShowHideWindowCommand.Description" xml:space="preserve">
+    <value>Mostrar u ocultar la ventana principal</value>
+  </data>
+  <data name="App_ShowHideWindowCommand.Label" xml:space="preserve">
+    <value>Mostrar ventana</value>
+  </data>
+  <data name="FavoritesPage_EmptySubtitle.Text" xml:space="preserve">
+    <value>Toca el icono de estrella en las canciones que te gusten para guardarlas aquí</value>
+  </data>
+  <data name="FavoritesPage_EmptyTitle.Text" xml:space="preserve">
+    <value>Aún no tienes canciones favoritas</value>
+  </data>
+  <data name="FavoritesPage_Export.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Exportar favoritos a un archivo de lista de reproducción</value>
+  </data>
+  <data name="FavoritesPage_ExportLabel.Text" xml:space="preserve">
+    <value>Exportar…</value>
+  </data>
+  <data name="FavoritesPage_IncludeInNextExport.Text" xml:space="preserve">
+    <value>Incluir en la próxima exportación</value>
+  </data>
+  <data name="FavoritesPage_Options.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Más opciones</value>
+  </data>
+  <data name="FavoritesPage_Remove.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Eliminar de favoritos</value>
+  </data>
+  <data name="FavoritesPage_Title.Text" xml:space="preserve">
+    <value>Canciones favoritas</value>
+  </data>
+  <data name="ManualStationWindow_Advanced.Text" xml:space="preserve">
+    <value>Avanzado</value>
+  </data>
+  <data name="ManualStationWindow_BufferLevel.Text" xml:space="preserve">
+    <value>Nivel del búfer</value>
+  </data>
+  <data name="ManualStationWindow_BufferLevelDescription.Text" xml:space="preserve">
+    <value>Los niveles altos del búfer ayudan con conexiones inestables, pero añaden un poco más de retardo en la reproducción. Anula esto solo para una estación que lo necesite.</value>
+  </data>
+  <data name="ManualStationWindow_BufferOverrideToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Anular nivel del búfer para esta estación</value>
+  </data>
+  <data name="ManualStationWindow_BufferOverrideToggle.OffContent" xml:space="preserve">
+    <value>Siguiendo la configuración de la app</value>
+  </data>
+  <data name="ManualStationWindow_BufferOverrideToggle.OnContent" xml:space="preserve">
+    <value>Anular para esta estación</value>
+  </data>
+  <data name="ManualStationWindow_SongPopupDelay.Text" xml:space="preserve">
+    <value>Retraso del popup de canción</value>
+  </data>
+  <data name="ManualStationWindow_SongPopupDelayDescription.Text" xml:space="preserve">
+    <value>Algunas estaciones anuncian la siguiente pista antes de que realmente empiece. Retrasa el popup para que aparezca cuando escuches la canción. Qué tan adelantada va una estación es una propiedad de su codificador, así que configura esto por estación.</value>
+  </data>
+  <data name="ManualStationWindow_SongPopupDelayOverride.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Anular el retraso del popup de canción para esta estación</value>
+  </data>
+  <data name="ManualStationWindow_SongPopupDelayOverride.OffContent" xml:space="preserve">
+    <value>Siguiendo la configuración de la app</value>
+  </data>
+  <data name="ManualStationWindow_SongPopupDelayOverride.OnContent" xml:space="preserve">
+    <value>Anular para esta estación</value>
+  </data>
+  <data name="ManualStationWindow_Title" xml:space="preserve">
+    <value>Traydio - Añadir estación</value>
+  </data>
+  <data name="ManualStationWindow_Volume.Text" xml:space="preserve">
+    <value>Volumen</value>
+  </data>
+  <data name="ManualStationWindow_VolumeDescription.Text" xml:space="preserve">
+    <value>Se recuerda para esta estación, por lo que se mantiene al mismo nivel cuando cambias y vuelves.</value>
+  </data>
+  <data name="NowPlayingPage_IdleSubtitle.Text" xml:space="preserve">
+    <value>Inicia la reproducción para ver información del título y el artista</value>
+  </data>
+  <data name="NowPlayingPage_IdleTitle.Text" xml:space="preserve">
+    <value>No hay estación reproduciéndose</value>
+  </data>
+  <data name="NowPlayingPage_Label_Artist.Text" xml:space="preserve">
+    <value>Artista</value>
+  </data>
+  <data name="NowPlayingPage_Label_Title.Text" xml:space="preserve">
+    <value>Título</value>
+  </data>
+  <data name="NowPlayingPage_RecentTracks.Text" xml:space="preserve">
+    <value>Canciones recientes</value>
+  </data>
+  <data name="NowPlayingPage_Title.Text" xml:space="preserve">
+    <value>Reproduciendo ahora</value>
+  </data>
+  <data name="NowPlayingPage_Tooltip_Favorite.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Canción favorita</value>
+  </data>
+  <data name="NowPlayingPage_Tooltip_SearchSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Configuración de búsqueda musical</value>
+  </data>
+  <data name="PlayingPage_About.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Acerca de Traydio</value>
+  </data>
+  <data name="PlayingPage_AddFirstStation.Text" xml:space="preserve">
+    <value>Añadir tu primera estación</value>
+  </data>
+  <data name="PlayingPage_DeleteGroup.Text" xml:space="preserve">
+    <value>Eliminar grupo</value>
+  </data>
+  <data name="PlayingPage_DeleteGroupAndStations.Text" xml:space="preserve">
+    <value>Eliminar el grupo y sus estaciones</value>
+  </data>
+  <data name="PlayingPage_Edit.Text" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+  <data name="PlayingPage_EditLabel.Text" xml:space="preserve">
+    <value>Editar etiqueta</value>
+  </data>
+  <data name="PlayingPage_EmptySubtitle.Text" xml:space="preserve">
+    <value>Empieza agregando tu estación de radio favorita para comenzar a escuchar.</value>
+  </data>
+  <data name="PlayingPage_EmptyTitle.Text" xml:space="preserve">
+    <value>Aún no hay estaciones</value>
+  </data>
+  <data name="PlayingPage_Favorites.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Canciones favoritas</value>
+  </data>
+  <data name="PlayingPage_GroupBy.Text" xml:space="preserve">
+    <value>Agrupar por</value>
+  </data>
+  <data name="PlayingPage_HideVolumeSlider" xml:space="preserve">
+    <value>Ocultar control de volumen</value>
+  </data>
+  <data name="PlayingPage_InsertDividerAbove.Text" xml:space="preserve">
+    <value>Insertar separador arriba</value>
+  </data>
+  <data name="PlayingPage_Manual.Content" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="PlayingPage_MoveToGroup.Text" xml:space="preserve">
+    <value>Mover al grupo</value>
+  </data>
+  <data name="PlayingPage_NewDivider.Text" xml:space="preserve">
+    <value>Nuevo separador</value>
+  </data>
+  <data name="PlayingPage_NewGroup.Text" xml:space="preserve">
+    <value>Nuevo grupo</value>
+  </data>
+  <data name="PlayingPage_RefreshAllInfo.Text" xml:space="preserve">
+    <value>Actualizar información de todas las estaciones</value>
+  </data>
+  <data name="PlayingPage_RefreshStationInfo.Text" xml:space="preserve">
+    <value>Actualizar información de la estación</value>
+  </data>
+  <data name="PlayingPage_Remove.Text" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="PlayingPage_RemoveDivider.Text" xml:space="preserve">
+    <value>Eliminar separador</value>
+  </data>
+  <data name="PlayingPage_Rename.Text" xml:space="preserve">
+    <value>Cambiar nombre</value>
+  </data>
+  <data name="PlayingPage_Settings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Configuración</value>
+  </data>
+  <data name="PlayingPage_ShowVolume.Text" xml:space="preserve">
+    <value>Mostrar control de volumen</value>
+  </data>
+  <data name="PlayingPage_SortBy.Text" xml:space="preserve">
+    <value>Ordenar por</value>
+  </data>
+  <data name="PlayingPage_StationButton.Text" xml:space="preserve">
+    <value>Estación</value>
+  </data>
+  <data name="PlayingPage_StationsHeader.Text" xml:space="preserve">
+    <value>Estaciones</value>
+  </data>
+  <data name="PlayingPage_VisitWebsite.Text" xml:space="preserve">
+    <value>Visitar sitio web</value>
+  </data>
+  <data name="SettingsPage_AllowSleepDescription.Text" xml:space="preserve">
+    <value>Permite que el equipo entre en suspensión según su programación normal mientras la radio está reproduciéndose. Ten en cuenta que Windows puede mantener el PC despierto mientras haya audio en reproducción.</value>
+  </data>
+  <data name="SettingsPage_AllowSleepTitle.Text" xml:space="preserve">
+    <value>Permitir que el PC duerma</value>
+  </data>
+  <data name="SettingsPage_AutoIncreaseBufferDescription.Text" xml:space="preserve">
+    <value>Permite que Traydio aumente el búfer automáticamente cuando la transmisión tiene problemas para seguir fluida.</value>
+  </data>
+  <data name="SettingsPage_AutoIncreaseBufferTitle.Text" xml:space="preserve">
+    <value>Aumentar el búfer automáticamente al trabarse</value>
+  </data>
+  <data name="SettingsPage_AutoPlayWarning.Message" xml:space="preserve">
+    <value>Esto hace que el audio comience a reproducirse cuando se inicia Traydio. Puede resultar molesto. ¿Seguro que quieres habilitarlo?</value>
+  </data>
+  <data name="SettingsPage_AutoRecoverDescription.Text" xml:space="preserve">
+    <value>Supervisa la reproducción y intenta recuperarse automáticamente si la transmisión se atasca, cae o se queda en silencio.</value>
+  </data>
+  <data name="SettingsPage_AutoRecoverTitle.Text" xml:space="preserve">
+    <value>Recuperación automática</value>
+  </data>
+  <data name="SettingsPage_BufferLevelDescription.Text" xml:space="preserve">
+    <value>Los niveles altos de búfer ayudan en conexiones inestables, pero pueden añadir un poco más de retardo de reproducción.</value>
+  </data>
+  <data name="SettingsPage_BufferLevelTitle.Text" xml:space="preserve">
+    <value>Nivel del búfer</value>
+  </data>
+  <data name="SettingsPage_CopyDiagnostics.Content" xml:space="preserve">
+    <value>Copiar diagnósticos</value>
+  </data>
+  <data name="SettingsPage_DemoPopupButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Ver demostración del popup</value>
+  </data>
+  <data name="SettingsPage_DemoPopupButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Muestra el popup ahora para ver cómo se ve</value>
+  </data>
+  <data name="SettingsPage_DemoPopupButton.Content" xml:space="preserve">
+    <value>Demostración</value>
+  </data>
+  <data name="SettingsPage_DiagnosticsDescription.Text" xml:space="preserve">
+    <value>Traydio guarda un registro de actividad de reproducción (qué motor se usó, estado de la transmisión y errores). Abre la carpeta de registros o copia diagnósticos recientes para compartirlos al reportar un problema.</value>
+  </data>
+  <data name="SettingsPage_DiagnosticsTitle.Text" xml:space="preserve">
+    <value>Diagnósticos</value>
+  </data>
+  <data name="SettingsPage_Enable.Content" xml:space="preserve">
+    <value>Habilitar</value>
+  </data>
+  <data name="SettingsPage_ExportStations.Content" xml:space="preserve">
+    <value>Exportar estaciones</value>
+  </data>
+  <data name="SettingsPage_ImportExportDescription.Text" xml:space="preserve">
+    <value>Copia de seguridad de tu lista de estaciones o muévela a otro dispositivo con archivos de lista de reproducción M3U y PLS.</value>
+  </data>
+  <data name="SettingsPage_ImportExportTitle.Text" xml:space="preserve">
+    <value>Importar / exportar estaciones</value>
+  </data>
+  <data name="SettingsPage_ImportStations.Content" xml:space="preserve">
+    <value>Importar estaciones</value>
+  </data>
+  <data name="SettingsPage_Language_English.Content" xml:space="preserve">
+    <value>Inglés</value>
+  </data>
+  <data name="SettingsPage_Language_Spanish.Content" xml:space="preserve">
+    <value>Español</value>
+  </data>
+  <data name="SettingsPage_LanguageDescription.Text" xml:space="preserve">
+    <value>Elige el idioma usado en toda la aplicación.</value>
+  </data>
+  <data name="SettingsPage_LanguageTitle.Text" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+  <data name="SettingsPage_MusicSearchServicesDescription.Text" xml:space="preserve">
+    <value>Elige qué accesos rápidos aparecen en Reproduciendo ahora y Favoritos cuando quieres buscar la canción actual en otros sitios.</value>
+  </data>
+  <data name="SettingsPage_MusicSearchServicesTitle.Text" xml:space="preserve">
+    <value>Servicios de búsqueda musical</value>
+  </data>
+  <data name="SettingsPage_OpenLogsFolder.Content" xml:space="preserve">
+    <value>Abrir carpeta de registros</value>
+  </data>
+  <data name="SettingsPage_OpenOnStartupDescription.Text" xml:space="preserve">
+    <value>Inicia Traydio automáticamente cuando inicias sesión para que el reproductor esté listo sin abrirlo manualmente.</value>
+  </data>
+  <data name="SettingsPage_OpenOnStartupTitle.Text" xml:space="preserve">
+    <value>Abrir al iniciar</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngine_ArmWarning.Message" xml:space="preserve">
+    <value>En dispositivos ARM el motor LibVLC no está disponible, así que las transmisiones siempre se reproducen con el motor de Windows sin importar la opción elegida. El volumen superior al 100% tampoco se aplicará.</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngine_Auto.Content" xml:space="preserve">
+    <value>Automático (recomendado)</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngine_NativeOnly.Content" xml:space="preserve">
+    <value>Sólo nativo</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngine_NativePreferred.Content" xml:space="preserve">
+    <value>Preferir nativo</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngine_RememberedInfo.Text" xml:space="preserve">
+    <value>Traydio recuerda qué motor usa cada estación, para que una estación que solo funciona en uno empiece en ese motor la próxima vez. Reinicia esto si el audio de una estación ha cambiado.</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngineDescription.Text" xml:space="preserve">
+    <value>Elige cómo reproduce Traydio las transmisiones. Auto usa LibVLC primero y vuelve al motor de Windows cuando hace falta.</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngineTitle.Text" xml:space="preserve">
+    <value>Motor de reproducción</value>
+  </data>
+  <data name="SettingsPage_PlayOnStartupDescription.Text" xml:space="preserve">
+    <value>Reanuda automáticamente la última estación en cuanto Traydio se abre.</value>
+  </data>
+  <data name="SettingsPage_PlayOnStartupTitle.Text" xml:space="preserve">
+    <value>Reproducir al iniciar</value>
+  </data>
+  <data name="SettingsPage_PopupDwellExplanation.Text" xml:space="preserve">
+    <value>Cuánto tiempo permanece el popup en pantalla antes de desvanecerse. Hacer clic lo cierra antes.</value>
+  </data>
+  <data name="SettingsPage_PopupDwellSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Cuánto tiempo permanece el popup de canción en pantalla, en segundos</value>
+  </data>
+  <data name="SettingsPage_ResetRememberedEngines.Content" xml:space="preserve">
+    <value>Restablecer motores recordados</value>
+  </data>
+  <data name="SettingsPage_RestartRequiredInfoBar.Message" xml:space="preserve">
+    <value>Reinicia Traydio para terminar de cambiar el idioma.</value>
+  </data>
+  <data name="SettingsPage_SilenceTimeoutDescription.Text" xml:space="preserve">
+    <value>Establece cuánto tiempo puede quedarse en silencio la reproducción antes de que Traydio reinicie la transmisión automáticamente.</value>
+  </data>
+  <data name="SettingsPage_SilenceTimeoutTitle.Text" xml:space="preserve">
+    <value>Tiempo de espera por silencio</value>
+  </data>
+  <data name="SettingsPage_SongChangePopupDescription.Text" xml:space="preserve">
+    <value>Muestra una breve notificación en pantalla junto a la barra de tareas cada vez que cambia la canción.</value>
+  </data>
+  <data name="SettingsPage_SongChangePopupTitle.Text" xml:space="preserve">
+    <value>Popup de cambio de canción</value>
+  </data>
+  <data name="SettingsPage_SongChangePopupToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Popup de cambio de canción</value>
+  </data>
+  <data name="SettingsPage_SongPopupDelayExplanation.Text" xml:space="preserve">
+    <value>Muchas estaciones anuncian una pista antes de que realmente empiece a sonar. Retrasa el popup para que coincida con el audio. Cada estación puede anular esto en su configuración avanzada o haciendo clic derecho en el popup.</value>
+  </data>
+  <data name="SettingsPage_SongPopupDelaySlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Retraso del popup de canción en segundos</value>
+  </data>
+  <data name="SettingsPage_Title.Text" xml:space="preserve">
+    <value>Configuración</value>
+  </data>
+  <data name="SettingsPage_TrayClickBehavior_Alternate.Content" xml:space="preserve">
+    <value>Clic izquierdo: abrir Traydio, clic derecho: reproducir/pausar</value>
+  </data>
+  <data name="SettingsPage_TrayClickBehavior_Default.Content" xml:space="preserve">
+    <value>Clic izquierdo: reproducir/pausar, clic derecho: abrir Traydio (predeterminado)</value>
+  </data>
+  <data name="SettingsPage_TrayClickBehaviorDescription.Text" xml:space="preserve">
+    <value>Elige si el icono de la bandeja prioriza los controles de reproducción o abrir el reproductor.</value>
+  </data>
+  <data name="SettingsPage_TrayClickBehaviorTitle.Text" xml:space="preserve">
+    <value>Comportamiento del clic en la bandeja</value>
+  </data>
+  <data name="ShellPage_TitleBar.Title" xml:space="preserve">
+    <value>Traydio</value>
+  </data>
+  <data name="SongChangePopup_Surface.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Reproduciendo ahora</value>
+  </data>
+  <data name="SongChangePopup_Surface.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Haz clic para cerrar, clic derecho para ajustar el retraso</value>
+  </data>
+  <data name="SongChangePopup_Title.Text" xml:space="preserve">
+    <value>Reproduciendo ahora</value>
+  </data>
+  <data name="Toggle_Off" xml:space="preserve">
+    <value>Desactivado</value>
+  </data>
+  <data name="Toggle_On" xml:space="preserve">
+    <value>Activado</value>
+  </data>
+  <data name="TutorialWindow_Feature_1.Text" xml:space="preserve">
+    <value>• Diseño ligero y minimalista</value>
+  </data>
+  <data name="TutorialWindow_Feature_2.Text" xml:space="preserve">
+    <value>• Acceso a miles de estaciones de radio en todo el mundo</value>
+  </data>
+  <data name="TutorialWindow_Feature_3.Text" xml:space="preserve">
+    <value>• Hermoso fondo Mica y una interfaz moderna</value>
+  </data>
+  <data name="TutorialWindow_Feature_4.Text" xml:space="preserve">
+    <value>• Vive tranquilamente en tu bandeja del sistema</value>
+  </data>
+  <data name="TutorialWindow_FeaturesTitle.Text" xml:space="preserve">
+    <value>✨ ¿Qué hace especial a Traydio?</value>
+  </data>
+  <data name="TutorialWindow_Intro.Text" xml:space="preserve">
+    <value>Tu pequeña radio de la bandeja para Windows</value>
+  </data>
+  <data name="TutorialWindow_QuickStart.Text" xml:space="preserve">
+    <value>Guía rápida</value>
+  </data>
+  <data name="TutorialWindow_StartButton.Text" xml:space="preserve">
+    <value>¡Comencemos!</value>
+  </data>
+  <data name="TutorialWindow_Step_Options_Desc.Text" xml:space="preserve">
+    <value>Navega por estaciones, ajusta la configuración y explora todas las funciones</value>
+  </data>
+  <data name="TutorialWindow_Step_Options_Title.Text" xml:space="preserve">
+    <value>Clic derecho para más opciones</value>
+  </data>
+  <data name="TutorialWindow_Step_Pin_Desc.Text" xml:space="preserve">
+    <value>Asegúrate de que el icono de Traydio siempre esté visible en tu bandeja del sistema</value>
+  </data>
+  <data name="TutorialWindow_Step_Pin_Title.Text" xml:space="preserve">
+    <value>Anclar el icono de la bandeja</value>
+  </data>
+  <data name="TutorialWindow_Step_Play_Desc.Text" xml:space="preserve">
+    <value>Control de reproducción rápido y sencillo al alcance de tu mano</value>
+  </data>
+  <data name="TutorialWindow_Step_Play_Title.Text" xml:space="preserve">
+    <value>Clic izquierdo para reproducir/pausar</value>
+  </data>
+  <data name="TutorialWindow_Title" xml:space="preserve">
+    <value>Ventana de primera ejecución de Traydio</value>
+  </data>
+  <data name="TutorialWindow_TitleBar.Title" xml:space="preserve">
+    <value>Traydio</value>
+  </data>
+  <data name="TutorialWindow_WelcomeTitle.Text" xml:space="preserve">
+    <value>¡Bienvenido a Traydio!</value>
+  </data>
+</root>
