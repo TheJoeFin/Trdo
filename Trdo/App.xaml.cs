@@ -705,13 +705,15 @@ public partial class App : Application
         string tooltip;
         if (!_playerVm.CanPlay)
         {
-            tooltip = "Traydio - Add a station to start listening";
+            tooltip = LocalizationService.GetString(
+                "TrayIcon_AddStation",
+                "Traydio - Add a station to start listening");
         }
         else if (_playerVm.IsPlaying)
         {
             string playPauseClickHint = SettingsService.TrayClickBehavior == 1
-                ? "Right-click to pause"
-                : "Left-click to pause";
+                ? LocalizationService.GetString("TrayIcon_RightClickToPause", "Right-click to pause")
+                : LocalizationService.GetString("TrayIcon_LeftClickToPause", "Left-click to pause");
 
             if (_playerVm.HasNowPlaying)
             {
@@ -721,20 +723,29 @@ public partial class App : Application
                     nowPlaying = string.Concat(nowPlaying.AsSpan(0, MaxTooltipNowPlayingLength - 3), "...");
                 }
 
-                tooltip = $"Traydio {station} (Playing)\n{nowPlaying}\n{playPauseClickHint}";
+                string playingFormat = LocalizationService.GetString(
+                    "TrayIcon_PlayingWithNowPlaying",
+                    "Traydio {0} (Playing)\n{1}\n{2}");
+                tooltip = string.Format(playingFormat, station, nowPlaying, playPauseClickHint);
             }
             else
             {
-                tooltip = $"Traydio {station} (Playing)\n{playPauseClickHint}";
+                string playingFormat = LocalizationService.GetString(
+                    "TrayIcon_Playing",
+                    "Traydio {0} (Playing)\n{1}");
+                tooltip = string.Format(playingFormat, station, playPauseClickHint);
             }
         }
         else
         {
             string playPauseClickHint = SettingsService.TrayClickBehavior == 1
-                ? "Right-click to play"
-                : "Left-click to play";
+                ? LocalizationService.GetString("TrayIcon_RightClickToPlay", "Right-click to play")
+                : LocalizationService.GetString("TrayIcon_LeftClickToPlay", "Left-click to play");
 
-            tooltip = $"Traydio {station} (Paused)\n{playPauseClickHint}";
+            string pausedFormat = LocalizationService.GetString(
+                "TrayIcon_Paused",
+                "Traydio {0} (Paused)\n{1}");
+            tooltip = string.Format(pausedFormat, station, playPauseClickHint);
         }
 
         SetTrayTooltip(tooltip, forceTooltip);

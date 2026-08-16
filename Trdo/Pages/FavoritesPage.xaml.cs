@@ -142,7 +142,7 @@ public sealed partial class FavoritesPage : Page
         catch (Exception ex)
         {
             Debug.WriteLine($"[FavoritesPage] Export failed: {ex.Message}");
-            ShowInfo(InfoBarSeverity.Error, "Export failed", ex.Message);
+            ShowInfo(InfoBarSeverity.Error, LocalizationService.GetString("FavoritesPage_ExportFailed", "Export failed"), ex.Message);
         }
     }
 

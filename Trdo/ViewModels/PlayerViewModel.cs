@@ -380,9 +380,12 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 // Validate the URL
                 if (!IsValidUrl(_selectedStation.StreamUrl))
                 {
-                    _lastError = $"Invalid stream URL for {_selectedStation.Name}";
-                    LogService.Error("PlayerViewModel", _lastError);
-                    Debug.WriteLine($"[PlayerViewModel] ERROR: {_lastError}");
+                    string logDetail = $"Invalid stream URL for {_selectedStation.Name}";
+                    _lastError = string.Format(
+                        LocalizationService.GetString("PlayerViewModel_InvalidStreamUrl", "Invalid stream URL for {0}"),
+                        _selectedStation.Name);
+                    LogService.Error("PlayerViewModel", logDetail);
+                    Debug.WriteLine($"[PlayerViewModel] ERROR: {logDetail}");
                     PlaybackErrorService.Instance.Report(_lastError);
                     if (shouldResumePlayback)
                     {
@@ -399,8 +402,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 }
                 catch (Exception ex)
                 {
-                    _lastError = $"Failed to switch to {_selectedStation.Name}: {ex.Message}";
-                    Debug.WriteLine($"[PlayerViewModel] EXCEPTION: {_lastError}");
+                    _lastError = string.Format(
+                        LocalizationService.GetString("PlayerViewModel_FailedToSwitch", "Failed to switch to {0}: {1}"),
+                        _selectedStation.Name, ex.Message);
+                    Debug.WriteLine($"[PlayerViewModel] EXCEPTION: Failed to switch to {_selectedStation.Name}: {ex.Message}");
                     Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
                     PlaybackErrorService.Instance.Report(_lastError);
                 }
@@ -595,13 +600,13 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             : "\uE768";
 
     public string PlaybackButtonText => IsBuffering
-        ? "Buffering"
+        ? LocalizationService.GetString("PlayerViewModel_Buffering", "Buffering")
         : IsPlaying
-            ? "Pause"
-            : "Play";
+            ? LocalizationService.GetString("PlayerViewModel_Pause", "Pause")
+            : LocalizationService.GetString("PlayerViewModel_Play", "Play");
 
     public string MiniPlayerCloseButtonText => IsPlaying
-        ? "Pause & close"
+        ? LocalizationService.GetString("PlayerViewModel_PauseAndClose", "Pause & close")
         : "";
 
     public Visibility MiniPlayerCloseButtonVisibility => IsPlaying
@@ -734,8 +739,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         catch (Exception ex)
         {
             string stationName = _selectedStation?.Name ?? "Unknown";
-            _lastError = $"Failed to play {stationName}: {ex.Message}";
-            Debug.WriteLine($"[PlayerViewModel] EXCEPTION in Toggle: {_lastError}");
+            _lastError = string.Format(
+                LocalizationService.GetString("PlayerViewModel_FailedToPlay", "Failed to play {0}: {1}"),
+                stationName, ex.Message);
+            Debug.WriteLine($"[PlayerViewModel] EXCEPTION in Toggle: Failed to play {stationName}: {ex.Message}");
             Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
             PlaybackErrorService.Instance.Report(_lastError);
         }
@@ -764,8 +771,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         catch (Exception ex)
         {
             string stationName = _selectedStation?.Name ?? "Unknown";
-            _lastError = $"Failed to pause {stationName}: {ex.Message}";
-            Debug.WriteLine($"[PlayerViewModel] EXCEPTION in Pause: {_lastError}");
+            _lastError = string.Format(
+                LocalizationService.GetString("PlayerViewModel_FailedToPause", "Failed to pause {0}: {1}"),
+                stationName, ex.Message);
+            Debug.WriteLine($"[PlayerViewModel] EXCEPTION in Pause: Failed to pause {stationName}: {ex.Message}");
             Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
             PlaybackErrorService.Instance.Report(_lastError);
         }
@@ -856,8 +865,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         catch (Exception ex)
         {
             string stationName = _selectedStation?.Name ?? "Unknown";
-            _lastError = $"Failed to restore {stationName}: {ex.Message}";
-            Debug.WriteLine($"[PlayerViewModel] EXCEPTION in RestoreSelectedStationPlaybackTarget: {_lastError}");
+            _lastError = string.Format(
+                LocalizationService.GetString("PlayerViewModel_FailedToRestore", "Failed to restore {0}: {1}"),
+                stationName, ex.Message);
+            Debug.WriteLine($"[PlayerViewModel] EXCEPTION in RestoreSelectedStationPlaybackTarget: Failed to restore {stationName}: {ex.Message}");
             Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
             PlaybackErrorService.Instance.Report(_lastError);
         }
@@ -1513,8 +1524,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             }
             catch (Exception ex)
             {
-                _lastError = $"Failed to update stream: {ex.Message}";
-                Debug.WriteLine($"[PlayerViewModel] EXCEPTION in SaveStations: {_lastError}");
+                _lastError = string.Format(
+                    LocalizationService.GetString("PlayerViewModel_FailedToUpdateStream", "Failed to update stream: {0}"),
+                    ex.Message);
+                Debug.WriteLine($"[PlayerViewModel] EXCEPTION in SaveStations: Failed to update stream: {ex.Message}");
                 Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
                 PlaybackErrorService.Instance.Report(_lastError);
             }
@@ -1555,8 +1568,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             }
             catch (Exception ex)
             {
-                _lastError = $"Failed to initialize stream: {ex.Message}";
-                Debug.WriteLine($"[PlayerViewModel] EXCEPTION in InitializeStream: {_lastError}");
+                _lastError = string.Format(
+                    LocalizationService.GetString("PlayerViewModel_FailedToInitializeStream", "Failed to initialize stream: {0}"),
+                    ex.Message);
+                Debug.WriteLine($"[PlayerViewModel] EXCEPTION in InitializeStream: Failed to initialize stream: {ex.Message}");
                 Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
                 PlaybackErrorService.Instance.Report(_lastError);
             }
@@ -1670,8 +1685,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         {
             if (ReferenceEquals(_selectedStation, station))
             {
-                _lastError = $"Failed to switch to {station.Name}: {ex.Message}";
-                Debug.WriteLine($"[PlayerViewModel] EXCEPTION: {_lastError}");
+                _lastError = string.Format(
+                    LocalizationService.GetString("PlayerViewModel_FailedToSwitch", "Failed to switch to {0}: {1}"),
+                    station.Name, ex.Message);
+                Debug.WriteLine($"[PlayerViewModel] EXCEPTION: Failed to switch to {station.Name}: {ex.Message}");
                 Debug.WriteLine($"[PlayerViewModel] Exception details: {ex}");
                 PlaybackErrorService.Instance.Report(_lastError);
             }

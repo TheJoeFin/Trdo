@@ -451,7 +451,10 @@ public sealed partial class RadioPlayerService
 
             if (diagnosis.Result == StreamProbeResult.PlaylistFile && diagnosis.PlaylistEntryUrl is not null)
             {
-                return $"{diagnosis.Summary} Try using {diagnosis.PlaylistEntryUrl} as the stream address instead.";
+                string format = LocalizationService.GetString(
+                    "StreamDiagnosis_TryPlaylistEntry",
+                    "{0} Try using {1} as the stream address instead.");
+                return string.Format(format, diagnosis.Summary, diagnosis.PlaylistEntryUrl);
             }
 
             if (diagnosis.ServerLooksHealthy)
@@ -460,8 +463,14 @@ public sealed partial class RadioPlayerService
                 // than blaming the station, and include what the engine reported.
                 string? engineReason = _lastPrepareError ?? _libVlcBackend?.DescribeLastError();
                 return string.IsNullOrWhiteSpace(engineReason)
-                    ? "The station is online, but neither playback engine could play it on this PC."
-                    : $"The station is online, but playback failed on this PC: {engineReason}";
+                    ? LocalizationService.GetString(
+                        "StreamDiagnosis_EngineFailedHealthyServer",
+                        "The station is online, but neither playback engine could play it on this PC.")
+                    : string.Format(
+                        LocalizationService.GetString(
+                            "StreamDiagnosis_EngineFailedHealthyServerWithReason",
+                            "The station is online, but playback failed on this PC: {0}"),
+                        engineReason);
             }
 
             return diagnosis.Summary;

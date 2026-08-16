@@ -221,6 +221,9 @@
   <data name="FavoritesPage_Export.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Export favorites to a playlist file</value>
   </data>
+  <data name="FavoritesPage_ExportFailed" xml:space="preserve">
+    <value>Export failed</value>
+  </data>
   <data name="FavoritesPage_ExportLabel.Text" xml:space="preserve">
     <value>Export…</value>
   </data>
@@ -302,6 +305,57 @@
   <data name="NowPlayingPage_Tooltip_SearchSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Music search settings</value>
   </data>
+  <data name="PlaybackFailure_NoDetail" xml:space="preserve">
+    <value>Couldn't play this station. The stream may be unavailable or the URL may be wrong.</value>
+  </data>
+  <data name="PlaybackFailure_NoNetwork" xml:space="preserve">
+    <value>No internet connection. Connect to a network and try again.</value>
+  </data>
+  <data name="PlaybackFailure_TooManyAttemptsNoDetail" xml:space="preserve">
+    <value>Couldn't play this station after several attempts. The stream may be offline or the URL may be wrong.</value>
+  </data>
+  <data name="PlaybackFailure_TooManyAttemptsWithDetail" xml:space="preserve">
+    <value>Couldn't play this station after several attempts ({0}). The stream may be offline or the URL may be wrong.</value>
+  </data>
+  <data name="PlaybackFailure_WithDetail" xml:space="preserve">
+    <value>Couldn't play this station: {0}</value>
+  </data>
+  <data name="PlaybackFailure_WithSentenceDetail" xml:space="preserve">
+    <value>Couldn't play this station. {0}</value>
+  </data>
+  <data name="PlayerViewModel_Buffering" xml:space="preserve">
+    <value>Buffering</value>
+  </data>
+  <data name="PlayerViewModel_FailedToInitializeStream" xml:space="preserve">
+    <value>Failed to initialize stream: {0}</value>
+  </data>
+  <data name="PlayerViewModel_FailedToPause" xml:space="preserve">
+    <value>Failed to pause {0}: {1}</value>
+  </data>
+  <data name="PlayerViewModel_FailedToPlay" xml:space="preserve">
+    <value>Failed to play {0}: {1}</value>
+  </data>
+  <data name="PlayerViewModel_FailedToRestore" xml:space="preserve">
+    <value>Failed to restore {0}: {1}</value>
+  </data>
+  <data name="PlayerViewModel_FailedToSwitch" xml:space="preserve">
+    <value>Failed to switch to {0}: {1}</value>
+  </data>
+  <data name="PlayerViewModel_FailedToUpdateStream" xml:space="preserve">
+    <value>Failed to update stream: {0}</value>
+  </data>
+  <data name="PlayerViewModel_InvalidStreamUrl" xml:space="preserve">
+    <value>Invalid stream URL for {0}</value>
+  </data>
+  <data name="PlayerViewModel_Pause" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="PlayerViewModel_PauseAndClose" xml:space="preserve">
+    <value>Pause &amp; close</value>
+  </data>
+  <data name="PlayerViewModel_Play" xml:space="preserve">
+    <value>Play</value>
+  </data>
   <data name="PlayingPage_About.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>About Traydio</value>
   </data>
@@ -349,6 +403,21 @@
   </data>
   <data name="PlayingPage_NewGroup.Text" xml:space="preserve">
     <value>New Group</value>
+  </data>
+  <data name="PlayingPage_PlaybackErrorClose" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="PlayingPage_PlaybackErrorTitle" xml:space="preserve">
+    <value>Playback Error</value>
+  </data>
+  <data name="PlayingPage_PopOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Open mini player</value>
+  </data>
+  <data name="PlayingPage_QuitButton.Content" xml:space="preserve">
+    <value>Quit</value>
+  </data>
+  <data name="PlayingPage_QuitButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Quit Traydio</value>
   </data>
   <data name="PlayingPage_RefreshAllInfo.Text" xml:space="preserve">
     <value>Refresh info for all stations</value>
@@ -413,6 +482,9 @@
   <data name="SettingsPage_CopyDiagnostics.Content" xml:space="preserve">
     <value>Copy diagnostics</value>
   </data>
+  <data name="SettingsPage_CopyDiagnosticsFailed" xml:space="preserve">
+    <value>Couldn't copy diagnostics: {0}</value>
+  </data>
   <data name="SettingsPage_DemoPopupButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Demo the song change popup</value>
   </data>
@@ -431,6 +503,9 @@
   <data name="SettingsPage_Enable.Content" xml:space="preserve">
     <value>Enable</value>
   </data>
+  <data name="SettingsPage_ExportFailed" xml:space="preserve">
+    <value>Export failed: {0}</value>
+  </data>
   <data name="SettingsPage_ExportStations.Content" xml:space="preserve">
     <value>Export stations</value>
   </data>
@@ -439,6 +514,9 @@
   </data>
   <data name="SettingsPage_ImportExportTitle.Text" xml:space="preserve">
     <value>Import / Export stations</value>
+  </data>
+  <data name="SettingsPage_ImportFailed" xml:space="preserve">
+    <value>Import failed: {0}</value>
   </data>
   <data name="SettingsPage_ImportStations.Content" xml:space="preserve">
     <value>Import stations</value>
@@ -466,6 +544,12 @@
   </data>
   <data name="SettingsPage_OpenLogsFolder.Content" xml:space="preserve">
     <value>Open logs folder</value>
+  </data>
+  <data name="SettingsPage_OpenLogsFolderFailed" xml:space="preserve">
+    <value>Couldn't open the logs folder: {0}</value>
+  </data>
+  <data name="SettingsPage_OpenLogsFolderFailedLocation" xml:space="preserve">
+    <value>Couldn't open the logs folder. It's located at: {0}</value>
   </data>
   <data name="SettingsPage_OpenOnStartupDescription.Text" xml:space="preserve">
     <value>Launch Traydio automatically when you sign in so the player is ready without opening it manually.</value>
@@ -505,6 +589,9 @@
   </data>
   <data name="SettingsPage_PopupDwellSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>How long the song popup stays on screen, in seconds</value>
+  </data>
+  <data name="SettingsPage_ResetEngineMemoryFailed" xml:space="preserve">
+    <value>Couldn't reset remembered engines: {0}</value>
   </data>
   <data name="SettingsPage_ResetRememberedEngines.Content" xml:space="preserve">
     <value>Reset remembered engines</value>
@@ -560,11 +647,48 @@
   <data name="SongChangePopup_Title.Text" xml:space="preserve">
     <value>Now playing</value>
   </data>
+  <data name="StreamDiagnosis_EngineFailedHealthyServer" xml:space="preserve">
+    <value>The station is online, but neither playback engine could play it on this PC.</value>
+  </data>
+  <data name="StreamDiagnosis_EngineFailedHealthyServerWithReason" xml:space="preserve">
+    <value>The station is online, but playback failed on this PC: {0}</value>
+  </data>
+  <data name="StreamDiagnosis_TryPlaylistEntry" xml:space="preserve">
+    <value>{0} Try using {1} as the stream address instead.</value>
+  </data>
   <data name="Toggle_Off" xml:space="preserve">
     <value>Off</value>
   </data>
   <data name="Toggle_On" xml:space="preserve">
     <value>On</value>
+  </data>
+  <data name="TrayIcon_AddStation" xml:space="preserve">
+    <value>Traydio - Add a station to start listening</value>
+  </data>
+  <data name="TrayIcon_LeftClickToPause" xml:space="preserve">
+    <value>Left-click to pause</value>
+  </data>
+  <data name="TrayIcon_LeftClickToPlay" xml:space="preserve">
+    <value>Left-click to play</value>
+  </data>
+  <data name="TrayIcon_Paused" xml:space="preserve">
+    <value>Traydio {0} (Paused)
+{1}</value>
+  </data>
+  <data name="TrayIcon_Playing" xml:space="preserve">
+    <value>Traydio {0} (Playing)
+{1}</value>
+  </data>
+  <data name="TrayIcon_PlayingWithNowPlaying" xml:space="preserve">
+    <value>Traydio {0} (Playing)
+{1}
+{2}</value>
+  </data>
+  <data name="TrayIcon_RightClickToPause" xml:space="preserve">
+    <value>Right-click to pause</value>
+  </data>
+  <data name="TrayIcon_RightClickToPlay" xml:space="preserve">
+    <value>Right-click to play</value>
   </data>
   <data name="TutorialWindow_Feature_1.Text" xml:space="preserve">
     <value>• Lightweight and minimalistic design</value>
