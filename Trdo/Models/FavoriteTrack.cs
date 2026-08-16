@@ -51,6 +51,14 @@ public class FavoriteTrack
     public bool IsArchived => ExportedAt.HasValue;
 
     /// <summary>
+    /// A human-friendly description of when this track was exported.
+    /// </summary>
+    [JsonIgnore]
+    public string ExportedOnDisplay => ExportedAt is DateTime exportedAt
+        ? $"Exported on {exportedAt:MMM d, yyyy h:mm tt}"
+        : string.Empty;
+
+    /// <summary>
     /// Gets a display-friendly string for the track.
     /// </summary>
     public string DisplayText

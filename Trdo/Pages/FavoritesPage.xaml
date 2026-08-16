@@ -166,18 +166,18 @@
                                             Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                             Text="{x:Bind StationName}"
                                             TextTrimming="CharacterEllipsis" />
-                                        <Border
-                                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
-                                            CornerRadius="4"
-                                            Padding="6,1"
-                                            ToolTipService.ToolTip="Already exported. Right-click to include it in the next export."
+                                        <StackPanel
+                                            Orientation="Horizontal"
+                                            Spacing="4"
+                                            ToolTipService.ToolTip="{x:Bind ExportedOnDisplay}"
                                             Visibility="{x:Bind IsArchived,
                                                                 Converter={StaticResource BooleanToVisibilityConverter}}">
-                                            <TextBlock
-                                                FontSize="10"
+                                            <FontIcon
+                                                VerticalAlignment="Center"
+                                                FontSize="12"
                                                 Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                                Text="Exported" />
-                                        </Border>
+                                                Glyph="&#xEDE1;" />
+                                        </StackPanel>
                                     </StackPanel>
                                 </StackPanel>
 
