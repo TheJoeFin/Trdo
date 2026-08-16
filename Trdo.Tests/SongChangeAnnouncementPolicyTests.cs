@@ -22,6 +22,73 @@ public sealed class SongChangeAnnouncementPolicyTests
     }
 
     [TestMethod]
+    public void FirstObservationAfterStationStart_AnnouncesImmediately()
+    {
+        Assert.IsTrue(SongChangeAnnouncementPolicy.ShouldAnnounce(
+            null,
+            "Artist - Title",
+            isEnabled: true,
+            isFirstObservationSinceStationStart: true));
+    }
+
+    /// <summary>
+    /// A start is rarely one clean event. The same track can be reported twice as sources
+    /// converge on it — an ICY title first, then the same title carrying album art — and a
+    /// stuttering connection re-opens the start window under a track that has already been
+    /// announced. Neither may show the same song a second time.
+    /// </summary>
+    [TestMethod]
+    public void RepeatedTextDuringAStutteringStart_DoesNotAnnounceTwice()
+    {
+        Assert.IsFalse(SongChangeAnnouncementPolicy.ShouldAnnounce(
+            "Artist - Title",
+            "Artist - Title",
+            isEnabled: true,
+            isFirstObservationSinceStationStart: true));
+
+        // Whitespace churn around an otherwise identical title is still the same track.
+        Assert.IsFalse(SongChangeAnnouncementPolicy.ShouldAnnounce(
+            " Artist - Title ",
+            "Artist - Title",
+            isEnabled: true,
+            isFirstObservationSinceStationStart: true));
+    }
+
+    /// <summary>
+    /// The stutter guard must not swallow a genuine change: if the station moved on to a new
+    /// track while the connection was settling, that track is what the listener is hearing.
+    /// </summary>
+    [TestMethod]
+    public void ARealChangeDuringTheStartWindow_StillAnnounces()
+    {
+        Assert.IsTrue(SongChangeAnnouncementPolicy.ShouldAnnounce(
+            "Artist - Title",
+            "Someone Else - Another Title",
+            isEnabled: true,
+            isFirstObservationSinceStationStart: true));
+    }
+
+    [TestMethod]
+    public void StationStart_DoesNotOverrideTheEnabledSetting()
+    {
+        Assert.IsFalse(SongChangeAnnouncementPolicy.ShouldAnnounce(
+            null,
+            "Artist - Title",
+            isEnabled: false,
+            isFirstObservationSinceStationStart: true));
+    }
+
+    [TestMethod]
+    public void StationStart_DoesNotAnnounceBlankMetadata()
+    {
+        Assert.IsFalse(SongChangeAnnouncementPolicy.ShouldAnnounce(
+            null,
+            "   ",
+            isEnabled: true,
+            isFirstObservationSinceStationStart: true));
+    }
+
+    [TestMethod]
     public void Disabled_NeverAnnounces_EvenOnAMeaningfulChange()
     {
         Assert.IsFalse(SongChangeAnnouncementPolicy.ShouldAnnounce("Old Song", "New Song", isEnabled: false));

@@ -59,13 +59,26 @@ public sealed class SongChangePopupDelayTests
     /// The delay compensates for metadata arriving ahead of the audio, which only makes
     /// sense for a track that has not started playing yet. The first track heard after
     /// starting a station is already mid-play, so waiting would land the popup after the
-    /// song it names — up to a minute late on a station with a long override.
+    /// song it names — up to a minute late on a station with a long override. It gets a
+    /// half-second instead: enough to let a stuttering start settle on one title, little
+    /// enough that the popup still lands with the audio.
     /// </summary>
     [TestMethod]
-    public void TheFirstAnnouncementAfterStartingAStation_IgnoresTheDelay()
+    public void TheFirstAnnouncementAfterStartingAStation_UsesAShortStartupDelay()
     {
-        Assert.AreEqual(0, SongChangeAnnouncementPolicy.ResolveDelaySeconds(30, 10, isFirstAnnouncementSinceStart: true));
-        Assert.AreEqual(0, SongChangeAnnouncementPolicy.ResolveDelaySeconds(null, 60, isFirstAnnouncementSinceStart: true));
+        Assert.AreEqual(0.5, SongChangeAnnouncementPolicy.ResolveDelaySeconds(30, 10, isFirstAnnouncementSinceStart: true));
+        Assert.AreEqual(0.5, SongChangeAnnouncementPolicy.ResolveDelaySeconds(null, 60, isFirstAnnouncementSinceStart: true));
+    }
+
+    /// <summary>
+    /// The whole point of the startup delay is that the listener sees the track more or less
+    /// as the station starts, so it has to stay inside the half-second the UI promises.
+    /// </summary>
+    [TestMethod]
+    public void TheStartupDelay_LandsWithinHalfASecond()
+    {
+        Assert.IsTrue(SongChangeAnnouncementPolicy.FirstAnnouncementDelaySeconds <= 0.5);
+        Assert.IsTrue(SongChangeAnnouncementPolicy.FirstAnnouncementDelaySeconds > 0);
     }
 
     [TestMethod]

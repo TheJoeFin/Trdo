@@ -204,10 +204,14 @@ public sealed class StreamMetadataOrchestrator : IDisposable
             _currentMetadata.Title == metadata.Title &&
             _currentMetadata.AlbumArtUrl == metadata.AlbumArtUrl)
         {
+            // Worth recording: this is the point where a repeat is dropped, so a track that
+            // was seen once but never announced will never be offered again.
+            LogService.Info("StreamMetadata", $"{source} repeated '{metadata.DisplayText}'; ignoring");
             return;
         }
 
         _currentMetadata = metadata;
+        LogService.Info("StreamMetadata", $"Updated via {source}: '{metadata.DisplayText}'");
         Debug.WriteLine($"[StreamMetadataOrchestrator] Metadata updated via {source}: {metadata.DisplayText}");
         MetadataChanged?.Invoke(this, metadata);
     }

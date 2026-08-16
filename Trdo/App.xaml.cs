@@ -36,6 +36,25 @@ public partial class App : Application
     /// that is already audible, so it skips the popup delay.
     /// </summary>
     private DateTimeOffset? _stationStartedAtUtc;
+
+    /// <summary>
+    /// The last <see cref="PlayerViewModel.IsPlaying"/> value acted on. The view model re-raises
+    /// the property on every playback-state event rather than only on a change, so a station
+    /// that stutters on connect reports "playing" repeatedly; without this, each report would
+    /// re-open the station-start window and hand a later track the startup delay instead of the
+    /// station's own.
+    /// </summary>
+    private bool _wasPlaying;
+
+    /// <summary>
+    /// The text the popup has most recently been asked to show for the current station, as
+    /// opposed to <see cref="_lastKnownNowPlayingDisplayText"/>, which is only the baseline for
+    /// spotting a change. The two differ whenever metadata is observed without being announced —
+    /// which is the normal case at startup, because a station's first metadata usually lands
+    /// while it is still buffering, before playback begins. Announcing at the start of playback
+    /// therefore has to ask "has this track been shown?", not "is this track new?".
+    /// </summary>
+    private string? _lastAnnouncedDisplayText;
     private readonly PlayerViewModel _playerVm = PlayerViewModel.Shared;
     private readonly UISettings _uiSettings = new();
     private Mutex? _singleInstanceMutex;
@@ -116,28 +135,48 @@ public partial class App : Application
     {
         string displayText = _playerVm.CurrentMetadata.DisplayText.Trim();
         if (displayText.Length == 0)
+        {
+            LogService.Info("SongChangePopup", "Metadata observed but blank; ignoring");
             return;
-
-        string? previous = _lastKnownNowPlayingDisplayText;
-        bool shouldAnnounce = SongChangeAnnouncementPolicy.ShouldAnnounce(
-            previous, displayText, SettingsService.IsSongChangePopupEnabled);
-
-        _lastKnownNowPlayingDisplayText = displayText;
+        }
 
         // Whatever this observation was — an announcement or just a new baseline — it was the
         // track already playing when the station started. Anything after it is a real
         // mid-stream change that the delay is meant for.
         bool isFirstSinceStart = SongChangeAnnouncementPolicy.IsWithinStationStartGrace(
             _stationStartedAtUtc, DateTimeOffset.UtcNow);
+
+        string? previous = _lastKnownNowPlayingDisplayText;
+        bool isEnabled = SettingsService.IsSongChangePopupEnabled;
+        bool shouldAnnounce = SongChangeAnnouncementPolicy.ShouldAnnounce(
+            previous,
+            displayText,
+            isEnabled,
+            isFirstSinceStart);
+
+        LogService.Info("SongChangePopup",
+            $"Metadata observed: '{displayText}' (previous='{previous ?? "<none>"}', " +
+            $"enabled={isEnabled}, isPlaying={_wasPlaying}, firstSinceStart={isFirstSinceStart}, " +
+            $"stationStartedAt={_stationStartedAtUtc?.ToString("HH:mm:ss.fff") ?? "<not started>"}) " +
+            $"-> announce={shouldAnnounce}");
+
+        _lastKnownNowPlayingDisplayText = displayText;
         _stationStartedAtUtc = null;
 
         if (!shouldAnnounce)
             return;
 
+        _lastAnnouncedDisplayText = displayText;
+
         double delaySeconds = SongChangeAnnouncementPolicy.ResolveDelaySeconds(
             _playerVm.SelectedStation?.SongPopupDelaySeconds,
             SettingsService.SongChangePopupDelaySeconds,
             isFirstSinceStart);
+
+        LogService.Info("SongChangePopup",
+            $"Announcing '{displayText}' after {delaySeconds}s " +
+            $"(station override={_playerVm.SelectedStation?.SongPopupDelaySeconds?.ToString() ?? "<none>"}, " +
+            $"app={SettingsService.SongChangePopupDelaySeconds}s)");
 
         if (delaySeconds <= 0)
         {
@@ -154,6 +193,49 @@ public partial class App : Application
         _songChangeDelayTimer!.Stop();
         _songChangeDelayTimer.Interval = TimeSpan.FromSeconds(delaySeconds);
         _songChangeDelayTimer.Start();
+    }
+
+    /// <summary>
+    /// Shows the track a station opens with, at the moment playback actually begins.
+    /// </summary>
+    /// <remarks>
+    /// Metadata providers are started alongside the play call, but the backend only reports
+    /// itself as playing once the stream has opened — a second or more later on a slow connect.
+    /// The opening track therefore usually arrives while the app is still buffering, when there
+    /// is no station-start window open and no baseline to differ from, so it can only be
+    /// recorded rather than shown. Because the metadata orchestrator suppresses repeats, it
+    /// would never be re-offered, and the popup would sit out the whole first track. This
+    /// re-offers it once audio is running, guarded by what has actually been shown so a
+    /// stuttering connect (which reports "playing" more than once) cannot show it twice.
+    /// </remarks>
+    private void AnnounceCurrentTrackAtStationStart()
+    {
+        string displayText = _playerVm.CurrentMetadata.DisplayText.Trim();
+
+        if (displayText.Length == 0)
+        {
+            // Nothing to show yet. The window stays open, so whichever track the stream
+            // reports first will announce through the normal path.
+            LogService.Info("SongChangePopup", "No metadata yet at station start; awaiting the stream's first track");
+            return;
+        }
+
+        if (string.Equals(displayText, _lastAnnouncedDisplayText, StringComparison.Ordinal))
+        {
+            // Already handled, so close the window this re-report opened. A stuttering connect
+            // reports "playing" several times; leaving it open would hand the next genuine
+            // track change the startup delay instead of the station's own.
+            _stationStartedAtUtc = null;
+            LogService.Info("SongChangePopup", $"'{displayText}' already shown for this station; not repeating");
+            return;
+        }
+
+        LogService.Info("SongChangePopup", $"Station opened on '{displayText}'; showing it now");
+
+        // Drop the baseline so the shared path reads this as the station's opening track
+        // rather than an unchanged repeat of what was observed while buffering.
+        _lastKnownNowPlayingDisplayText = null;
+        HandleSongChangePopup();
     }
 
     private void EnsureSongChangeDelayTimer()
@@ -183,7 +265,10 @@ public partial class App : Application
 
         // Re-check the setting: the user may have turned popups off during the wait.
         if (!SettingsService.IsSongChangePopupEnabled)
+        {
+            LogService.Info("SongChangePopup", $"Delay elapsed for '{pending}' but popups were turned off; dropping");
             return;
+        }
 
         ShowSongChangePopup(pending);
     }
@@ -191,7 +276,15 @@ public partial class App : Application
     private void ShowSongChangePopup(string displayText)
     {
         EnsureSongChangePopupWindow();
-        _songChangePopupWindow?.ShowSongChange(displayText);
+
+        if (_songChangePopupWindow is null)
+        {
+            LogService.Warn("SongChangePopup", $"No popup window available; '{displayText}' not shown");
+            return;
+        }
+
+        LogService.Info("SongChangePopup", $"Showing popup for '{displayText}'");
+        _songChangePopupWindow.ShowSongChange(displayText);
     }
 
     /// <summary>
@@ -359,12 +452,25 @@ public partial class App : Application
     {
         if (e.PropertyName == nameof(PlayerViewModel.IsPlaying))
         {
-            if (_playerVm.IsPlaying)
+            bool isPlaying = _playerVm.IsPlaying;
+
+            if (isPlaying && !_wasPlaying)
             {
                 // The track playing when a station starts is already audible, so its
                 // announcement must not be held back by the metadata-lead delay.
                 _stationStartedAtUtc = DateTimeOffset.UtcNow;
+                _wasPlaying = true;
+
+                LogService.Info("SongChangePopup", "Playback started; station-start window open");
+
+                // Metadata providers start with the play call, but playback only reports itself
+                // as started once the stream has actually opened — well over a second later on a
+                // slow connect. The station's current track therefore usually arrives before
+                // this point, where it could only establish the baseline. Show it now.
+                AnnounceCurrentTrackAtStationStart();
             }
+
+            _wasPlaying = isPlaying;
 
             UpdatePlayPauseCommandText();
             // Update tray icon to reflect play/pause state
@@ -396,7 +502,12 @@ public partial class App : Application
             // first metadata establishes it rather than announcing immediately.
             CancelPendingSongChangePopup();
             _lastKnownNowPlayingDisplayText = null;
+            _lastAnnouncedDisplayText = null;
             _stationStartedAtUtc = DateTimeOffset.UtcNow;
+
+            LogService.Info("SongChangePopup",
+                $"Station changed to '{_playerVm.SelectedStation?.Name ?? "<none>"}'; " +
+                "baseline cleared and station-start window open");
         }
     }
 

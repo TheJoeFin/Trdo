@@ -26,17 +26,43 @@ public static class SongChangeAnnouncementPolicy
     /// <returns><see langword="true"/> if the popup should be shown for this change.</returns>
     public static bool ShouldAnnounce(string? previousDisplayText, string currentDisplayText, bool isEnabled)
     {
-        // First observation establishes the baseline only — never announces.
-        // This keeps startup and "just enabled the setting" quiet for whatever
-        // is already playing.
-        if (string.IsNullOrWhiteSpace(previousDisplayText))
-            return false;
+        return ShouldAnnounce(previousDisplayText, currentDisplayText, isEnabled, isFirstObservationSinceStationStart: false);
+    }
 
+    /// <summary>
+    /// Decides whether the current metadata change is meaningful enough to announce.
+    /// When a station has just started, its first metadata observation is the current track the
+    /// listener can already hear, so it must bypass the usual baseline guard and surface
+    /// immediately even when there is no prior display text to compare against.
+    /// </summary>
+    /// <remarks>
+    /// The station-start bypass lifts the baseline guard <em>only</em>. The dedupe against
+    /// the previous text still applies, because a start is rarely a single clean event: the
+    /// same track can be reported twice as sources converge on it (an ICY title first, then
+    /// the same title carrying album art), and a stuttering connection re-opens the start
+    /// window under a track that has already been announced. Announcing unconditionally here
+    /// would show the same song twice in a row in both cases.
+    /// </remarks>
+    public static bool ShouldAnnounce(
+        string? previousDisplayText,
+        string currentDisplayText,
+        bool isEnabled,
+        bool isFirstObservationSinceStationStart)
+    {
         if (!isEnabled)
             return false;
 
         if (string.IsNullOrWhiteSpace(currentDisplayText))
             return false;
+
+        if (string.IsNullOrWhiteSpace(previousDisplayText))
+        {
+            // With no baseline, the decision is entirely about why we got here. Just after a
+            // station starts this is the track already playing and the listener wants to see
+            // it; otherwise (launch, or the setting being switched on mid-song) establishing
+            // the baseline is all this observation does.
+            return isFirstObservationSinceStationStart;
+        }
 
         return !string.Equals(
             currentDisplayText.Trim(),
@@ -68,8 +94,17 @@ public static class SongChangeAnnouncementPolicy
         return elapsed >= TimeSpan.Zero && elapsed <= StationStartGrace;
     }
 
-    /// <summary>No delay — the popup appears as soon as the metadata changes.</summary>
+    /// <summary>Minimum supported delay: announce as soon as the metadata arrives.</summary>
     public const double MinDelaySeconds = 0;
+
+    /// <summary>
+    /// The startup delay, used only for the first announcement after a station starts. Short
+    /// enough that the popup still reads as part of the station starting — the track appears
+    /// within half a second of the audio — but long enough to coalesce the burst of metadata
+    /// that a connecting stream tends to emit, so a stuttering start settles on one title
+    /// before anything is shown rather than flashing through several.
+    /// </summary>
+    public const double FirstAnnouncementDelaySeconds = 0.5;
 
     /// <summary>
     /// Upper bound on the announcement delay. A minute covers even the worst offenders,
@@ -151,10 +186,11 @@ public static class SongChangeAnnouncementPolicy
     /// <para>
     /// The delay exists to cancel out the lead a station's metadata has on its audio, which
     /// only applies to a track that has not begun playing yet. The first track heard after
-    /// starting a station is already mid-play by the time the listener hears anything, so
-    /// holding its announcement back would push the popup past the song it describes — up to
-    /// a minute late on stations with a long override. That first announcement therefore
-    /// ignores the delay entirely; every later track change compensates as usual.
+    /// starting a station is already mid-play by the time the listener hears anything, so it
+    /// should not be held back by an extended station delay. A very short startup window keeps
+    /// the popup aligned with the current track without letting fast metadata churn immediately
+    /// after connect cause a flicker/stutter effect. Every later track change compensates as
+    /// usual.
     /// </para>
     /// </summary>
     /// <param name="stationDelaySeconds">The station's override, or null to follow the app setting.</param>
@@ -167,9 +203,10 @@ public static class SongChangeAnnouncementPolicy
         double globalDelaySeconds,
         bool isFirstAnnouncementSinceStart)
     {
-        return isFirstAnnouncementSinceStart
-            ? MinDelaySeconds
-            : ResolveDelaySeconds(stationDelaySeconds, globalDelaySeconds);
+        if (!isFirstAnnouncementSinceStart)
+            return ResolveDelaySeconds(stationDelaySeconds, globalDelaySeconds);
+
+        return FirstAnnouncementDelaySeconds;
     }
 
     /// <summary>
