@@ -114,7 +114,8 @@ public sealed partial class SettingsPage : Page
         catch (Exception ex)
         {
             ImportExportInfoBar.Severity = InfoBarSeverity.Error;
-            ImportExportInfoBar.Message = $"Import failed: {ex.Message}";
+            ImportExportInfoBar.Message = string.Format(
+                LocalizationService.GetString("SettingsPage_ImportFailed", "Import failed: {0}"), ex.Message);
             ImportExportInfoBar.IsOpen = true;
         }
     }
@@ -142,7 +143,8 @@ public sealed partial class SettingsPage : Page
         catch (Exception ex)
         {
             ImportExportInfoBar.Severity = InfoBarSeverity.Error;
-            ImportExportInfoBar.Message = $"Export failed: {ex.Message}";
+            ImportExportInfoBar.Message = string.Format(
+                LocalizationService.GetString("SettingsPage_ExportFailed", "Export failed: {0}"), ex.Message);
             ImportExportInfoBar.IsOpen = true;
         }
     }
@@ -169,7 +171,11 @@ public sealed partial class SettingsPage : Page
             else
             {
                 DiagnosticsInfoBar.Severity = InfoBarSeverity.Error;
-                DiagnosticsInfoBar.Message = $"Couldn't open the logs folder. It's located at: {folder}";
+                DiagnosticsInfoBar.Message = string.Format(
+                    LocalizationService.GetString(
+                        "SettingsPage_OpenLogsFolderFailedLocation",
+                        "Couldn't open the logs folder. It's located at: {0}"),
+                    folder);
             }
 
             DiagnosticsInfoBar.IsOpen = true;
@@ -177,7 +183,9 @@ public sealed partial class SettingsPage : Page
         catch (Exception ex)
         {
             DiagnosticsInfoBar.Severity = InfoBarSeverity.Error;
-            DiagnosticsInfoBar.Message = $"Couldn't open the logs folder: {ex.Message}";
+            DiagnosticsInfoBar.Message = string.Format(
+                LocalizationService.GetString("SettingsPage_OpenLogsFolderFailed", "Couldn't open the logs folder: {0}"),
+                ex.Message);
             DiagnosticsInfoBar.IsOpen = true;
         }
     }
@@ -203,7 +211,9 @@ public sealed partial class SettingsPage : Page
         catch (Exception ex)
         {
             EngineMemoryInfoBar.Severity = InfoBarSeverity.Error;
-            EngineMemoryInfoBar.Message = $"Couldn't reset remembered engines: {ex.Message}";
+            EngineMemoryInfoBar.Message = string.Format(
+                LocalizationService.GetString("SettingsPage_ResetEngineMemoryFailed", "Couldn't reset remembered engines: {0}"),
+                ex.Message);
         }
 
         EngineMemoryInfoBar.IsOpen = true;
@@ -226,7 +236,9 @@ public sealed partial class SettingsPage : Page
         catch (Exception ex)
         {
             DiagnosticsInfoBar.Severity = InfoBarSeverity.Error;
-            DiagnosticsInfoBar.Message = $"Couldn't copy diagnostics: {ex.Message}";
+            DiagnosticsInfoBar.Message = string.Format(
+                LocalizationService.GetString("SettingsPage_CopyDiagnosticsFailed", "Couldn't copy diagnostics: {0}"),
+                ex.Message);
             DiagnosticsInfoBar.IsOpen = true;
         }
     }

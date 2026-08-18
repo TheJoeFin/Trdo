@@ -650,21 +650,20 @@
             </Button>
 
             <HyperlinkButton
+                x:Uid="PlayingPage_PopOutButton"
                 Grid.Column="1"
                 VerticalAlignment="Center"
-                Click="PopOutButton_Click"
-                ToolTipService.ToolTip="Open mini player">
+                Click="PopOutButton_Click">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                     <FontIcon FontSize="16" Glyph="&#xE93A;" />
                 </StackPanel>
             </HyperlinkButton>
 
             <HyperlinkButton
+                x:Uid="PlayingPage_QuitButton"
                 Grid.Column="2"
                 VerticalAlignment="Center"
-                Click="CloseButton_Click"
-                Content="Quit"
-                ToolTipService.ToolTip="Quit Traydio" />
+                Click="CloseButton_Click" />
         </Grid>
     </Grid>
 </Page>

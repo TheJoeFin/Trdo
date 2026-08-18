@@ -66,8 +66,10 @@ public sealed partial class RadioPlayerService : IDisposable
     /// </summary>
     public event EventHandler<string>? PlaybackFailed;
 
-    internal const string NoNetworkMessage =
-        "No internet connection. Connect to a network and try again.";
+    internal static string NoNetworkMessage =>
+        LocalizationService.GetString(
+            "PlaybackFailure_NoNetwork",
+            "No internet connection. Connect to a network and try again.");
 
     public bool IsPlaying
     {
@@ -1391,8 +1393,12 @@ public sealed partial class RadioPlayerService : IDisposable
         if (!hasDetail)
         {
             return tooManyAttempts
-                ? "Couldn't play this station after several attempts. The stream may be offline or the URL may be wrong."
-                : "Couldn't play this station. The stream may be unavailable or the URL may be wrong.";
+                ? LocalizationService.GetString(
+                    "PlaybackFailure_TooManyAttemptsNoDetail",
+                    "Couldn't play this station after several attempts. The stream may be offline or the URL may be wrong.")
+                : LocalizationService.GetString(
+                    "PlaybackFailure_NoDetail",
+                    "Couldn't play this station. The stream may be unavailable or the URL may be wrong.");
         }
 
         // A diagnosis from StreamDiagnostics is already a complete sentence explaining the
@@ -1400,12 +1406,20 @@ public sealed partial class RadioPlayerService : IDisposable
         // apology. Raw engine error text is a fragment and still needs the wrapper.
         if (ReadsAsSentence(sanitizedDetail))
         {
-            return $"Couldn't play this station. {sanitizedDetail}";
+            return string.Format(
+                LocalizationService.GetString("PlaybackFailure_WithSentenceDetail", "Couldn't play this station. {0}"),
+                sanitizedDetail);
         }
 
         return tooManyAttempts
-            ? $"Couldn't play this station after several attempts ({sanitizedDetail}). The stream may be offline or the URL may be wrong."
-            : $"Couldn't play this station: {sanitizedDetail}";
+            ? string.Format(
+                LocalizationService.GetString(
+                    "PlaybackFailure_TooManyAttemptsWithDetail",
+                    "Couldn't play this station after several attempts ({0}). The stream may be offline or the URL may be wrong."),
+                sanitizedDetail)
+            : string.Format(
+                LocalizationService.GetString("PlaybackFailure_WithDetail", "Couldn't play this station: {0}"),
+                sanitizedDetail);
     }
 
     /// <summary>

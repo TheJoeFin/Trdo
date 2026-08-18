@@ -208,9 +208,9 @@ public sealed partial class PlayingPage : Page
 
         ContentDialog dialog = new()
         {
-            Title = "Playback Error",
+            Title = LocalizationService.GetString("PlayingPage_PlaybackErrorTitle", "Playback Error"),
             Content = errorMessage,
-            CloseButtonText = "OK",
+            CloseButtonText = LocalizationService.GetString("PlayingPage_PlaybackErrorClose", "OK"),
             XamlRoot = this.XamlRoot
         };
 
