@@ -557,9 +557,6 @@
   <data name="SettingsPage_OpenOnStartupTitle.Text" xml:space="preserve">
     <value>Abrir al iniciar</value>
   </data>
-  <data name="SettingsPage_PlaybackEngine_ArmWarning.Message" xml:space="preserve">
-    <value>En dispositivos ARM el motor LibVLC no está disponible, así que las transmisiones siempre se reproducen con el motor de Windows sin importar la opción elegida. El volumen superior al 100% tampoco se aplicará.</value>
-  </data>
   <data name="SettingsPage_PlaybackEngine_Auto.Content" xml:space="preserve">
     <value>Automático (recomendado)</value>
   </data>

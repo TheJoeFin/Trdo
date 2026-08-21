@@ -346,11 +346,6 @@
                             Style="{StaticResource SettingStatusStyle}"
                             Text="{x:Bind ViewModel.PlaybackEngineModeDescription, Mode=OneWay}"
                             TextWrapping="Wrap" />
-                        <InfoBar
-                            x:Uid="SettingsPage_PlaybackEngine_ArmWarning"
-                            IsClosable="False"
-                            IsOpen="{x:Bind ViewModel.IsLibVlcUnavailableOnThisDevice}"
-                            Severity="Warning" />
                         <TextBlock
                             x:Uid="SettingsPage_PlaybackEngine_RememberedInfo"
                             Style="{StaticResource SettingDescriptionStyle}"
