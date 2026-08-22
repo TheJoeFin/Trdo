@@ -1752,7 +1752,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         return new BitmapImage(new Uri(url!, UriKind.Absolute));
     }
 
-    protected void OnPropertyChanged([CallerMemberName] string? name = null)
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
     {
         Debug.WriteLine($"[PlayerViewModel] PropertyChanged: {name}");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));

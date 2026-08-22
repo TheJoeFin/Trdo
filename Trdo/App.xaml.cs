@@ -58,7 +58,6 @@ public partial class App : Application
     private Mutex? _singleInstanceMutex;
     private EventWaitHandle? _trayIconRestoreEvent;
     private DispatcherQueue? _uiDispatcherQueue;
-    private DispatcherQueueTimer? _restoreEventMonitorTimer;
 #if DEBUG
     private DispatcherQueueTimer? _songChangePopupPreviewTimer;
 #endif
