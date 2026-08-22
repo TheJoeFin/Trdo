@@ -227,7 +227,7 @@ internal static class HlsStreamHelper
         HttpClient httpClient,
         CancellationToken cancellationToken = default)
     {
-        if (!Uri.TryCreate(streamUrl, UriKind.Absolute, out Uri uri))
+        if (!Uri.TryCreate(streamUrl, UriKind.Absolute, out Uri? uri))
         {
             return (null, "Invalid stream URL");
         }
