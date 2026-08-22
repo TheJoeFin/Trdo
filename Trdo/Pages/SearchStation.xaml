@@ -286,9 +286,9 @@
                                         Width="40"
                                         Height="40"
                                         VerticalAlignment="Top"
-                                        Visibility="{x:Bind Favicon, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}">
+                                        Visibility="{x:Bind Favicon, Converter={StaticResource NullToVisibilityConverter}, Mode=OneTime}">
                                         <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="6">
-                                            <Image Source="{x:Bind Favicon, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}" Stretch="UniformToFill" />
+                                            <Image Source="{x:Bind Favicon, Converter={StaticResource StringToImageSourceConverter}, Mode=OneTime}" Stretch="UniformToFill" />
                                         </Border>
                                     </Grid>
 
