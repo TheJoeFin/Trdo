@@ -242,7 +242,7 @@ public class AddStationViewModel : INotifyPropertyChanged
         : $"Buffer: {StreamWatchdogService.DescribeBufferLevel(GlobalBufferLevel)} (app setting)";
 
     /// <summary>
-    /// Whether this station overrides the app-wide song popup delay. When false the
+    /// Whether this station overrides the app-wide track info delay. When false the
     /// station follows the global setting and <see cref="SongPopupDelaySeconds"/> is only
     /// the seed value for the slider.
     /// </summary>
@@ -259,7 +259,7 @@ public class AddStationViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// How long this station waits after a metadata change before the popup appears.
+    /// How long this station holds a metadata change back before the app shows it.
     /// Only applied when <see cref="HasSongPopupDelayOverride"/> is set.
     /// </summary>
     public double SongPopupDelaySeconds
@@ -280,7 +280,7 @@ public class AddStationViewModel : INotifyPropertyChanged
         SongChangeAnnouncementPolicy.DescribeDelay(_songPopupDelaySeconds);
 
     /// <summary>The app-wide delay this station falls back to when it has no override.</summary>
-    public double GlobalSongPopupDelaySeconds => SettingsService.SongChangePopupDelaySeconds;
+    public double GlobalSongPopupDelaySeconds => SettingsService.TrackInfoDelaySeconds;
 
     /// <summary>The largest delay the slider offers, bounded by the policy.</summary>
     public double MaxSongPopupDelaySeconds => SongChangeAnnouncementPolicy.MaxDelaySeconds;
@@ -290,8 +290,8 @@ public class AddStationViewModel : INotifyPropertyChanged
     /// header so the setting is discoverable without expanding.
     /// </summary>
     public string SongPopupDelaySummary => _hasSongPopupDelayOverride
-        ? $"Song popup delay: {SongPopupDelayDescription} (this station)"
-        : $"Song popup delay: {SongChangeAnnouncementPolicy.DescribeDelay(GlobalSongPopupDelaySeconds)} (app setting)";
+        ? $"Track info delay: {SongPopupDelayDescription} (this station)"
+        : $"Track info delay: {SongChangeAnnouncementPolicy.DescribeDelay(GlobalSongPopupDelaySeconds)} (app setting)";
 
     public bool HasValidationError
     {
