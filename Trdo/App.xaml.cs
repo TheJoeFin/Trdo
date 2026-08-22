@@ -544,7 +544,13 @@ public partial class App : Application
 
     private void ShowFlyout(TrayIconEventArgs args)
     {
-        WindowPlacementService.CapturePointerAnchor();
+        // Unlike TryShowFlyout/ShowMiniPlayerWindow (invoked from a button
+        // inside the app, where the pointer position is meaningful), this is
+        // always a click/tap/pen activation of the tray icon itself. Touch
+        // and pen taps don't move the hardware cursor, so capturing it here
+        // can anchor the popup to a stale, unrelated position instead of the
+        // icon — clear it so placement always derives from the icon's rect.
+        WindowPlacementService.ClearPointerAnchor();
         ShowTrayPopup();
     }
 
