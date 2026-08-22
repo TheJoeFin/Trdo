@@ -258,13 +258,13 @@
     <value>Override for this station</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelay.Text" xml:space="preserve">
-    <value>Song popup delay</value>
+    <value>Track info delay</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayDescription.Text" xml:space="preserve">
-    <value>Some stations announce the next track before it actually starts. Delay the popup so it appears when you hear the song. How far ahead a station runs is a property of its encoder, so set this per station.</value>
+    <value>Some stations announce the next track before it actually starts. Hold the track info back so it changes when you hear the song. How far ahead a station runs is a property of its encoder, so set this per station.</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Override song popup delay for this station</value>
+    <value>Override the track info delay for this station</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.OffContent" xml:space="preserve">
     <value>Following the app setting</value>
@@ -612,13 +612,16 @@
     <value>Song change popup</value>
   </data>
   <data name="SettingsPage_SongPopupDelayExplanation.Text" xml:space="preserve">
-    <value>Many stations announce a track before it actually starts playing. Delay the popup so it lines up with the audio. Individual stations can override this in their Advanced settings, or by right-clicking the popup itself.</value>
+    <value>Many stations announce a track before it actually starts playing. Hold the track info back so it changes when you hear the song — in the window, the mini player, the media controls, the playlist history and the popup alike. The first track after you tune in appears straight away. Individual stations can override this in their Advanced settings, or by right-clicking the popup itself.</value>
   </data>
   <data name="SettingsPage_SongPopupDelaySlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Song popup delay in seconds</value>
+    <value>Track info delay in seconds</value>
   </data>
   <data name="SettingsPage_Title.Text" xml:space="preserve">
     <value>Settings</value>
+  </data>
+  <data name="SettingsPage_TrackInfoDelayTitle.Text" xml:space="preserve">
+    <value>Track info delay</value>
   </data>
   <data name="SettingsPage_TrayClickBehavior_Alternate.Content" xml:space="preserve">
     <value>Left click: open Traydio, right click: play/pause</value>
@@ -639,7 +642,7 @@
     <value>Now playing</value>
   </data>
   <data name="SongChangePopup_Surface.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Click to dismiss, right-click to adjust the delay</value>
+    <value>Click to dismiss, right-click to adjust the track info delay</value>
   </data>
   <data name="SongChangePopup_Title.Text" xml:space="preserve">
     <value>Now playing</value>

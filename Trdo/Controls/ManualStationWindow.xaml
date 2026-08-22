@@ -165,7 +165,7 @@
                             </Grid>
                         </StackPanel>
 
-                        <!--  Per-station song change popup delay  -->
+                        <!--  Per-station track info delay  -->
                         <StackPanel Spacing="4">
                             <TextBlock x:Uid="ManualStationWindow_SongPopupDelay" FontWeight="SemiBold" />
                             <TextBlock
@@ -180,7 +180,7 @@
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                 <Slider
                                     Grid.Column="0"
-                                    AutomationProperties.Name="Station song popup delay in seconds"
+                                    AutomationProperties.Name="Station track info delay in seconds"
                                     IsEnabled="{x:Bind ViewModel.HasSongPopupDelayOverride, Mode=OneWay}"
                                     Maximum="{x:Bind ViewModel.MaxSongPopupDelaySeconds}"
                                     Minimum="0"

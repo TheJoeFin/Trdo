@@ -258,13 +258,13 @@
     <value>Anular para esta estación</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelay.Text" xml:space="preserve">
-    <value>Retraso del popup de canción</value>
+    <value>Retraso de la información de la pista</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayDescription.Text" xml:space="preserve">
-    <value>Algunas estaciones anuncian la siguiente pista antes de que realmente empiece. Retrasa el popup para que aparezca cuando escuches la canción. Qué tan adelantada va una estación es una propiedad de su codificador, así que configura esto por estación.</value>
+    <value>Algunas estaciones anuncian la siguiente pista antes de que realmente empiece. Retén la información de la pista para que cambie cuando escuches la canción. Qué tan adelantada va una estación es una propiedad de su codificador, así que configura esto por estación.</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Anular el retraso del popup de canción para esta estación</value>
+    <value>Anular el retraso de la información de la pista para esta estación</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.OffContent" xml:space="preserve">
     <value>Siguiendo la configuración de la app</value>
@@ -612,13 +612,16 @@
     <value>Popup de cambio de canción</value>
   </data>
   <data name="SettingsPage_SongPopupDelayExplanation.Text" xml:space="preserve">
-    <value>Muchas estaciones anuncian una pista antes de que realmente empiece a sonar. Retrasa el popup para que coincida con el audio. Cada estación puede anular esto en su configuración avanzada o haciendo clic derecho en el popup.</value>
+    <value>Muchas estaciones anuncian una pista antes de que realmente empiece a sonar. Retén la información de la pista para que cambie cuando escuches la canción: en la ventana, el mini reproductor, los controles multimedia, el historial y el popup por igual. La primera pista al sintonizar aparece de inmediato. Cada estación puede anular esto en su configuración avanzada o haciendo clic derecho en el popup.</value>
   </data>
   <data name="SettingsPage_SongPopupDelaySlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Retraso del popup de canción en segundos</value>
+    <value>Retraso de la información de la pista en segundos</value>
   </data>
   <data name="SettingsPage_Title.Text" xml:space="preserve">
     <value>Configuración</value>
+  </data>
+  <data name="SettingsPage_TrackInfoDelayTitle.Text" xml:space="preserve">
+    <value>Retraso de la información de la pista</value>
   </data>
   <data name="SettingsPage_TrayClickBehavior_Alternate.Content" xml:space="preserve">
     <value>Clic izquierdo: abrir Traydio, clic derecho: reproducir/pausar</value>
@@ -639,7 +642,7 @@
     <value>Reproduciendo ahora</value>
   </data>
   <data name="SongChangePopup_Surface.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Haz clic para cerrar, clic derecho para ajustar el retraso</value>
+    <value>Haz clic para cerrar, clic derecho para ajustar el retraso de la información de la pista</value>
   </data>
   <data name="SongChangePopup_Title.Text" xml:space="preserve">
     <value>Reproduciendo ahora</value>
