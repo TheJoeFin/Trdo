@@ -47,7 +47,7 @@ public sealed class StationSortPolicyTests
 
         IReadOnlyList<RadioStation> sorted = StationSortPolicy.Sort(stations, StationSortMode.Manual);
 
-        CollectionAssert.AreEqual(new[] { "Zulu", "Alpha" }, NamesOf(sorted));
+        Assert.AreSequenceEqual(["Zulu", "Alpha"], NamesOf(sorted));
     }
 
     [TestMethod]
@@ -57,7 +57,7 @@ public sealed class StationSortPolicyTests
 
         IReadOnlyList<RadioStation> sorted = StationSortPolicy.Sort(stations, StationSortMode.Name);
 
-        CollectionAssert.AreEqual(new[] { "apple", "Banana", "Cherry" }, NamesOf(sorted));
+        Assert.AreSequenceEqual(["apple", "Banana", "Cherry"], NamesOf(sorted));
     }
 
     [TestMethod]
@@ -70,7 +70,7 @@ public sealed class StationSortPolicyTests
 
         IReadOnlyList<RadioStation> sorted = StationSortPolicy.Sort(stations, StationSortMode.Name);
 
-        CollectionAssert.AreEqual(new[] { "Alpha", "Ärger", "Zulu" }, NamesOf(sorted));
+        Assert.AreSequenceEqual(["Alpha", "Ärger", "Zulu"], NamesOf(sorted));
     }
 
     [TestMethod]
@@ -86,7 +86,7 @@ public sealed class StationSortPolicyTests
 
         IReadOnlyList<RadioStation> sorted = StationSortPolicy.Sort(stations, StationSortMode.Genre);
 
-        CollectionAssert.AreEqual(new[] { "Ambient", "Rock", "NoTags", "Blank" }, NamesOf(sorted));
+        Assert.AreSequenceEqual(["Ambient", "Rock", "NoTags", "Blank"], NamesOf(sorted));
     }
 
     [TestMethod]
@@ -101,7 +101,7 @@ public sealed class StationSortPolicyTests
 
         IReadOnlyList<RadioStation> sorted = StationSortPolicy.Sort(stations, StationSortMode.Country);
 
-        CollectionAssert.AreEqual(new[] { "Austrian", "German", "Unknown" }, NamesOf(sorted));
+        Assert.AreSequenceEqual(["Austrian", "German", "Unknown"], NamesOf(sorted));
     }
 
     [TestMethod]
@@ -121,7 +121,7 @@ public sealed class StationSortPolicyTests
 
         IReadOnlyList<RadioStation> sorted = StationSortPolicy.Sort(stations, StationSortMode.RecentlyAdded);
 
-        CollectionAssert.AreEqual(new[] { "Newest", "Older", "LegacyA", "LegacyB" }, NamesOf(sorted));
+        Assert.AreSequenceEqual(["Newest", "Older", "LegacyA", "LegacyB"], NamesOf(sorted));
     }
 
     [TestMethod]
@@ -138,13 +138,13 @@ public sealed class StationSortPolicyTests
 
         IReadOnlyList<RadioStation> sorted = StationSortPolicy.Sort(stations, StationSortMode.Country);
 
-        CollectionAssert.AreEqual(new[] { "Third", "First", "Second" }, NamesOf(sorted));
+        Assert.AreSequenceEqual(["Third", "First", "Second"], NamesOf(sorted));
     }
 
     [TestMethod]
     public void Sort_HandlesAnEmptyList()
     {
-        Assert.AreEqual(0, StationSortPolicy.Sort([], StationSortMode.Name).Count);
+        Assert.IsEmpty(StationSortPolicy.Sort([], StationSortMode.Name));
     }
 
     [TestMethod]

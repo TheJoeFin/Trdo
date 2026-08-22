@@ -45,13 +45,13 @@ public sealed class StationGroupingPolicyTests
 
         List<object> rows = StationGroupingPolicy.Flatten(stations, StationGroupByMode.None, []);
 
-        Assert.AreEqual(0, rows.Count);
+        Assert.IsEmpty(rows);
     }
 
     [TestMethod]
     public void Flatten_HandlesAnEmptyList()
     {
-        Assert.AreEqual(0, StationGroupingPolicy.Flatten([], StationGroupByMode.Genre, []).Count);
+        Assert.IsEmpty(StationGroupingPolicy.Flatten([], StationGroupByMode.Genre, []));
     }
 
     [TestMethod]
@@ -67,7 +67,7 @@ public sealed class StationGroupingPolicyTests
 
         List<object> rows = StationGroupingPolicy.Flatten(stations, StationGroupByMode.Genre, []);
 
-        CollectionAssert.AreEqual(new[] { "ambient", "rock", "No genre" }, HeaderNamesOf(rows));
+        Assert.AreSequenceEqual(["ambient", "rock", "No genre"], HeaderNamesOf(rows));
     }
 
     [TestMethod]
@@ -82,7 +82,7 @@ public sealed class StationGroupingPolicyTests
 
         List<object> rows = StationGroupingPolicy.Flatten(stations, StationGroupByMode.Country, []);
 
-        CollectionAssert.AreEqual(new[] { "Austria", "Germany", "No country" }, HeaderNamesOf(rows));
+        Assert.AreSequenceEqual(["Austria", "Germany", "No country"], HeaderNamesOf(rows));
     }
 
     [TestMethod]
@@ -103,7 +103,7 @@ public sealed class StationGroupingPolicyTests
                 groups.Add(group);
         }
 
-        Assert.AreEqual(1, groups.Count);
+        Assert.HasCount(1, groups);
         Assert.AreEqual(2, groups[0].StationCount);
     }
 
@@ -114,7 +114,7 @@ public sealed class StationGroupingPolicyTests
 
         List<object> rows = StationGroupingPolicy.Flatten(stations, StationGroupByMode.Genre, []);
 
-        Assert.AreEqual(3, rows.Count);
+        Assert.HasCount(3, rows);
         Assert.IsTrue(rows[0] is StationGroup);
         Assert.AreSame(stations[0], rows[1]);
         Assert.AreSame(stations[1], rows[2]);
@@ -131,7 +131,7 @@ public sealed class StationGroupingPolicyTests
 
         List<object> second = StationGroupingPolicy.Flatten(stations, StationGroupByMode.Genre, cache);
 
-        Assert.AreEqual(1, second.Count);
+        Assert.HasCount(1, second);
     }
 
     [TestMethod]
@@ -161,12 +161,12 @@ public sealed class StationGroupingPolicyTests
     {
         Dictionary<string, StationGroup> cache = [];
         StationGroupingPolicy.Flatten([Station("Rock1", tags: "rock"), Station("Jazz1", tags: "jazz")], StationGroupByMode.Genre, cache);
-        Assert.AreEqual(2, cache.Count);
+        Assert.HasCount(2, cache);
 
         // The last jazz station is gone; the jazz folder should not linger in the cache forever.
         StationGroupingPolicy.Flatten([Station("Rock1", tags: "rock")], StationGroupByMode.Genre, cache);
 
-        Assert.AreEqual(1, cache.Count);
+        Assert.HasCount(1, cache);
     }
 
     [TestMethod]

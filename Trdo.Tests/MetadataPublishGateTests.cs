@@ -71,7 +71,7 @@ public sealed class MetadataPublishGateTests
     {
         FakeScheduler scheduler = new();
         MetadataPublishGate gate = new(scheduler, clock);
-        List<string> published = new();
+        List<string> published = [];
         gate.MetadataPublished += (_, metadata) => published.Add(metadata.DisplayText);
         gate.DelaySeconds = delaySeconds;
         return (gate, scheduler, published);
@@ -89,7 +89,7 @@ public sealed class MetadataPublishGateTests
 
         gate.Submit(Track("Opening Track"));
 
-        CollectionAssert.AreEqual(new[] { "Opening Track" }, published);
+        Assert.AreSequenceEqual(["Opening Track"], published);
         Assert.IsFalse(scheduler.HasPending);
         Assert.AreEqual("Opening Track", gate.Current.DisplayText);
     }
@@ -102,12 +102,12 @@ public sealed class MetadataPublishGateTests
 
         gate.Submit(Track("Second Track"));
 
-        CollectionAssert.AreEqual(new[] { "Opening Track" }, published);
+        Assert.AreSequenceEqual(["Opening Track"], published);
         Assert.AreEqual(TimeSpan.FromSeconds(20), scheduler.ScheduledDelay);
 
         scheduler.Fire();
 
-        CollectionAssert.AreEqual(new[] { "Opening Track", "Second Track" }, published);
+        Assert.AreSequenceEqual(["Opening Track", "Second Track"], published);
     }
 
     /// <summary>
@@ -124,8 +124,8 @@ public sealed class MetadataPublishGateTests
         gate.Submit(Track("Actual"));
         scheduler.Fire();
 
-        CollectionAssert.AreEqual(new[] { "Opening Track", "Actual" }, published);
-        CollectionAssert.DoesNotContain(published, "Superseded");
+        Assert.AreSequenceEqual(["Opening Track", "Actual"], published);
+        Assert.DoesNotContain("Superseded", published);
     }
 
     [TestMethod]
@@ -136,7 +136,7 @@ public sealed class MetadataPublishGateTests
         gate.Submit(Track("First"));
         gate.Submit(Track("Second"));
 
-        CollectionAssert.AreEqual(new[] { "First", "Second" }, published);
+        Assert.AreSequenceEqual(["First", "Second"], published);
         Assert.IsFalse(scheduler.HasPending);
     }
 
@@ -154,9 +154,9 @@ public sealed class MetadataPublishGateTests
         gate.Submit(StreamMetadata.Empty);
 
         Assert.IsFalse(scheduler.HasPending);
-        Assert.AreEqual(2, published.Count);
+        Assert.HasCount(2, published);
         Assert.AreEqual(string.Empty, published[1]);
-        CollectionAssert.DoesNotContain(published, "Held");
+        Assert.DoesNotContain("Held", published);
     }
 
     /// <summary>
@@ -172,7 +172,7 @@ public sealed class MetadataPublishGateTests
 
         gate.Submit(Track("Next Track"));
 
-        CollectionAssert.DoesNotContain(published, "Next Track");
+        Assert.DoesNotContain("Next Track", published);
         Assert.AreEqual(TimeSpan.FromSeconds(20), scheduler.ScheduledDelay);
     }
 
@@ -190,7 +190,7 @@ public sealed class MetadataPublishGateTests
         gate.Reset();
         gate.Submit(Track("New Station Track"));
 
-        CollectionAssert.AreEqual(new[] { "Opening Track", "New Station Track" }, published);
+        Assert.AreSequenceEqual(["Opening Track", "New Station Track"], published);
         Assert.IsFalse(scheduler.HasPending);
     }
 
@@ -229,7 +229,7 @@ public sealed class MetadataPublishGateTests
         gate.Reset();
         scheduler.FireStale();
 
-        CollectionAssert.AreEqual(new[] { "Opening Track" }, published);
+        Assert.AreSequenceEqual(["Opening Track"], published);
     }
 
     /// <summary>
@@ -248,7 +248,7 @@ public sealed class MetadataPublishGateTests
         gate.Submit(Track("Actual"));
         supersededTimer?.Invoke();
 
-        CollectionAssert.AreEqual(new[] { "Opening Track" }, published);
+        Assert.AreSequenceEqual(["Opening Track"], published);
         Assert.AreEqual(TimeSpan.FromSeconds(20), scheduler.ScheduledDelay);
     }
 
@@ -269,7 +269,7 @@ public sealed class MetadataPublishGateTests
         gate.DelaySeconds = 15;
 
         Assert.AreEqual(TimeSpan.FromSeconds(7), scheduler.ScheduledDelay);
-        CollectionAssert.DoesNotContain(published, "Held");
+        Assert.DoesNotContain("Held", published);
     }
 
     [TestMethod]
@@ -283,7 +283,7 @@ public sealed class MetadataPublishGateTests
         now = now.AddSeconds(8);
         gate.DelaySeconds = 5;
 
-        CollectionAssert.AreEqual(new[] { "Opening Track", "Held" }, published);
+        Assert.AreSequenceEqual(["Opening Track", "Held"], published);
         Assert.IsFalse(scheduler.HasPending);
     }
 
@@ -304,7 +304,7 @@ public sealed class MetadataPublishGateTests
         playing = false;
         scheduler.Fire();
 
-        CollectionAssert.AreEqual(new[] { "Opening Track" }, published);
+        Assert.AreSequenceEqual(["Opening Track"], published);
         Assert.AreEqual("Opening Track", gate.Current.DisplayText);
     }
 
@@ -326,7 +326,7 @@ public sealed class MetadataPublishGateTests
         playing = true;
         gate.Submit(Track("After Resume"));
 
-        CollectionAssert.AreEqual(new[] { "Opening Track", "After Resume" }, published);
+        Assert.AreSequenceEqual(["Opening Track", "After Resume"], published);
         Assert.IsFalse(scheduler.HasPending);
     }
 
@@ -344,7 +344,7 @@ public sealed class MetadataPublishGateTests
 
         scheduler.Fire();
 
-        CollectionAssert.AreEqual(new[] { "Opening Track", "Held" }, published);
+        Assert.AreSequenceEqual(["Opening Track", "Held"], published);
     }
 
     /// <summary>
@@ -360,7 +360,7 @@ public sealed class MetadataPublishGateTests
 
         gate.Submit(StreamMetadata.Empty);
 
-        Assert.AreEqual(2, published.Count);
+        Assert.HasCount(2, published);
         Assert.AreEqual(string.Empty, published[1]);
     }
 
