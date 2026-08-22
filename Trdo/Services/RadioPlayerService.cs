@@ -218,9 +218,31 @@ public sealed partial class RadioPlayerService : IDisposable
     public StreamWatchdogService Watchdog => _watchdog;
 
     /// <summary>
-    /// Gets the current stream metadata (now playing information).
+    /// Gets the current stream metadata (now playing information) as published to the app -
+    /// which during a track-info delay is still the previous track, because that is the one
+    /// the listener can hear. The orchestrator's own value runs ahead of the audio and is
+    /// deliberately not exposed.
     /// </summary>
-    public StreamMetadata CurrentMetadata => _metadataOrchestrator.CurrentMetadata;
+    public StreamMetadata CurrentMetadata => _publishGate.Current;
+
+    /// <summary>
+    /// How long a mid-stream track change is held back before the app shows it, in seconds.
+    /// Set by <see cref="ViewModels.PlayerViewModel"/>, which is the only thing that knows both
+    /// the app setting and the selected station's override.
+    /// </summary>
+    public double TrackInfoDelaySeconds
+    {
+        get => _publishGate.DelaySeconds;
+        set => _publishGate.DelaySeconds = value;
+    }
+
+    /// <summary>
+    /// Drops a track that is still being held and treats the next one as a station start.
+    /// Called the moment the user picks a different station: the held track belongs to the
+    /// outgoing stream, and the transition that would otherwise clear it runs asynchronously,
+    /// so waiting for it leaves a window in which the old track could still surface.
+    /// </summary>
+    public void ResetTrackInfoHold() => _publishGate.Reset();
 
     public double Volume
     {

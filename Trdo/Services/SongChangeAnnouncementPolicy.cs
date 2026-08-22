@@ -98,15 +98,6 @@ public static class SongChangeAnnouncementPolicy
     public const double MinDelaySeconds = 0;
 
     /// <summary>
-    /// The startup delay, used only for the first announcement after a station starts. Short
-    /// enough that the popup still reads as part of the station starting — the track appears
-    /// within half a second of the audio — but long enough to coalesce the burst of metadata
-    /// that a connecting stream tends to emit, so a stuttering start settles on one title
-    /// before anything is shown rather than flashing through several.
-    /// </summary>
-    public const double FirstAnnouncementDelaySeconds = 0.5;
-
-    /// <summary>
     /// Upper bound on the announcement delay. A minute covers even the worst offenders,
     /// and stopping there keeps an unbounded value from letting a popup outlive the song
     /// it describes.
@@ -178,35 +169,6 @@ public static class SongChangeAnnouncementPolicy
     public static double ResolveDelaySeconds(double? stationDelaySeconds, double globalDelaySeconds)
     {
         return ClampDelay(stationDelaySeconds ?? globalDelaySeconds);
-    }
-
-    /// <summary>
-    /// Works out how long to wait before announcing, taking into account whether the station
-    /// has only just been started.
-    /// <para>
-    /// The delay exists to cancel out the lead a station's metadata has on its audio, which
-    /// only applies to a track that has not begun playing yet. The first track heard after
-    /// starting a station is already mid-play by the time the listener hears anything, so it
-    /// should not be held back by an extended station delay. A very short startup window keeps
-    /// the popup aligned with the current track without letting fast metadata churn immediately
-    /// after connect cause a flicker/stutter effect. Every later track change compensates as
-    /// usual.
-    /// </para>
-    /// </summary>
-    /// <param name="stationDelaySeconds">The station's override, or null to follow the app setting.</param>
-    /// <param name="globalDelaySeconds">The app-wide delay.</param>
-    /// <param name="isFirstAnnouncementSinceStart">
-    /// Whether this is the first announcement since playback of the station started.
-    /// </param>
-    public static double ResolveDelaySeconds(
-        double? stationDelaySeconds,
-        double globalDelaySeconds,
-        bool isFirstAnnouncementSinceStart)
-    {
-        if (!isFirstAnnouncementSinceStart)
-            return ResolveDelaySeconds(stationDelaySeconds, globalDelaySeconds);
-
-        return FirstAnnouncementDelaySeconds;
     }
 
     /// <summary>

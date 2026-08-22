@@ -38,6 +38,12 @@ public static class SettingsService
     public static event EventHandler? SongChangePopupEnabledChanged;
 
     /// <summary>
+    /// Raised when <see cref="TrackInfoDelaySeconds"/> changes, so the player can re-time a
+    /// track it is already holding rather than only the next one.
+    /// </summary>
+    public static event EventHandler? TrackInfoDelayChanged;
+
+    /// <summary>
     /// Gets or sets whether the app should automatically start playing the last selected station on startup.
     /// Defaults to false when no saved value exists.
     /// </summary>
@@ -419,17 +425,27 @@ public static class SettingsService
     }
 
     /// <summary>
-    /// Gets or sets how long to wait after a song change before showing the popup, in
-    /// seconds. Defaults to no delay. Stations whose metadata runs ahead of the audio can
-    /// override this individually via <see cref="Models.RadioStation.SongPopupDelaySeconds"/>.
+    /// Gets or sets how long the app holds a song change back before showing it anywhere - the
+    /// window, the mini player, the media transport controls, the playlist history and the
+    /// popup all wait this out together. Defaults to no delay. Stations whose metadata runs
+    /// ahead of the audio can override this individually via
+    /// <see cref="Models.RadioStation.SongPopupDelaySeconds"/>.
     /// </summary>
-    public static double SongChangePopupDelaySeconds
+    /// <remarks>
+    /// The stored key still says "popup" because the setting began life as a popup-only delay;
+    /// renaming it would silently reset the value for everyone who had already chosen one.
+    /// </remarks>
+    public static double TrackInfoDelaySeconds
     {
         get => SongChangeAnnouncementPolicy.ClampDelay(
             GetDoubleSetting(SongChangePopupDelaySecondsKey, defaultValue: 0));
-        set => SetDoubleSetting(
-            SongChangePopupDelaySecondsKey,
-            SongChangeAnnouncementPolicy.ClampDelay(value));
+        set
+        {
+            SetDoubleSetting(
+                SongChangePopupDelaySecondsKey,
+                SongChangeAnnouncementPolicy.ClampDelay(value));
+            TrackInfoDelayChanged?.Invoke(null, EventArgs.Empty);
+        }
     }
 
     /// <summary>
