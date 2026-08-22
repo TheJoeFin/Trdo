@@ -183,7 +183,7 @@
     <value>Nombre de la estación</value>
   </data>
   <data name="AddStation_StationNamePlaceholder.PlaceholderText" xml:space="preserve">
-    <value>p. ej., WYMS - Hometown radio</value>
+    <value>p. ej., Radio Encanto - La radio de tu barrio</value>
   </data>
   <data name="AddStation_StreamUrlLabel.Text" xml:space="preserve">
     <value>URL de la transmisión</value>

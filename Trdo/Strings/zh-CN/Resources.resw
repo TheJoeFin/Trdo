@@ -183,7 +183,7 @@
     <value>电台名称</value>
   </data>
   <data name="AddStation_StationNamePlaceholder.PlaceholderText" xml:space="preserve">
-    <value>例如：WYMS - Hometown radio</value>
+    <value>例如：FM99.9 - 家乡电台</value>
   </data>
   <data name="AddStation_StreamUrlLabel.Text" xml:space="preserve">
     <value>流媒体网址</value>

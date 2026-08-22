@@ -183,7 +183,7 @@
     <value>اسم المحطة</value>
   </data>
   <data name="AddStation_StationNamePlaceholder.PlaceholderText" xml:space="preserve">
-    <value>مثال: WYMS - Hometown radio</value>
+    <value>مثال: إذاعة الوطن - إذاعة محلية</value>
   </data>
   <data name="AddStation_StreamUrlLabel.Text" xml:space="preserve">
     <value>رابط البث</value>

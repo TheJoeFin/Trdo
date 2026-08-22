@@ -183,7 +183,7 @@
     <value>Sendername</value>
   </data>
   <data name="AddStation_StationNamePlaceholder.PlaceholderText" xml:space="preserve">
-    <value>z. B. WYMS - Hometown radio</value>
+    <value>z. B. Radio Heimat - Dein Lokalsender</value>
   </data>
   <data name="AddStation_StreamUrlLabel.Text" xml:space="preserve">
     <value>Stream-URL</value>
