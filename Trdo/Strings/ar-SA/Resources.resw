@@ -78,682 +78,682 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="AboutPage_BuiltWithOpenSourceBody.Text" xml:space="preserve">
-    <value>This app uses the following open source libraries:</value>
+    <value>يستخدم هذا التطبيق مكتبات المصدر المفتوح التالية:</value>
   </data>
   <data name="AboutPage_BuiltWithOpenSourceTitle.Text" xml:space="preserve">
-    <value>Built With Open Source</value>
+    <value>مبني باستخدام المصدر المفتوح</value>
   </data>
   <data name="AboutPage_ContactDeveloper.Text" xml:space="preserve">
-    <value>Contact the Developer</value>
+    <value>التواصل مع المطوّر</value>
   </data>
   <data name="AboutPage_DeveloperTitle.Text" xml:space="preserve">
-    <value>Developer</value>
+    <value>المطوّر</value>
   </data>
   <data name="AboutPage_EnjoyingPrompt.Text" xml:space="preserve">
-    <value>Enjoying Traydio?</value>
+    <value>هل يعجبك Traydio؟</value>
   </data>
   <data name="AboutPage_Feature_MultiStations.Text" xml:space="preserve">
-    <value>Multiple radio station support</value>
+    <value>دعم محطات إذاعية متعددة</value>
   </data>
   <data name="AboutPage_Feature_StartWithWindows.Text" xml:space="preserve">
-    <value>Start with Windows option</value>
+    <value>خيار التشغيل مع بدء Windows</value>
   </data>
   <data name="AboutPage_Feature_SystemTray.Text" xml:space="preserve">
-    <value>System tray integration for easy access</value>
+    <value>تكامل مع علبة النظام لسهولة الوصول</value>
   </data>
   <data name="AboutPage_Feature_Watchdog.Text" xml:space="preserve">
-    <value>Stream watchdog for automatic reconnection</value>
+    <value>مراقبة البث لإعادة الاتصال تلقائيًا</value>
   </data>
   <data name="AboutPage_FeaturesTitle.Text" xml:space="preserve">
-    <value>Features</value>
+    <value>الميزات</value>
   </data>
   <data name="AboutPage_Formerly.Text" xml:space="preserve">
-    <value>Formerly Trdo</value>
+    <value>المعروف سابقًا باسم Trdo</value>
   </data>
   <data name="AboutPage_HelpBody.Text" xml:space="preserve">
-    <value>View the tutorial again to learn how to use Traydio.</value>
+    <value>شاهد الدرس التعليمي مرة أخرى لتتعرف على كيفية استخدام Traydio.</value>
   </data>
   <data name="AboutPage_HelpTitle.Text" xml:space="preserve">
-    <value>Need Help?</value>
+    <value>بحاجة إلى مساعدة؟</value>
   </data>
   <data name="AboutPage_IssuePrompt.Text" xml:space="preserve">
-    <value>Having an issue or have a suggestion?</value>
+    <value>هل تواجه مشكلة أو لديك اقتراح؟</value>
   </data>
   <data name="AboutPage_OpenSourceBody.Text" xml:space="preserve">
-    <value>This app is open source and available on GitHub.</value>
+    <value>هذا التطبيق مفتوح المصدر ومتاح على GitHub.</value>
   </data>
   <data name="AboutPage_OpenSourceTitle.Text" xml:space="preserve">
-    <value>Open Source</value>
+    <value>المصدر المفتوح</value>
   </data>
   <data name="AboutPage_RadioDatabaseTitle.Text" xml:space="preserve">
-    <value>Radio Database</value>
+    <value>قاعدة بيانات المحطات الإذاعية</value>
   </data>
   <data name="AboutPage_RateLabel.Text" xml:space="preserve">
-    <value>Rate your experience with the app:</value>
+    <value>قيّم تجربتك مع التطبيق:</value>
   </data>
   <data name="AboutPage_SupportBody.Text" xml:space="preserve">
-    <value>If you enjoy Traydio, consider buying me a coffee!</value>
+    <value>إذا أعجبك Traydio، ففكّر في شراء فنجان قهوة لي!</value>
   </data>
   <data name="AboutPage_SupportTitle.Text" xml:space="preserve">
-    <value>Support the Developer</value>
+    <value>ادعم المطوّر</value>
   </data>
   <data name="AboutPage_Title.Text" xml:space="preserve">
-    <value>About</value>
+    <value>حول</value>
   </data>
   <data name="AboutPage_ViewTutorial.Text" xml:space="preserve">
-    <value>View Tutorial</value>
+    <value>عرض الدرس التعليمي</value>
   </data>
   <data name="AboutPage_VisitDeveloperGitHub.Text" xml:space="preserve">
-    <value>Visit Developer&apos;s GitHub</value>
+    <value>زيارة صفحة GitHub الخاصة بالمطوّر</value>
   </data>
   <data name="Action_Cancel.Text" xml:space="preserve">
-    <value>Cancel</value>
+    <value>إلغاء</value>
   </data>
   <data name="Action_Save.Text" xml:space="preserve">
-    <value>Save</value>
+    <value>حفظ</value>
   </data>
   <data name="AddStation_AddPageTitle" xml:space="preserve">
-    <value>Add Radio Station</value>
+    <value>إضافة محطة إذاعية</value>
   </data>
   <data name="AddStation_EditPageTitle" xml:space="preserve">
-    <value>Edit Radio Station</value>
+    <value>تعديل محطة إذاعية</value>
   </data>
   <data name="AddStation_HomepageLabel.Text" xml:space="preserve">
-    <value>Homepage (Optional)</value>
+    <value>الصفحة الرئيسية (اختياري)</value>
   </data>
   <data name="AddStation_HomepagePlaceholder.PlaceholderText" xml:space="preserve">
-    <value>e.g., https://example.com</value>
+    <value>مثال: https://example.com</value>
   </data>
   <data name="AddStation_LogoUrlLabel.Text" xml:space="preserve">
-    <value>Station Logo/Icon URL (Optional)</value>
+    <value>رابط شعار/أيقونة المحطة (اختياري)</value>
   </data>
   <data name="AddStation_LogoUrlPlaceholder.PlaceholderText" xml:space="preserve">
-    <value>e.g., https://example.com/logo.png</value>
+    <value>مثال: https://example.com/logo.png</value>
   </data>
   <data name="AddStation_InvalidUrl" xml:space="preserve">
-    <value>Please enter a valid HTTP or HTTPS URL.</value>
+    <value>يرجى إدخال رابط HTTP أو HTTPS صالح.</value>
   </data>
   <data name="AddStation_NameRequired" xml:space="preserve">
-    <value>Station name is required.</value>
+    <value>اسم المحطة مطلوب.</value>
   </data>
   <data name="AddStation_PageTitle.Text" xml:space="preserve">
-    <value>Add Station</value>
+    <value>إضافة محطة</value>
   </data>
   <data name="AddStation_StationNameLabel.Text" xml:space="preserve">
-    <value>Station Name</value>
+    <value>اسم المحطة</value>
   </data>
   <data name="AddStation_StationNamePlaceholder.PlaceholderText" xml:space="preserve">
-    <value>e.g., WYMS - Hometown radio</value>
+    <value>مثال: WYMS - Hometown radio</value>
   </data>
   <data name="AddStation_StreamUrlLabel.Text" xml:space="preserve">
-    <value>Stream URL</value>
+    <value>رابط البث</value>
   </data>
   <data name="AddStation_StreamUrlPlaceholder.PlaceholderText" xml:space="preserve">
-    <value>e.g., https://example.com/stream</value>
+    <value>مثال: https://example.com/stream</value>
   </data>
   <data name="AddStation_UrlRequired" xml:space="preserve">
-    <value>Stream URL is required.</value>
+    <value>رابط البث مطلوب.</value>
   </data>
   <data name="App_ExitApplicationCommand.Description" xml:space="preserve">
-    <value>Exit Traydio</value>
+    <value>الخروج من Traydio</value>
   </data>
   <data name="App_ExitApplicationCommand.Label" xml:space="preserve">
-    <value>Exit</value>
+    <value>خروج</value>
   </data>
   <data name="App_PlayPauseCommand.Description" xml:space="preserve">
-    <value>Play or pause radio</value>
+    <value>تشغيل الراديو أو إيقافه مؤقتًا</value>
   </data>
   <data name="App_PlayPauseCommand.Label" xml:space="preserve">
-    <value>Play</value>
+    <value>تشغيل</value>
   </data>
   <data name="App_ShowHideWindowCommand.Description" xml:space="preserve">
-    <value>Show or hide the main window</value>
+    <value>إظهار النافذة الرئيسية أو إخفاؤها</value>
   </data>
   <data name="App_ShowHideWindowCommand.Label" xml:space="preserve">
-    <value>Show Window</value>
+    <value>إظهار النافذة</value>
   </data>
   <data name="FavoritesPage_EmptySubtitle.Text" xml:space="preserve">
-    <value>Tap the star icon on songs you love to save them here</value>
+    <value>اضغط على أيقونة النجمة في الأغاني التي تحبها لحفظها هنا</value>
   </data>
   <data name="FavoritesPage_EmptyTitle.Text" xml:space="preserve">
-    <value>No favorite songs yet</value>
+    <value>لا توجد أغانٍ مفضّلة بعد</value>
   </data>
   <data name="FavoritesPage_Export.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Export favorites to a playlist file</value>
+    <value>تصدير المفضلة إلى ملف قائمة تشغيل</value>
   </data>
   <data name="FavoritesPage_ExportFailed" xml:space="preserve">
-    <value>Export failed</value>
+    <value>فشل التصدير</value>
   </data>
   <data name="FavoritesPage_ExportLabel.Text" xml:space="preserve">
-    <value>Export…</value>
+    <value>تصدير…</value>
   </data>
   <data name="FavoritesPage_IncludeInNextExport.Text" xml:space="preserve">
-    <value>Include in next export</value>
+    <value>التضمين في التصدير التالي</value>
   </data>
   <data name="FavoritesPage_Options.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>More options</value>
+    <value>خيارات إضافية</value>
   </data>
   <data name="FavoritesPage_Remove.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Remove from favorites</value>
+    <value>إزالة من المفضلة</value>
   </data>
   <data name="FavoritesPage_Title.Text" xml:space="preserve">
-    <value>Favorite Songs</value>
+    <value>الأغاني المفضّلة</value>
   </data>
   <data name="ManualStationWindow_Advanced.Text" xml:space="preserve">
-    <value>Advanced</value>
+    <value>متقدم</value>
   </data>
   <data name="ManualStationWindow_BufferLevel.Text" xml:space="preserve">
-    <value>Buffer level</value>
+    <value>مستوى التخزين المؤقت</value>
   </data>
   <data name="ManualStationWindow_BufferLevelDescription.Text" xml:space="preserve">
-    <value>Higher buffer levels help on unstable connections, but they add a little more playback delay. Override this only for a station that needs it.</value>
+    <value>تساعد مستويات التخزين المؤقت الأعلى في حالة الاتصالات غير المستقرة، لكنها تزيد من تأخير التشغيل قليلًا. استخدم هذا التجاوز فقط للمحطة التي تحتاج إليه.</value>
   </data>
   <data name="ManualStationWindow_BufferOverrideToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Override buffer level for this station</value>
+    <value>تجاوز مستوى التخزين المؤقت لهذه المحطة</value>
   </data>
   <data name="ManualStationWindow_BufferOverrideToggle.OffContent" xml:space="preserve">
-    <value>Following the app setting</value>
+    <value>اتباع إعداد التطبيق</value>
   </data>
   <data name="ManualStationWindow_BufferOverrideToggle.OnContent" xml:space="preserve">
-    <value>Override for this station</value>
+    <value>تجاوز لهذه المحطة</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelay.Text" xml:space="preserve">
-    <value>Track info delay</value>
+    <value>تأخير معلومات المقطوعة</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayDescription.Text" xml:space="preserve">
-    <value>Some stations announce the next track before it actually starts. Hold the track info back so it changes when you hear the song. How far ahead a station runs is a property of its encoder, so set this per station.</value>
+    <value>تعلن بعض المحطات عن المقطوعة التالية قبل أن تبدأ فعليًا. أخّر معلومات المقطوعة بحيث تتغير عندما تسمع الأغنية. مقدار التقدم الزمني للمحطة يعتمد على المُرمِّز الخاص بها، لذا اضبط هذا لكل محطة على حدة.</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Override the track info delay for this station</value>
+    <value>تجاوز تأخير معلومات المقطوعة لهذه المحطة</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.OffContent" xml:space="preserve">
-    <value>Following the app setting</value>
+    <value>اتباع إعداد التطبيق</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.OnContent" xml:space="preserve">
-    <value>Override for this station</value>
+    <value>تجاوز لهذه المحطة</value>
   </data>
   <data name="ManualStationWindow_Title" xml:space="preserve">
-    <value>Traydio - Add Station</value>
+    <value>Traydio - إضافة محطة</value>
   </data>
   <data name="ManualStationWindow_Volume.Text" xml:space="preserve">
-    <value>Volume</value>
+    <value>مستوى الصوت</value>
   </data>
   <data name="ManualStationWindow_VolumeDescription.Text" xml:space="preserve">
-    <value>Remembered for this station, so it stays level when you switch away and back.</value>
+    <value>يتم تذكّره لهذه المحطة، بحيث يبقى على نفس المستوى عند التبديل بعيدًا والعودة.</value>
   </data>
   <data name="NowPlayingPage_IdleSubtitle.Text" xml:space="preserve">
-    <value>Start playback to see title and artist information</value>
+    <value>ابدأ التشغيل لرؤية معلومات العنوان والفنان</value>
   </data>
   <data name="NowPlayingPage_IdleTitle.Text" xml:space="preserve">
-    <value>No station playing</value>
+    <value>لا توجد محطة قيد التشغيل</value>
   </data>
   <data name="NowPlayingPage_Label_Artist.Text" xml:space="preserve">
-    <value>Artist</value>
+    <value>الفنان</value>
   </data>
   <data name="NowPlayingPage_Label_Title.Text" xml:space="preserve">
-    <value>Title</value>
+    <value>العنوان</value>
   </data>
   <data name="NowPlayingPage_RecentTracks.Text" xml:space="preserve">
-    <value>Recent Tracks</value>
+    <value>المقطوعات الأخيرة</value>
   </data>
   <data name="NowPlayingPage_Title.Text" xml:space="preserve">
-    <value>Now Playing</value>
+    <value>قيد التشغيل الآن</value>
   </data>
   <data name="NowPlayingPage_Tooltip_Favorite.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Favorite Song</value>
+    <value>إضافة الأغنية إلى المفضلة</value>
   </data>
   <data name="NowPlayingPage_Tooltip_SearchSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Music search settings</value>
+    <value>إعدادات البحث عن الموسيقى</value>
   </data>
   <data name="PlaybackFailure_NoDetail" xml:space="preserve">
-    <value>Couldn't play this station. The stream may be unavailable or the URL may be wrong.</value>
+    <value>تعذّر تشغيل هذه المحطة. قد يكون البث غير متاح أو الرابط غير صحيح.</value>
   </data>
   <data name="PlaybackFailure_NoNetwork" xml:space="preserve">
-    <value>No internet connection. Connect to a network and try again.</value>
+    <value>لا يوجد اتصال بالإنترنت. اتصل بشبكة وحاول مرة أخرى.</value>
   </data>
   <data name="PlaybackFailure_TooManyAttemptsNoDetail" xml:space="preserve">
-    <value>Couldn't play this station after several attempts. The stream may be offline or the URL may be wrong.</value>
+    <value>تعذّر تشغيل هذه المحطة بعد عدة محاولات. قد يكون البث غير متصل أو الرابط غير صحيح.</value>
   </data>
   <data name="PlaybackFailure_TooManyAttemptsWithDetail" xml:space="preserve">
-    <value>Couldn't play this station after several attempts ({0}). The stream may be offline or the URL may be wrong.</value>
+    <value>تعذّر تشغيل هذه المحطة بعد عدة محاولات ({0}). قد يكون البث غير متصل أو الرابط غير صحيح.</value>
   </data>
   <data name="PlaybackFailure_WithDetail" xml:space="preserve">
-    <value>Couldn't play this station: {0}</value>
+    <value>تعذّر تشغيل هذه المحطة: {0}</value>
   </data>
   <data name="PlaybackFailure_WithSentenceDetail" xml:space="preserve">
-    <value>Couldn't play this station. {0}</value>
+    <value>تعذّر تشغيل هذه المحطة. {0}</value>
   </data>
   <data name="PlayerViewModel_Buffering" xml:space="preserve">
-    <value>Buffering</value>
+    <value>جارٍ التخزين المؤقت</value>
   </data>
   <data name="PlayerViewModel_FailedToInitializeStream" xml:space="preserve">
-    <value>Failed to initialize stream: {0}</value>
+    <value>فشل تهيئة البث: {0}</value>
   </data>
   <data name="PlayerViewModel_FailedToPause" xml:space="preserve">
-    <value>Failed to pause {0}: {1}</value>
+    <value>فشل إيقاف {0} مؤقتًا: {1}</value>
   </data>
   <data name="PlayerViewModel_FailedToPlay" xml:space="preserve">
-    <value>Failed to play {0}: {1}</value>
+    <value>فشل تشغيل {0}: {1}</value>
   </data>
   <data name="PlayerViewModel_FailedToRestore" xml:space="preserve">
-    <value>Failed to restore {0}: {1}</value>
+    <value>فشل استعادة {0}: {1}</value>
   </data>
   <data name="PlayerViewModel_FailedToSwitch" xml:space="preserve">
-    <value>Failed to switch to {0}: {1}</value>
+    <value>فشل التبديل إلى {0}: {1}</value>
   </data>
   <data name="PlayerViewModel_FailedToUpdateStream" xml:space="preserve">
-    <value>Failed to update stream: {0}</value>
+    <value>فشل تحديث البث: {0}</value>
   </data>
   <data name="PlayerViewModel_InvalidStreamUrl" xml:space="preserve">
-    <value>Invalid stream URL for {0}</value>
+    <value>رابط بث غير صالح لـ {0}</value>
   </data>
   <data name="PlayerViewModel_Pause" xml:space="preserve">
-    <value>Pause</value>
+    <value>إيقاف مؤقت</value>
   </data>
   <data name="PlayerViewModel_PauseAndClose" xml:space="preserve">
-    <value>Pause &amp; close</value>
+    <value>إيقاف مؤقت وإغلاق</value>
   </data>
   <data name="PlayerViewModel_Play" xml:space="preserve">
-    <value>Play</value>
+    <value>تشغيل</value>
   </data>
   <data name="PlayingPage_About.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>About Traydio</value>
+    <value>حول Traydio</value>
   </data>
   <data name="PlayingPage_AddFirstStation.Text" xml:space="preserve">
-    <value>Add Your First Station</value>
+    <value>أضف محطتك الأولى</value>
   </data>
   <data name="PlayingPage_DeleteGroup.Text" xml:space="preserve">
-    <value>Delete group</value>
+    <value>حذف المجموعة</value>
   </data>
   <data name="PlayingPage_DeleteGroupAndStations.Text" xml:space="preserve">
-    <value>Delete group and its stations</value>
+    <value>حذف المجموعة ومحطاتها</value>
   </data>
   <data name="PlayingPage_Edit.Text" xml:space="preserve">
-    <value>Edit</value>
+    <value>تعديل</value>
   </data>
   <data name="PlayingPage_EditLabel.Text" xml:space="preserve">
-    <value>Edit label</value>
+    <value>تعديل التسمية</value>
   </data>
   <data name="PlayingPage_EmptySubtitle.Text" xml:space="preserve">
-    <value>Get started by adding your favorite radio station to begin listening.</value>
+    <value>ابدأ بإضافة محطتك الإذاعية المفضّلة لبدء الاستماع.</value>
   </data>
   <data name="PlayingPage_EmptyTitle.Text" xml:space="preserve">
-    <value>No Stations Yet</value>
+    <value>لا توجد محطات بعد</value>
   </data>
   <data name="PlayingPage_Favorites.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Favorite Songs</value>
+    <value>الأغاني المفضّلة</value>
   </data>
   <data name="PlayingPage_GroupBy.Text" xml:space="preserve">
-    <value>Group by</value>
+    <value>التجميع حسب</value>
   </data>
   <data name="PlayingPage_HideVolumeSlider" xml:space="preserve">
-    <value>Hide Volume Slider</value>
+    <value>إخفاء منزلق الصوت</value>
   </data>
   <data name="PlayingPage_InsertDividerAbove.Text" xml:space="preserve">
-    <value>Insert divider above</value>
+    <value>إدراج فاصل أعلاه</value>
   </data>
   <data name="PlayingPage_Manual.Content" xml:space="preserve">
-    <value>Manual</value>
+    <value>يدوي</value>
   </data>
   <data name="PlayingPage_MoveToGroup.Text" xml:space="preserve">
-    <value>Move to group</value>
+    <value>نقل إلى مجموعة</value>
   </data>
   <data name="PlayingPage_NewDivider.Text" xml:space="preserve">
-    <value>New Divider</value>
+    <value>فاصل جديد</value>
   </data>
   <data name="PlayingPage_NewGroup.Text" xml:space="preserve">
-    <value>New Group</value>
+    <value>مجموعة جديدة</value>
   </data>
   <data name="PlayingPage_PlaybackErrorClose" xml:space="preserve">
-    <value>OK</value>
+    <value>موافق</value>
   </data>
   <data name="PlayingPage_PlaybackErrorTitle" xml:space="preserve">
-    <value>Playback Error</value>
+    <value>خطأ في التشغيل</value>
   </data>
   <data name="PlayingPage_PopOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Open mini player</value>
+    <value>فتح المشغّل المصغّر</value>
   </data>
   <data name="PlayingPage_QuitButton.Content" xml:space="preserve">
-    <value>Quit</value>
+    <value>إنهاء</value>
   </data>
   <data name="PlayingPage_QuitButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Quit Traydio</value>
+    <value>إنهاء Traydio</value>
   </data>
   <data name="PlayingPage_RefreshAllInfo.Text" xml:space="preserve">
-    <value>Refresh info for all stations</value>
+    <value>تحديث معلومات جميع المحطات</value>
   </data>
   <data name="PlayingPage_RefreshStationInfo.Text" xml:space="preserve">
-    <value>Refresh station info</value>
+    <value>تحديث معلومات المحطة</value>
   </data>
   <data name="PlayingPage_Remove.Text" xml:space="preserve">
-    <value>Remove</value>
+    <value>إزالة</value>
   </data>
   <data name="PlayingPage_RemoveDivider.Text" xml:space="preserve">
-    <value>Remove divider</value>
+    <value>إزالة الفاصل</value>
   </data>
   <data name="PlayingPage_Rename.Text" xml:space="preserve">
-    <value>Rename</value>
+    <value>إعادة تسمية</value>
   </data>
   <data name="PlayingPage_Settings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Settings</value>
+    <value>الإعدادات</value>
   </data>
   <data name="PlayingPage_ShowVolume.Text" xml:space="preserve">
-    <value>Show Volume Slider</value>
+    <value>إظهار منزلق الصوت</value>
   </data>
   <data name="PlayingPage_SortBy.Text" xml:space="preserve">
-    <value>Sort by</value>
+    <value>الترتيب حسب</value>
   </data>
   <data name="PlayingPage_StationButton.Text" xml:space="preserve">
-    <value>Station</value>
+    <value>محطة</value>
   </data>
   <data name="PlayingPage_StationsHeader.Text" xml:space="preserve">
-    <value>Stations</value>
+    <value>المحطات</value>
   </data>
   <data name="PlayingPage_VisitWebsite.Text" xml:space="preserve">
-    <value>Visit Website</value>
+    <value>زيارة الموقع الإلكتروني</value>
   </data>
   <data name="SettingsPage_AllowSleepDescription.Text" xml:space="preserve">
-    <value>Let the computer go to sleep on its normal schedule while radio is playing. Note that Windows itself may keep the PC awake while any audio is playing.</value>
+    <value>السماح للكمبيوتر بالدخول في وضع السكون وفق جدوله المعتاد أثناء تشغيل الراديو. لاحظ أن نظام Windows نفسه قد يبقي الكمبيوتر نشطًا أثناء تشغيل أي صوت.</value>
   </data>
   <data name="SettingsPage_AllowSleepTitle.Text" xml:space="preserve">
-    <value>Allow PC to sleep</value>
+    <value>السماح للكمبيوتر بالسكون</value>
   </data>
   <data name="SettingsPage_AutoIncreaseBufferDescription.Text" xml:space="preserve">
-    <value>Let Traydio raise the buffer automatically when the stream is struggling to stay smooth.</value>
+    <value>السماح لـ Traydio بزيادة التخزين المؤقت تلقائيًا عندما يواجه البث صعوبة في الاستمرار بسلاسة.</value>
   </data>
   <data name="SettingsPage_AutoIncreaseBufferTitle.Text" xml:space="preserve">
-    <value>Auto-increase buffer on stutter</value>
+    <value>زيادة التخزين المؤقت تلقائيًا عند التقطّع</value>
   </data>
   <data name="SettingsPage_AutoPlayWarning.Message" xml:space="preserve">
-    <value>This means audio will begin playing when Traydio is launched. It could be disruptive. Are you sure you want to enable this?</value>
+    <value>هذا يعني أن الصوت سيبدأ بالتشغيل عند تشغيل Traydio. قد يكون هذا مزعجًا. هل تريد بالتأكيد تفعيل هذا الخيار؟</value>
   </data>
   <data name="SettingsPage_AutoRecoverDescription.Text" xml:space="preserve">
-    <value>Monitor playback and automatically try to recover when a stream stalls, drops out, or goes silent.</value>
+    <value>مراقبة التشغيل ومحاولة الاستعادة تلقائيًا عندما يتعطل البث أو ينقطع أو يصمت.</value>
   </data>
   <data name="SettingsPage_AutoRecoverTitle.Text" xml:space="preserve">
-    <value>Auto-recover</value>
+    <value>الاستعادة التلقائية</value>
   </data>
   <data name="SettingsPage_BufferLevelDescription.Text" xml:space="preserve">
-    <value>Higher buffer levels help on unstable connections, but they can add a little more playback delay.</value>
+    <value>تساعد مستويات التخزين المؤقت الأعلى في حالة الاتصالات غير المستقرة، لكنها قد تزيد من تأخير التشغيل قليلًا.</value>
   </data>
   <data name="SettingsPage_BufferLevelTitle.Text" xml:space="preserve">
-    <value>Buffer level</value>
+    <value>مستوى التخزين المؤقت</value>
   </data>
   <data name="SettingsPage_CopyDiagnostics.Content" xml:space="preserve">
-    <value>Copy diagnostics</value>
+    <value>نسخ التشخيصات</value>
   </data>
   <data name="SettingsPage_CopyDiagnosticsFailed" xml:space="preserve">
-    <value>Couldn't copy diagnostics: {0}</value>
+    <value>تعذّر نسخ التشخيصات: {0}</value>
   </data>
   <data name="SettingsPage_DemoPopupButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Demo the song change popup</value>
+    <value>عرض توضيحي للنافذة المنبثقة لتغيير الأغنية</value>
   </data>
   <data name="SettingsPage_DemoPopupButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Show the popup now, so you can see what it looks like</value>
+    <value>إظهار النافذة المنبثقة الآن لترى شكلها</value>
   </data>
   <data name="SettingsPage_DemoPopupButton.Content" xml:space="preserve">
-    <value>Demo</value>
+    <value>عرض توضيحي</value>
   </data>
   <data name="SettingsPage_DiagnosticsDescription.Text" xml:space="preserve">
-    <value>Traydio keeps a log of playback activity (which engine was used, stream status, and errors). Open the log folder or copy recent diagnostics to share when reporting a problem.</value>
+    <value>يحتفظ Traydio بسجل لنشاط التشغيل (المحرك المستخدم، وحالة البث، والأخطاء). افتح مجلد السجلات أو انسخ التشخيصات الأخيرة لمشاركتها عند الإبلاغ عن مشكلة.</value>
   </data>
   <data name="SettingsPage_DiagnosticsTitle.Text" xml:space="preserve">
-    <value>Diagnostics</value>
+    <value>التشخيصات</value>
   </data>
   <data name="SettingsPage_Enable.Content" xml:space="preserve">
-    <value>Enable</value>
+    <value>تفعيل</value>
   </data>
   <data name="SettingsPage_ExportFailed" xml:space="preserve">
-    <value>Export failed: {0}</value>
+    <value>فشل التصدير: {0}</value>
   </data>
   <data name="SettingsPage_ExportStations.Content" xml:space="preserve">
-    <value>Export stations</value>
+    <value>تصدير المحطات</value>
   </data>
   <data name="SettingsPage_ImportExportDescription.Text" xml:space="preserve">
-    <value>Back up your station list or move it to another device with M3U and PLS playlist files.</value>
+    <value>انسخ قائمة محطاتك احتياطيًا أو انقلها إلى جهاز آخر باستخدام ملفات قوائم التشغيل M3U وPLS.</value>
   </data>
   <data name="SettingsPage_ImportExportTitle.Text" xml:space="preserve">
-    <value>Import / Export stations</value>
+    <value>استيراد/تصدير المحطات</value>
   </data>
   <data name="SettingsPage_ImportFailed" xml:space="preserve">
-    <value>Import failed: {0}</value>
+    <value>فشل الاستيراد: {0}</value>
   </data>
   <data name="SettingsPage_ImportStations.Content" xml:space="preserve">
-    <value>Import stations</value>
+    <value>استيراد المحطات</value>
   </data>
   <data name="SettingsPage_Language_English.Content" xml:space="preserve">
-    <value>English</value>
+    <value>الإنجليزية</value>
   </data>
   <data name="SettingsPage_Language_System.Content" xml:space="preserve">
-    <value>System</value>
+    <value>النظام</value>
   </data>
   <data name="SettingsPage_Language_Spanish.Content" xml:space="preserve">
-    <value>Español</value>
+    <value>الإسبانية</value>
   </data>
   <data name="SettingsPage_Language_Chinese.Content" xml:space="preserve">
-    <value>Chinese</value>
+    <value>الصينية</value>
   </data>
   <data name="SettingsPage_Language_German.Content" xml:space="preserve">
-    <value>German</value>
+    <value>الألمانية</value>
   </data>
   <data name="SettingsPage_Language_PortugueseBrazil.Content" xml:space="preserve">
-    <value>Portuguese (Brazil)</value>
+    <value>البرتغالية (البرازيل)</value>
   </data>
   <data name="SettingsPage_Language_PortuguesePortugal.Content" xml:space="preserve">
-    <value>Portuguese (Portugal)</value>
+    <value>البرتغالية (البرتغال)</value>
   </data>
   <data name="SettingsPage_Language_Arabic.Content" xml:space="preserve">
-    <value>Arabic</value>
+    <value>العربية</value>
   </data>
   <data name="SettingsPage_LanguageDescription.Text" xml:space="preserve">
-    <value>Choose the language used throughout the app.</value>
+    <value>اختر اللغة المستخدمة في التطبيق بأكمله.</value>
   </data>
   <data name="SettingsPage_LanguageTitle.Text" xml:space="preserve">
-    <value>Language</value>
+    <value>اللغة</value>
   </data>
   <data name="SettingsPage_MusicSearchServicesDescription.Text" xml:space="preserve">
-    <value>Choose which shortcuts appear on Now Playing and Favorites when you want to search for the current song elsewhere.</value>
+    <value>اختر الاختصارات التي تظهر في صفحتَي "قيد التشغيل الآن" و"المفضلة" عندما تريد البحث عن الأغنية الحالية في مكان آخر.</value>
   </data>
   <data name="SettingsPage_MusicSearchServicesTitle.Text" xml:space="preserve">
-    <value>Music search services</value>
+    <value>خدمات البحث عن الموسيقى</value>
   </data>
   <data name="SettingsPage_OpenLogsFolder.Content" xml:space="preserve">
-    <value>Open logs folder</value>
+    <value>فتح مجلد السجلات</value>
   </data>
   <data name="SettingsPage_OpenLogsFolderFailed" xml:space="preserve">
-    <value>Couldn't open the logs folder: {0}</value>
+    <value>تعذّر فتح مجلد السجلات: {0}</value>
   </data>
   <data name="SettingsPage_OpenLogsFolderFailedLocation" xml:space="preserve">
-    <value>Couldn't open the logs folder. It's located at: {0}</value>
+    <value>تعذّر فتح مجلد السجلات. يوجد في: {0}</value>
   </data>
   <data name="SettingsPage_OpenOnStartupDescription.Text" xml:space="preserve">
-    <value>Launch Traydio automatically when you sign in so the player is ready without opening it manually.</value>
+    <value>تشغيل Traydio تلقائيًا عند تسجيل الدخول ليكون المشغّل جاهزًا دون الحاجة لفتحه يدويًا.</value>
   </data>
   <data name="SettingsPage_OpenOnStartupTitle.Text" xml:space="preserve">
-    <value>Open on startup</value>
+    <value>الفتح عند بدء التشغيل</value>
   </data>
   <data name="SettingsPage_PlaybackEngine_Auto.Content" xml:space="preserve">
-    <value>Auto (recommended)</value>
+    <value>تلقائي (موصى به)</value>
   </data>
   <data name="SettingsPage_PlaybackEngine_NativeOnly.Content" xml:space="preserve">
-    <value>Native only</value>
+    <value>أصلي فقط</value>
   </data>
   <data name="SettingsPage_PlaybackEngine_NativePreferred.Content" xml:space="preserve">
-    <value>Native preferred</value>
+    <value>الأصلي مفضّل</value>
   </data>
   <data name="SettingsPage_PlaybackEngine_RememberedInfo.Text" xml:space="preserve">
-    <value>Traydio remembers which engine each station actually plays on, so a station that only works on one of them starts there next time. Reset this if a station&apos;s playback has changed.</value>
+    <value>يتذكّر Traydio المحرك الذي تعمل عليه كل محطة فعليًا، لذا فإن المحطة التي تعمل على أحدهما فقط ستبدأ منه في المرة القادمة. أعد ضبط هذا إذا تغيّر تشغيل إحدى المحطات.</value>
   </data>
   <data name="SettingsPage_PlaybackEngineDescription.Text" xml:space="preserve">
-    <value>Choose how Traydio plays streams. Auto uses LibVLC first and falls back to Windows Media Foundation when needed.</value>
+    <value>اختر كيفية تشغيل Traydio للبث. يستخدم الوضع التلقائي LibVLC أولًا ويعود إلى Windows Media Foundation عند الحاجة.</value>
   </data>
   <data name="SettingsPage_PlaybackEngineTitle.Text" xml:space="preserve">
-    <value>Playback engine</value>
+    <value>محرك التشغيل</value>
   </data>
   <data name="SettingsPage_PlayOnStartupDescription.Text" xml:space="preserve">
-    <value>Automatically resume the last station as soon as Traydio opens.</value>
+    <value>استئناف آخر محطة تلقائيًا بمجرد فتح Traydio.</value>
   </data>
   <data name="SettingsPage_PlayOnStartupTitle.Text" xml:space="preserve">
-    <value>Play on startup</value>
+    <value>التشغيل عند بدء التشغيل</value>
   </data>
   <data name="SettingsPage_PopupDwellExplanation.Text" xml:space="preserve">
-    <value>How long the popup stays on screen before it fades away. Clicking it dismisses it sooner.</value>
+    <value>المدة التي تبقى فيها النافذة المنبثقة على الشاشة قبل أن تختفي. النقر عليها يغلقها بشكل أسرع.</value>
   </data>
   <data name="SettingsPage_PopupDwellSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>How long the song popup stays on screen, in seconds</value>
+    <value>المدة التي تبقى فيها النافذة المنبثقة للأغنية على الشاشة، بالثواني</value>
   </data>
   <data name="SettingsPage_ResetEngineMemoryFailed" xml:space="preserve">
-    <value>Couldn't reset remembered engines: {0}</value>
+    <value>تعذّر إعادة ضبط المحركات المحفوظة: {0}</value>
   </data>
   <data name="SettingsPage_ResetRememberedEngines.Content" xml:space="preserve">
-    <value>Reset remembered engines</value>
+    <value>إعادة ضبط المحركات المحفوظة</value>
   </data>
   <data name="SettingsPage_RestartRequiredInfoBar.Message" xml:space="preserve">
-    <value>Restart Traydio to finish switching languages.</value>
+    <value>أعد تشغيل Traydio لإتمام تغيير اللغة.</value>
   </data>
   <data name="SettingsPage_SilenceTimeoutDescription.Text" xml:space="preserve">
-    <value>Set how long playback can stay silent before Traydio restarts the stream automatically.</value>
+    <value>حدد المدة التي يمكن أن يبقى فيها التشغيل صامتًا قبل أن يعيد Traydio تشغيل البث تلقائيًا.</value>
   </data>
   <data name="SettingsPage_SilenceTimeoutTitle.Text" xml:space="preserve">
-    <value>Silence detection timeout</value>
+    <value>مهلة اكتشاف الصمت</value>
   </data>
   <data name="SettingsPage_SongChangePopupDescription.Text" xml:space="preserve">
-    <value>Show a brief on-screen notification near the taskbar whenever the playing song changes.</value>
+    <value>إظهار إشعار قصير على الشاشة بالقرب من شريط المهام عند تغيّر الأغنية قيد التشغيل.</value>
   </data>
   <data name="SettingsPage_SongChangePopupTitle.Text" xml:space="preserve">
-    <value>Song change popup</value>
+    <value>نافذة تغيير الأغنية المنبثقة</value>
   </data>
   <data name="SettingsPage_SongChangePopupToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Song change popup</value>
+    <value>نافذة تغيير الأغنية المنبثقة</value>
   </data>
   <data name="SettingsPage_SongPopupDelayExplanation.Text" xml:space="preserve">
-    <value>Many stations announce a track before it actually starts playing. Hold the track info back so it changes when you hear the song — in the window, the mini player, the media controls, the playlist history and the popup alike. The first track after you tune in appears straight away. Individual stations can override this in their Advanced settings, or by right-clicking the popup itself.</value>
+    <value>تعلن العديد من المحطات عن مقطوعة قبل أن تبدأ فعليًا بالتشغيل. أخّر معلومات المقطوعة بحيث تتغير عندما تسمع الأغنية — في النافذة، والمشغّل المصغّر، وعناصر تحكم الوسائط، وسجل قائمة التشغيل، والنافذة المنبثقة على حدٍ سواء. تظهر أول مقطوعة بعد ضبط المحطة فورًا. يمكن للمحطات الفردية تجاوز هذا في إعداداتها المتقدمة، أو بالنقر بزر الماوس الأيمن على النافذة المنبثقة نفسها.</value>
   </data>
   <data name="SettingsPage_SongPopupDelaySlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Track info delay in seconds</value>
+    <value>تأخير معلومات المقطوعة بالثواني</value>
   </data>
   <data name="SettingsPage_Title.Text" xml:space="preserve">
-    <value>Settings</value>
+    <value>الإعدادات</value>
   </data>
   <data name="SettingsPage_TrackInfoDelayTitle.Text" xml:space="preserve">
-    <value>Track info delay</value>
+    <value>تأخير معلومات المقطوعة</value>
   </data>
   <data name="SettingsPage_TrayClickBehavior_Alternate.Content" xml:space="preserve">
-    <value>Left click: open Traydio, right click: play/pause</value>
+    <value>النقر بالزر الأيسر: فتح Traydio، النقر بالزر الأيمن: تشغيل/إيقاف مؤقت</value>
   </data>
   <data name="SettingsPage_TrayClickBehavior_Default.Content" xml:space="preserve">
-    <value>Left click: play/pause, right click: open Traydio (Default)</value>
+    <value>النقر بالزر الأيسر: تشغيل/إيقاف مؤقت، النقر بالزر الأيمن: فتح Traydio (افتراضي)</value>
   </data>
   <data name="SettingsPage_TrayClickBehaviorDescription.Text" xml:space="preserve">
-    <value>Choose whether the tray icon prioritizes playback controls or opening the player.</value>
+    <value>اختر ما إذا كانت أيقونة علبة النظام تُولي الأولوية لعناصر تحكم التشغيل أو لفتح المشغّل.</value>
   </data>
   <data name="SettingsPage_TrayClickBehaviorTitle.Text" xml:space="preserve">
-    <value>Tray icon click behavior</value>
+    <value>سلوك النقر على أيقونة علبة النظام</value>
   </data>
   <data name="ShellPage_TitleBar.Title" xml:space="preserve">
     <value>Traydio</value>
   </data>
   <data name="SongChangePopup_Surface.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>Now playing</value>
+    <value>قيد التشغيل الآن</value>
   </data>
   <data name="SongChangePopup_Surface.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>Click to dismiss, right-click to adjust the track info delay</value>
+    <value>انقر للإغلاق، وانقر بزر الماوس الأيمن لضبط تأخير معلومات المقطوعة</value>
   </data>
   <data name="SongChangePopup_Title.Text" xml:space="preserve">
-    <value>Now playing</value>
+    <value>قيد التشغيل الآن</value>
   </data>
   <data name="StreamDiagnosis_EngineFailedHealthyServer" xml:space="preserve">
-    <value>The station is online, but neither playback engine could play it on this PC.</value>
+    <value>المحطة متصلة، لكن لم يتمكن أي من محركَي التشغيل من تشغيلها على هذا الكمبيوتر.</value>
   </data>
   <data name="StreamDiagnosis_EngineFailedHealthyServerWithReason" xml:space="preserve">
-    <value>The station is online, but playback failed on this PC: {0}</value>
+    <value>المحطة متصلة، لكن فشل التشغيل على هذا الكمبيوتر: {0}</value>
   </data>
   <data name="StreamDiagnosis_TryPlaylistEntry" xml:space="preserve">
-    <value>{0} Try using {1} as the stream address instead.</value>
+    <value>{0} جرّب استخدام {1} كعنوان للبث بدلًا من ذلك.</value>
   </data>
   <data name="Toggle_Off" xml:space="preserve">
-    <value>Off</value>
+    <value>إيقاف</value>
   </data>
   <data name="Toggle_On" xml:space="preserve">
-    <value>On</value>
+    <value>تشغيل</value>
   </data>
   <data name="TrayIcon_AddStation" xml:space="preserve">
-    <value>Traydio - Add a station to start listening</value>
+    <value>Traydio - أضف محطة لبدء الاستماع</value>
   </data>
   <data name="TrayIcon_LeftClickToPause" xml:space="preserve">
-    <value>Left-click to pause</value>
+    <value>انقر بالزر الأيسر للإيقاف المؤقت</value>
   </data>
   <data name="TrayIcon_LeftClickToPlay" xml:space="preserve">
-    <value>Left-click to play</value>
+    <value>انقر بالزر الأيسر للتشغيل</value>
   </data>
   <data name="TrayIcon_Paused" xml:space="preserve">
-    <value>Traydio {0} (Paused)
+    <value>Traydio {0} (متوقف مؤقتًا)
 {1}</value>
   </data>
   <data name="TrayIcon_Playing" xml:space="preserve">
-    <value>Traydio {0} (Playing)
+    <value>Traydio {0} (قيد التشغيل)
 {1}</value>
   </data>
   <data name="TrayIcon_PlayingWithNowPlaying" xml:space="preserve">
-    <value>Traydio {0} (Playing)
+    <value>Traydio {0} (قيد التشغيل)
 {1}
 {2}</value>
   </data>
   <data name="TrayIcon_RightClickToPause" xml:space="preserve">
-    <value>Right-click to pause</value>
+    <value>انقر بالزر الأيمن للإيقاف المؤقت</value>
   </data>
   <data name="TrayIcon_RightClickToPlay" xml:space="preserve">
-    <value>Right-click to play</value>
+    <value>انقر بالزر الأيمن للتشغيل</value>
   </data>
   <data name="TutorialWindow_Feature_1.Text" xml:space="preserve">
-    <value>• Lightweight and minimalistic design</value>
+    <value>• تصميم خفيف وبسيط</value>
   </data>
   <data name="TutorialWindow_Feature_2.Text" xml:space="preserve">
-    <value>• Access thousands of radio stations worldwide</value>
+    <value>• الوصول إلى آلاف المحطات الإذاعية حول العالم</value>
   </data>
   <data name="TutorialWindow_Feature_3.Text" xml:space="preserve">
-    <value>• Beautiful Mica backdrop and modern UI</value>
+    <value>• خلفية Mica جميلة وواجهة مستخدم عصرية</value>
   </data>
   <data name="TutorialWindow_Feature_4.Text" xml:space="preserve">
-    <value>• Lives quietly in your system tray</value>
+    <value>• يعمل بهدوء في علبة النظام</value>
   </data>
   <data name="TutorialWindow_FeaturesTitle.Text" xml:space="preserve">
-    <value>✨ What makes Traydio special:</value>
+    <value>✨ ما الذي يميّز Traydio:</value>
   </data>
   <data name="TutorialWindow_Intro.Text" xml:space="preserve">
-    <value>Your tiny tray radio for Windows</value>
+    <value>راديو علبة النظام الصغير الخاص بك لنظام Windows</value>
   </data>
   <data name="TutorialWindow_QuickStart.Text" xml:space="preserve">
-    <value>Quick Start Guide</value>
+    <value>دليل البدء السريع</value>
   </data>
   <data name="TutorialWindow_StartButton.Text" xml:space="preserve">
-    <value>Let&apos;s Get Started!</value>
+    <value>لنبدأ!</value>
   </data>
   <data name="TutorialWindow_Step_Options_Desc.Text" xml:space="preserve">
-    <value>Browse stations, adjust settings, and explore all features</value>
+    <value>تصفّح المحطات، واضبط الإعدادات، واستكشف جميع الميزات</value>
   </data>
   <data name="TutorialWindow_Step_Options_Title.Text" xml:space="preserve">
-    <value>Right Click for More Options</value>
+    <value>انقر بالزر الأيمن لمزيد من الخيارات</value>
   </data>
   <data name="TutorialWindow_Step_Pin_Desc.Text" xml:space="preserve">
-    <value>Make sure the Traydio icon is always visible in your system tray</value>
+    <value>تأكد من أن أيقونة Traydio مرئية دائمًا في علبة النظام</value>
   </data>
   <data name="TutorialWindow_Step_Pin_Title.Text" xml:space="preserve">
-    <value>Pin the Tray Icon</value>
+    <value>تثبيت أيقونة علبة النظام</value>
   </data>
   <data name="TutorialWindow_Step_Play_Desc.Text" xml:space="preserve">
-    <value>Quick and easy playback control at your fingertips</value>
+    <value>تحكم سريع وسهل في التشغيل في متناول يدك</value>
   </data>
   <data name="TutorialWindow_Step_Play_Title.Text" xml:space="preserve">
-    <value>Left Click to Play/Pause</value>
+    <value>انقر بالزر الأيسر للتشغيل/الإيقاف المؤقت</value>
   </data>
   <data name="TutorialWindow_Title" xml:space="preserve">
-    <value>Traydio First Run Window</value>
+    <value>نافذة التشغيل الأول لـ Traydio</value>
   </data>
   <data name="TutorialWindow_TitleBar.Title" xml:space="preserve">
     <value>Traydio</value>
   </data>
   <data name="TutorialWindow_WelcomeTitle.Text" xml:space="preserve">
-    <value>Welcome to Traydio!</value>
+    <value>مرحبًا بك في Traydio!</value>
   </data>
 </root>

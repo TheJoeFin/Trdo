@@ -111,7 +111,7 @@
     <value>Antes era Trdo</value>
   </data>
   <data name="AboutPage_HelpBody.Text" xml:space="preserve">
-    <value>Vuelve a ver el tutorial para aprender a usar Trdo.</value>
+    <value>Vuelve a ver el tutorial para aprender a usar Traydio.</value>
   </data>
   <data name="AboutPage_HelpTitle.Text" xml:space="preserve">
     <value>¿Necesitas ayuda?</value>
@@ -529,6 +529,21 @@
   </data>
   <data name="SettingsPage_Language_Spanish.Content" xml:space="preserve">
     <value>Español</value>
+  </data>
+  <data name="SettingsPage_Language_Chinese.Content" xml:space="preserve">
+    <value>Chino</value>
+  </data>
+  <data name="SettingsPage_Language_German.Content" xml:space="preserve">
+    <value>Alemán</value>
+  </data>
+  <data name="SettingsPage_Language_PortugueseBrazil.Content" xml:space="preserve">
+    <value>Portugués (Brasil)</value>
+  </data>
+  <data name="SettingsPage_Language_PortuguesePortugal.Content" xml:space="preserve">
+    <value>Portugués (Portugal)</value>
+  </data>
+  <data name="SettingsPage_Language_Arabic.Content" xml:space="preserve">
+    <value>Árabe</value>
   </data>
   <data name="SettingsPage_LanguageDescription.Text" xml:space="preserve">
     <value>Elige el idioma usado en toda la aplicación.</value>

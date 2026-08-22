@@ -62,6 +62,11 @@
                             <ComboBoxItem x:Uid="SettingsPage_Language_System" />
                             <ComboBoxItem x:Uid="SettingsPage_Language_English" />
                             <ComboBoxItem x:Uid="SettingsPage_Language_Spanish" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_Chinese" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_German" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_PortugueseBrazil" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_PortuguesePortugal" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_Arabic" />
                         </ComboBox>
                         <InfoBar
                             x:Uid="SettingsPage_RestartRequiredInfoBar"
