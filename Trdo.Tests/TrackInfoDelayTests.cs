@@ -5,13 +5,14 @@ using Trdo.Services;
 namespace Trdo.Tests;
 
 /// <summary>
-/// Covers how long the song change popup waits before appearing. Stations commonly push
-/// metadata a few seconds ahead of the audio, so the popup can announce a track before the
-/// listener hears it; the delay compensates, and because the lead time is a property of the
+/// Covers how long the app holds a song change back before showing it anywhere. Stations
+/// commonly push metadata a few seconds ahead of the audio, so the app can name a track before
+/// the listener hears it; the delay compensates, and because the lead time is a property of the
 /// station's encoder, a per-station override has to beat the app-wide setting outright.
+/// The holding itself is covered by <see cref="MetadataPublishGateTests"/>.
 /// </summary>
 [TestClass]
-public sealed class SongChangePopupDelayTests
+public sealed class TrackInfoDelayTests
 {
     [TestMethod]
     public void WithNoStationOverride_TheAppSettingApplies()
@@ -56,36 +57,15 @@ public sealed class SongChangePopupDelayTests
     }
 
     /// <summary>
-    /// The delay compensates for metadata arriving ahead of the audio, which only makes
-    /// sense for a track that has not started playing yet. The first track heard after
-    /// starting a station is already mid-play, so waiting would land the popup after the
-    /// song it names — up to a minute late on a station with a long override. It gets a
-    /// half-second instead: enough to let a stuttering start settle on one title, little
-    /// enough that the popup still lands with the audio.
+    /// Mid-stream changes are what the delay is for, and the resolved value is handed to the
+    /// player as-is. Which arrivals skip the wait is the gate's decision, not the policy's -
+    /// see <see cref="MetadataPublishGateTests"/>.
     /// </summary>
     [TestMethod]
-    public void TheFirstAnnouncementAfterStartingAStation_UsesAShortStartupDelay()
+    public void MidStreamChanges_WaitOutTheResolvedDelay()
     {
-        Assert.AreEqual(0.5, SongChangeAnnouncementPolicy.ResolveDelaySeconds(30, 10, isFirstAnnouncementSinceStart: true));
-        Assert.AreEqual(0.5, SongChangeAnnouncementPolicy.ResolveDelaySeconds(null, 60, isFirstAnnouncementSinceStart: true));
-    }
-
-    /// <summary>
-    /// The whole point of the startup delay is that the listener sees the track more or less
-    /// as the station starts, so it has to stay inside the half-second the UI promises.
-    /// </summary>
-    [TestMethod]
-    public void TheStartupDelay_LandsWithinHalfASecond()
-    {
-        Assert.IsTrue(SongChangeAnnouncementPolicy.FirstAnnouncementDelaySeconds <= 0.5);
-        Assert.IsTrue(SongChangeAnnouncementPolicy.FirstAnnouncementDelaySeconds > 0);
-    }
-
-    [TestMethod]
-    public void LaterAnnouncements_StillWaitOutTheDelay()
-    {
-        Assert.AreEqual(30, SongChangeAnnouncementPolicy.ResolveDelaySeconds(30, 10, isFirstAnnouncementSinceStart: false));
-        Assert.AreEqual(60, SongChangeAnnouncementPolicy.ResolveDelaySeconds(null, 60, isFirstAnnouncementSinceStart: false));
+        Assert.AreEqual(30, SongChangeAnnouncementPolicy.ResolveDelaySeconds(30, 10));
+        Assert.AreEqual(60, SongChangeAnnouncementPolicy.ResolveDelaySeconds(null, 60));
     }
 
     /// <summary>
