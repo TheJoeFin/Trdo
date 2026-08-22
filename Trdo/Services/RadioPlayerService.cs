@@ -237,12 +237,17 @@ public sealed partial class RadioPlayerService : IDisposable
     }
 
     /// <summary>
-    /// Drops a track that is still being held and treats the next one as a station start.
-    /// Called the moment the user picks a different station: the held track belongs to the
-    /// outgoing stream, and the transition that would otherwise clear it runs asynchronously,
-    /// so waiting for it leaves a window in which the old track could still surface.
+    /// Drops a track that is still being held and treats the next one as a fresh start.
     /// </summary>
-    public void ResetTrackInfoHold() => _publishGate.Reset();
+    /// <remarks>
+    /// The single place anything says "whatever was waiting to be shown no longer applies".
+    /// Every route out of audio funnels here - pausing, a hardware button, a backend
+    /// reporting Stopped or EndReached, a stream failing, and the user picking a different
+    /// station, which resets eagerly because its transition runs asynchronously and would
+    /// otherwise leave a window for the outgoing stream's track to surface. Null-tolerant
+    /// because playback state can be reported before the engine has finished initialising.
+    /// </remarks>
+    public void ResetTrackInfoHold() => _publishGate?.Reset();
 
     public double Volume
     {
@@ -390,6 +395,15 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine($"[RadioPlayerService] EXCEPTION in PlaybackStateChanged: {ex.Message}");
                 return;
             }
+            // Covers the states Pause() does not run through - a stream that ends or is
+            // stopped outright. Buffering and Opening are excluded: a stream stuttering
+            // mid-track is still playing that track, and dropping the held info there would
+            // mean the track never appeared at all.
+            if (!isPlaying && !isBuffering)
+            {
+                ResetTrackInfoHold();
+            }
+
             TryEnqueueOnUi(() =>
             {
                 PlaybackStateChanged?.Invoke(this, isPlaying);
@@ -1328,6 +1342,11 @@ public sealed partial class RadioPlayerService : IDisposable
     private void RaisePlaybackFailed(string message)
     {
         Debug.WriteLine($"[RadioPlayerService] Raising PlaybackFailed: {message}");
+
+        // A failed stream produces no more audio, so a track still waiting out its delay
+        // would be announced over silence.
+        ResetTrackInfoHold();
+
         TryEnqueueOnUi(() => PlaybackFailed?.Invoke(this, message));
     }
 

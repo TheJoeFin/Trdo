@@ -49,7 +49,8 @@ public sealed partial class RadioPlayerService
         // reports what the listener can actually hear.
         _publishGate = new MetadataPublishGate
         {
-            Log = line => LogService.Info("TrackInfoDelay", line)
+            Log = line => LogService.Info("TrackInfoDelay", line),
+            IsPlaybackActive = () => IsPlaying || IsBuffering
         };
 
         _metadataOrchestrator.MetadataChanged += (_, metadata) => _publishGate.Submit(metadata);
@@ -742,6 +743,12 @@ public sealed partial class RadioPlayerService
         {
             ResetPlaybackFailureTracking();
             ConfirmActiveBackendHealthy();
+        }
+        else if (!IsBuffering)
+        {
+            // Paused, Stopped or EndReached, none of which route through Pause(). A stall
+            // reports buffering instead of a state change, so this cannot fire mid-track.
+            ResetTrackInfoHold();
         }
 
         TryEnqueueOnUi(() =>

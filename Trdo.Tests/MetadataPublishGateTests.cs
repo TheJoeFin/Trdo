@@ -287,6 +287,83 @@ public sealed class MetadataPublishGateTests
         Assert.IsFalse(scheduler.HasPending);
     }
 
+    /// <summary>
+    /// Pausing part-way through the wait means the track never becomes audible. Publishing it
+    /// anyway would name a song over silence - and not just in the popup: the window, the mini
+    /// player, the media controls and the playlist history would all pick it up.
+    /// </summary>
+    [TestMethod]
+    public void AHeldTrack_IsDroppedWhenPlaybackStoppedDuringTheWait()
+    {
+        bool playing = true;
+        (MetadataPublishGate gate, FakeScheduler scheduler, List<string> published) = NewGate(20);
+        gate.IsPlaybackActive = () => playing;
+        gate.Submit(Track("Opening Track"));
+        gate.Submit(Track("Held"));
+
+        playing = false;
+        scheduler.Fire();
+
+        CollectionAssert.AreEqual(new[] { "Opening Track" }, published);
+        Assert.AreEqual("Opening Track", gate.Current.DisplayText);
+    }
+
+    /// <summary>
+    /// Whatever plays next is a fresh start, so it should appear as it arrives rather than
+    /// waiting out a delay meant for a stream that is no longer running.
+    /// </summary>
+    [TestMethod]
+    public void AfterAHeldTrackIsDroppedForStoppedPlayback_TheNextTrackPublishesImmediately()
+    {
+        bool playing = true;
+        (MetadataPublishGate gate, FakeScheduler scheduler, List<string> published) = NewGate(20);
+        gate.IsPlaybackActive = () => playing;
+        gate.Submit(Track("Opening Track"));
+        gate.Submit(Track("Held"));
+
+        playing = false;
+        scheduler.Fire();
+        playing = true;
+        gate.Submit(Track("After Resume"));
+
+        CollectionAssert.AreEqual(new[] { "Opening Track", "After Resume" }, published);
+        Assert.IsFalse(scheduler.HasPending);
+    }
+
+    /// <summary>
+    /// A stream stuttering mid-track is still playing that track, so the hold has to survive
+    /// it - otherwise a rebuffer would mean the track was never shown at all.
+    /// </summary>
+    [TestMethod]
+    public void AHeldTrack_SurvivesWhilePlaybackIsStillActive()
+    {
+        (MetadataPublishGate gate, FakeScheduler scheduler, List<string> published) = NewGate(20);
+        gate.IsPlaybackActive = () => true;
+        gate.Submit(Track("Opening Track"));
+        gate.Submit(Track("Held"));
+
+        scheduler.Fire();
+
+        CollectionAssert.AreEqual(new[] { "Opening Track", "Held" }, published);
+    }
+
+    /// <summary>
+    /// Clearing the display is always allowed: that is what a stop looks like, and blocking it
+    /// would strand a finished track on screen.
+    /// </summary>
+    [TestMethod]
+    public void BlankMetadata_PublishesEvenWhenPlaybackHasStopped()
+    {
+        (MetadataPublishGate gate, _, List<string> published) = NewGate(20);
+        gate.IsPlaybackActive = () => false;
+        gate.Submit(Track("Opening Track"));
+
+        gate.Submit(StreamMetadata.Empty);
+
+        Assert.AreEqual(2, published.Count);
+        Assert.AreEqual(string.Empty, published[1]);
+    }
+
     [TestMethod]
     public void TheDelayIsClampedToTheSupportedRange()
     {

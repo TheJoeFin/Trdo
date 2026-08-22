@@ -132,6 +132,21 @@ public sealed class MetadataPublishGate : IDisposable
     public Action<string>? Log { get; set; }
 
     /// <summary>
+    /// Asked, when a held track's wait runs out, whether audio is still running. A held track
+    /// only makes sense as a description of something the listener is hearing, so if playback
+    /// stopped during the wait the track is dropped rather than published into silence.
+    /// </summary>
+    /// <remarks>
+    /// This is the backstop rather than the mechanism: a stop is expected to reach
+    /// <see cref="Reset"/> at the moment it happens. But "audio stopped" arrives by several
+    /// routes - the user pausing, a hardware button, a backend reporting Stopped or EndReached,
+    /// a stream failing - and a route that forgets to reset would otherwise announce a track
+    /// over silence. Checking here means no such route can. Buffering counts as active: a
+    /// stream stuttering mid-track is still playing that track.
+    /// </remarks>
+    public Func<bool>? IsPlaybackActive { get; set; }
+
+    /// <summary>
     /// How long to hold a mid-stream track change. Changing this re-times a track that is
     /// already being held, measured from when it arrived, so adjusting the delay affects the
     /// track in hand rather than only the next one.
@@ -280,12 +295,29 @@ public sealed class MetadataPublishGate : IDisposable
 
     private void PublishPending(long generation)
     {
+        // Evaluated before taking the lock: the caller reads player state, which has no
+        // business running underneath the gate's own lock.
+        bool playbackActive = IsPlaybackActive?.Invoke() ?? true;
+
         StreamMetadata publishNow;
 
         lock (_lock)
         {
             if (generation != _generation || _pending is null)
                 return;
+
+            if (!playbackActive)
+            {
+                StreamMetadata dropped = _pending;
+                _pending = null;
+
+                // Whatever comes next is the opening track of whatever the listener starts
+                // playing, so it should appear as soon as it arrives.
+                _publishNextImmediately = true;
+
+                Log?.Invoke($"Delay elapsed for '{dropped.DisplayText}' but playback had stopped; dropping");
+                return;
+            }
 
             publishNow = _pending;
             _pending = null;
