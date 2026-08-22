@@ -189,6 +189,7 @@
                     AutomationProperties.Name="{x:Bind ViewModel.PlaybackButtonText, Mode=OneWay}"
                     Click="PlayPauseButton_Click"
                     CornerRadius="42"
+                    IsEnabled="{x:Bind ViewModel.CanPlay, Mode=OneWay}"
                     Style="{StaticResource AccentButtonStyle}">
                     <FontIcon FontSize="34" Glyph="{x:Bind ViewModel.PlaybackButtonGlyph, Mode=OneWay}" />
                 </Button>
