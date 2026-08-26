@@ -67,8 +67,14 @@ public class SearchStationViewModel : INotifyPropertyChanged
 
     public ObservableCollection<RadioBrowserStation> SearchResults { get; } = [];
 
-    /// <summary>The filters currently narrowing the search, shown as removable chips.</summary>
+    /// <summary>The country/language/genre filters currently narrowing the search.</summary>
     public ObservableCollection<StationFilterOption> ActiveFilters { get; } = [];
+
+    /// <summary>
+    /// Every applied filter as a removable chip — <see cref="ActiveFilters"/> plus a chip for
+    /// each non-default codec/bitrate/sort/hide-broken pick. What the page's chip row binds to.
+    /// </summary>
+    public ObservableCollection<IStationFilterChip> FilterChips { get; } = [];
 
     /// <summary>What the filter picker is offering for the text typed into it.</summary>
     public ObservableCollection<StationFilterOption> FilterSuggestions { get; } = [];
@@ -230,6 +236,31 @@ public class SearchStationViewModel : INotifyPropertyChanged
         OnFiltersChanged();
     }
 
+    /// <summary>
+    /// Removes whatever chip was clicked, regardless of which side of the panel it came from.
+    /// </summary>
+    public void RemoveChip(IStationFilterChip chip)
+    {
+        switch (chip)
+        {
+            case StationFilterOption option:
+                RemoveFilter(option);
+                break;
+            case QualityFilterChip { Kind: QualityChipKind.Codec }:
+                SelectedCodec = null;
+                break;
+            case QualityFilterChip { Kind: QualityChipKind.Bitrate }:
+                SelectedBitrate = null;
+                break;
+            case QualityFilterChip { Kind: QualityChipKind.Sort }:
+                SelectedSort = SortOptions[0];
+                break;
+            case QualityFilterChip { Kind: QualityChipKind.HideBroken }:
+                HideBroken = false;
+                break;
+        }
+    }
+
     // Bounded filter selections (each change re-runs the search) ---------
 
     public CodecOption? SelectedCodec
@@ -255,9 +286,16 @@ public class SearchStationViewModel : INotifyPropertyChanged
         get => _selectedSort;
         set
         {
+            // The Segmented control's SelectedItem can momentarily go null when its
+            // SelectionMode is applied after a selection is already bound; there's always a
+            // default sort, so null means "back to that" rather than "no sort".
+            value ??= SortOptions[0];
+
             if (Equals(value, _selectedSort)) return;
             _selectedSort = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(HasActiveFilters));
+            RefreshFilterChips();
             _ = PerformSearchAsync();
         }
     }
@@ -268,7 +306,8 @@ public class SearchStationViewModel : INotifyPropertyChanged
         ActiveFilters.Count > 0 ||
         !string.IsNullOrEmpty(SelectedCodec?.Value) ||
         (SelectedBitrate?.Value ?? 0) > 0 ||
-        HideBroken;
+        HideBroken ||
+        !Equals(SelectedSort, SortOptions[0]);
 
     public bool ShowInitialState => string.IsNullOrWhiteSpace(SearchTerm) &&
                 !HasActiveFilters &&
@@ -360,6 +399,7 @@ public class SearchStationViewModel : INotifyPropertyChanged
         SelectedCodec = null;
         SelectedBitrate = null;
         HideBroken = false;
+        SelectedSort = SortOptions[0];
 
         if (ActiveFilters.Count == 0)
             return;
@@ -377,7 +417,35 @@ public class SearchStationViewModel : INotifyPropertyChanged
     {
         OnPropertyChanged(nameof(HasActiveFilters));
         OnPropertyChanged(nameof(ShowInitialState));
+        RefreshFilterChips();
         _ = PerformSearchAsync();
+    }
+
+    /// <summary>
+    /// Rebuilds the combined chip row from <see cref="ActiveFilters"/> plus whichever
+    /// codec/bitrate/sort/hide-broken picks are away from their "any" default. Cheap enough to
+    /// rebuild from scratch on every change: at most a handful of chips.
+    /// </summary>
+    private void RefreshFilterChips()
+    {
+        FilterChips.Clear();
+
+        foreach (StationFilterOption option in ActiveFilters)
+        {
+            FilterChips.Add(option);
+        }
+
+        if (!string.IsNullOrEmpty(SelectedCodec?.Value))
+            FilterChips.Add(new QualityFilterChip(QualityChipKind.Codec, $"Codec: {SelectedCodec!.Display}"));
+
+        if ((SelectedBitrate?.Value ?? 0) > 0)
+            FilterChips.Add(new QualityFilterChip(QualityChipKind.Bitrate, $"Bitrate: {SelectedBitrate!.Display}"));
+
+        if (!Equals(SelectedSort, SortOptions[0]))
+            FilterChips.Add(new QualityFilterChip(QualityChipKind.Sort, $"Sort: {SelectedSort.Display}"));
+
+        if (HideBroken)
+            FilterChips.Add(new QualityFilterChip(QualityChipKind.HideBroken, "Hide broken stations"));
     }
 
     private async Task PerformSearchAsync()
@@ -486,6 +554,7 @@ public class SearchStationViewModel : INotifyPropertyChanged
         OnPropertyChanged(propertyName);
         OnPropertyChanged(nameof(HasActiveFilters));
         OnPropertyChanged(nameof(ShowInitialState));
+        RefreshFilterChips();
         _ = PerformSearchAsync();
     }
 
