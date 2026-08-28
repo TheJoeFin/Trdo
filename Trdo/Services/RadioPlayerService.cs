@@ -218,9 +218,36 @@ public sealed partial class RadioPlayerService : IDisposable
     public StreamWatchdogService Watchdog => _watchdog;
 
     /// <summary>
-    /// Gets the current stream metadata (now playing information).
+    /// Gets the current stream metadata (now playing information) as published to the app -
+    /// which during a track-info delay is still the previous track, because that is the one
+    /// the listener can hear. The orchestrator's own value runs ahead of the audio and is
+    /// deliberately not exposed.
     /// </summary>
-    public StreamMetadata CurrentMetadata => _metadataOrchestrator.CurrentMetadata;
+    public StreamMetadata CurrentMetadata => _publishGate.Current;
+
+    /// <summary>
+    /// How long a mid-stream track change is held back before the app shows it, in seconds.
+    /// Set by <see cref="ViewModels.PlayerViewModel"/>, which is the only thing that knows both
+    /// the app setting and the selected station's override.
+    /// </summary>
+    public double TrackInfoDelaySeconds
+    {
+        get => _publishGate.DelaySeconds;
+        set => _publishGate.DelaySeconds = value;
+    }
+
+    /// <summary>
+    /// Drops a track that is still being held and treats the next one as a fresh start.
+    /// </summary>
+    /// <remarks>
+    /// The single place anything says "whatever was waiting to be shown no longer applies".
+    /// Every route out of audio funnels here - pausing, a hardware button, a backend
+    /// reporting Stopped or EndReached, a stream failing, and the user picking a different
+    /// station, which resets eagerly because its transition runs asynchronously and would
+    /// otherwise leave a window for the outgoing stream's track to surface. Null-tolerant
+    /// because playback state can be reported before the engine has finished initialising.
+    /// </remarks>
+    public void ResetTrackInfoHold() => _publishGate?.Reset();
 
     public double Volume
     {
@@ -368,6 +395,15 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine($"[RadioPlayerService] EXCEPTION in PlaybackStateChanged: {ex.Message}");
                 return;
             }
+            // Covers the states Pause() does not run through - a stream that ends or is
+            // stopped outright. Buffering and Opening are excluded: a stream stuttering
+            // mid-track is still playing that track, and dropping the held info there would
+            // mean the track never appeared at all.
+            if (!isPlaying && !isBuffering)
+            {
+                ResetTrackInfoHold();
+            }
+
             TryEnqueueOnUi(() =>
             {
                 PlaybackStateChanged?.Invoke(this, isPlaying);
@@ -1306,6 +1342,11 @@ public sealed partial class RadioPlayerService : IDisposable
     private void RaisePlaybackFailed(string message)
     {
         Debug.WriteLine($"[RadioPlayerService] Raising PlaybackFailed: {message}");
+
+        // A failed stream produces no more audio, so a track still waiting out its delay
+        // would be announced over silence.
+        ResetTrackInfoHold();
+
         TryEnqueueOnUi(() => PlaybackFailed?.Invoke(this, message));
     }
 

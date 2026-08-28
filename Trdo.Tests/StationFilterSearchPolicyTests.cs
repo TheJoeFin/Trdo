@@ -47,9 +47,8 @@ public sealed class StationFilterSearchPolicyTests
 
         // "Germany" and "german" both start with it; "Niger" only contains it.
         Assert.AreEqual(Niger, suggestions[^1]);
-        CollectionAssert.AreEquivalent(
-            new[] { Germany, German },
-            suggestions.Take(2).ToArray());
+        Assert.AreSequenceEqual(
+            [Germany, German], suggestions.Take(2).ToArray(), Microsoft.VisualStudio.TestTools.UnitTesting.SequenceOrder.InAnyOrder);
     }
 
     /// <summary>
@@ -62,9 +61,8 @@ public sealed class StationFilterSearchPolicyTests
         List<StationFilterOption> suggestions =
             StationFilterSearchPolicy.Suggest(AllOptions(), "rock").ToList();
 
-        CollectionAssert.AreEqual(
-            new[] { Rock, ClassicRock, PunkRock },
-            suggestions);
+        Assert.AreSequenceEqual(
+            [Rock, ClassicRock, PunkRock], suggestions);
     }
 
     [TestMethod]
@@ -85,8 +83,8 @@ public sealed class StationFilterSearchPolicyTests
     [TestMethod]
     public void MatchingIsCaseInsensitive()
     {
-        Assert.IsTrue(
-            StationFilterSearchPolicy.Suggest(AllOptions(), "JAZZ").Contains(Jazz));
+        Assert.Contains(
+            Jazz, StationFilterSearchPolicy.Suggest(AllOptions(), "JAZZ"));
     }
 
     /// <summary>
@@ -99,9 +97,9 @@ public sealed class StationFilterSearchPolicyTests
         List<StationFilterOption> suggestions =
             StationFilterSearchPolicy.Suggest(AllOptions(), string.Empty).ToList();
 
-        Assert.IsTrue(suggestions.Any(option => option.Facet == StationFilterFacet.Country));
-        Assert.IsTrue(suggestions.Any(option => option.Facet == StationFilterFacet.Language));
-        Assert.IsTrue(suggestions.Any(option => option.Facet == StationFilterFacet.Genre));
+        Assert.Contains(option => option.Facet == StationFilterFacet.Country, suggestions);
+        Assert.Contains(option => option.Facet == StationFilterFacet.Language, suggestions);
+        Assert.Contains(option => option.Facet == StationFilterFacet.Genre, suggestions);
 
         // Countries lead, and the busiest country leads them.
         Assert.AreEqual(Germany, suggestions[0]);
@@ -118,7 +116,7 @@ public sealed class StationFilterSearchPolicyTests
         List<StationFilterOption> suggestions =
             StationFilterSearchPolicy.Suggest(manyGenres, null).ToList();
 
-        Assert.AreEqual(StationFilterSearchPolicy.BrowseSuggestionsPerFacet, suggestions.Count);
+        Assert.HasCount(StationFilterSearchPolicy.BrowseSuggestionsPerFacet, suggestions);
     }
 
     [TestMethod]
@@ -129,9 +127,9 @@ public sealed class StationFilterSearchPolicyTests
             .Select(i => new StationFilterOption(StationFilterFacet.Genre, $"rock {i}", i))
             .ToList();
 
-        Assert.AreEqual(
+        Assert.HasCount(
             StationFilterSearchPolicy.MaxSuggestions,
-            StationFilterSearchPolicy.Suggest(manyGenres, "rock").Count);
+            StationFilterSearchPolicy.Suggest(manyGenres, "rock"));
     }
 
     /// <summary>
@@ -144,8 +142,8 @@ public sealed class StationFilterSearchPolicyTests
         List<StationFilterOption> suggestions =
             StationFilterSearchPolicy.Suggest(AllOptions(), "rock", [Rock]).ToList();
 
-        Assert.IsFalse(suggestions.Contains(Rock));
-        Assert.IsTrue(suggestions.Contains(ClassicRock));
+        Assert.DoesNotContain(Rock, suggestions);
+        Assert.Contains(ClassicRock, suggestions);
     }
 
     /// <summary>
@@ -159,7 +157,7 @@ public sealed class StationFilterSearchPolicyTests
             .Suggest(AllOptions(), "jazz", [new StationFilterOption(StationFilterFacet.Genre, "JAZZ", 1500)])
             .ToList();
 
-        Assert.AreEqual(0, suggestions.Count);
+        Assert.IsEmpty(suggestions);
     }
 
     [TestMethod]
@@ -171,9 +169,8 @@ public sealed class StationFilterSearchPolicyTests
             Germany,
         ];
 
-        CollectionAssert.AreEqual(
-            new[] { Germany },
-            StationFilterSearchPolicy.Suggest(options, null).ToArray());
+        Assert.AreSequenceEqual(
+            [Germany], StationFilterSearchPolicy.Suggest(options, null).ToArray());
     }
 
     // Applying a pick ----------------------------------------------------
@@ -188,7 +185,7 @@ public sealed class StationFilterSearchPolicyTests
         IReadOnlyList<StationFilterOption> applied =
             StationFilterSearchPolicy.Apply([Rock], Jazz);
 
-        CollectionAssert.AreEqual(new[] { Rock, Jazz }, applied.ToArray());
+        Assert.AreSequenceEqual([Rock, Jazz], applied.ToArray());
     }
 
     [TestMethod]
@@ -197,7 +194,7 @@ public sealed class StationFilterSearchPolicyTests
         IReadOnlyList<StationFilterOption> applied =
             StationFilterSearchPolicy.Apply([Germany, Jazz], Niger);
 
-        CollectionAssert.AreEqual(new[] { Jazz, Niger }, applied.ToArray());
+        Assert.AreSequenceEqual([Jazz, Niger], applied.ToArray());
     }
 
     [TestMethod]
@@ -208,7 +205,7 @@ public sealed class StationFilterSearchPolicyTests
         IReadOnlyList<StationFilterOption> applied =
             StationFilterSearchPolicy.Apply([German], french);
 
-        CollectionAssert.AreEqual(new[] { french }, applied.ToArray());
+        Assert.AreSequenceEqual([french], applied.ToArray());
     }
 
     [TestMethod]
@@ -217,7 +214,7 @@ public sealed class StationFilterSearchPolicyTests
         IReadOnlyList<StationFilterOption> applied =
             StationFilterSearchPolicy.Apply([Rock, Jazz], Jazz);
 
-        CollectionAssert.AreEqual(new[] { Rock, Jazz }, applied.ToArray());
+        Assert.AreSequenceEqual([Rock, Jazz], applied.ToArray());
     }
 
     [TestMethod]

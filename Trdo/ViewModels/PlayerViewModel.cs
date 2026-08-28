@@ -186,6 +186,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(HasEnabledMusicServices));
             OnPropertyChanged(nameof(ShowMiniPlayerSearchLinks));
         };
+        SettingsService.TrackInfoDelayChanged += (_, _) => SyncTrackInfoDelay();
 
         // Load stations from settings
         Debug.WriteLine("[PlayerViewModel] Loading stations from settings...");
@@ -233,10 +234,11 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         // Initialize with selected station's URL if available
         if (_selectedStation != null)
         {
-            // Apply the restored station's saved volume and buffer override before
-            // playback starts, so the first connection already uses them.
+            // Apply the restored station's saved volume, buffer override and track-info delay
+            // before playback starts, so the first connection already uses them.
             _player.Volume = _selectedStation.Volume;
             _player.Watchdog.StationBufferLevelOverride = _selectedStation.BufferLevel;
+            SyncTrackInfoDelay();
 
             Debug.WriteLine($"[PlayerViewModel] Initializing stream with URL: {_selectedStation.StreamUrl}");
             InitializeStream(_selectedStation.StreamUrl);
@@ -358,6 +360,12 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 previous.IsSelectedStation = false;
             if (_selectedStation is not null)
                 _selectedStation.IsSelectedStation = true;
+
+            // Drop anything the outgoing station was still holding before applying the new
+            // station's delay - re-timing a held track against a shorter delay would publish
+            // a song from the stream the user just left.
+            _player.ResetTrackInfoHold();
+            SyncTrackInfoDelay();
 
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanPlay));
@@ -715,7 +723,22 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     {
         _saveStationsTimer.Change(Timeout.Infinite, Timeout.Infinite);
         _stationService.SaveStations(Stations);
+
+        // The popup's right-click delay menu saves this way precisely because it must not
+        // restart playback, so the new delay has to be picked up here rather than by a
+        // re-transition.
+        SyncTrackInfoDelay();
     }
+
+    /// <summary>
+    /// Hands the player the delay that applies right now - the selected station's override
+    /// where it has one, the app setting otherwise. This view model is the only thing that
+    /// knows both, which is why the value is pushed to the player rather than read by it.
+    /// </summary>
+    private void SyncTrackInfoDelay() =>
+        _player.TrackInfoDelaySeconds = SongChangeAnnouncementPolicy.ResolveDelaySeconds(
+            _selectedStation?.SongPopupDelaySeconds,
+            SettingsService.TrackInfoDelaySeconds);
 
     public void Toggle()
     {
@@ -1512,6 +1535,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         // Cancel any pending debounced volume save; this write covers it.
         _saveStationsTimer.Change(Timeout.Infinite, Timeout.Infinite);
         _stationService.SaveStations(Stations);
+        SyncTrackInfoDelay();
 
         // If the current station was edited, reinitialize the stream
         if (_selectedStation != null && IsValidUrl(_selectedStation.StreamUrl))
@@ -1728,7 +1752,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         return new BitmapImage(new Uri(url!, UriKind.Absolute));
     }
 
-    protected void OnPropertyChanged([CallerMemberName] string? name = null)
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
     {
         Debug.WriteLine($"[PlayerViewModel] PropertyChanged: {name}");
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));

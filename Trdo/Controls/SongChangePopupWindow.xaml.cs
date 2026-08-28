@@ -271,13 +271,13 @@ public sealed partial class SongChangePopupWindow : Window
         MenuFlyout flyout = new();
 
         RadioStation? station = PlayerViewModel.Shared.SelectedStation;
-        double globalDelay = SettingsService.SongChangePopupDelaySeconds;
+        double globalDelay = SettingsService.TrackInfoDelaySeconds;
         double? stationDelay = station?.SongPopupDelaySeconds;
         double effective = SongChangeAnnouncementPolicy.ResolveDelaySeconds(stationDelay, globalDelay);
 
         string header = station is null
-            ? "Popup delay"
-            : $"Popup delay for {station.Name}";
+            ? "Track info delay"
+            : $"Track info delay for {station.Name}";
 
         flyout.Items.Add(new MenuFlyoutItem
         {

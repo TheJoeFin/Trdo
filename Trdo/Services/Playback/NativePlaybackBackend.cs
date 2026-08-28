@@ -80,8 +80,12 @@ public sealed class NativePlaybackBackend : IPlaybackBackend
         }
     }
 
+    // Required by IPlaybackBackend, but RadioPlayerService wires the native-backend case
+    // directly to _player.PlaybackSession instead of these, so they're never raised here.
+#pragma warning disable CS0067
     public event EventHandler<bool>? PlaybackStateChanged;
     public event EventHandler<bool>? BufferingStateChanged;
+#pragma warning restore CS0067
     public event EventHandler<PlaybackFailureEventArgs>? PlaybackFailed;
 
     public IReadOnlyList<MediaTimeRange> GetBufferedRanges()

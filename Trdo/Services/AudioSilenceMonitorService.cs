@@ -11,7 +11,11 @@ namespace Trdo.Services;
 /// </summary>
 public sealed partial class AudioSilenceMonitorService : IDisposable
 {
+    // WasapiLoopbackCapture is obsolete in favor of WasapiRecorderBuilder, but that API
+    // reshapes capture setup/teardown significantly; deferred until it can be verified on device.
+#pragma warning disable CS0618
     private WasapiLoopbackCapture? _capture;
+#pragma warning restore CS0618
     private readonly object _lock = new();
     private volatile bool _isMonitoring;
     private DateTime _silenceStartTime;
@@ -70,7 +74,9 @@ public sealed partial class AudioSilenceMonitorService : IDisposable
 
             try
             {
+#pragma warning disable CS0618
                 WasapiLoopbackCapture capture = new();
+#pragma warning restore CS0618
                 capture.DataAvailable += OnDataAvailable;
                 capture.RecordingStopped += OnRecordingStopped;
 
@@ -192,7 +198,9 @@ public sealed partial class AudioSilenceMonitorService : IDisposable
     /// </summary>
     private void DisposeCapture()
     {
+#pragma warning disable CS0618
         WasapiLoopbackCapture? capture;
+#pragma warning restore CS0618
         lock (_lock)
         {
             capture = _capture;

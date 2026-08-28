@@ -182,8 +182,8 @@ public sealed class RecoveryPolicyTests
             policy.RecordFailure();
         }
 
-        Assert.IsTrue(
-            policy.AutoBufferBump <= RecoveryPolicy.MaxAutoBufferBump,
+        Assert.IsLessThanOrEqualTo(
+            RecoveryPolicy.MaxAutoBufferBump, policy.AutoBufferBump,
             $"Buffer bump ran away to {policy.AutoBufferBump}.");
     }
 
@@ -229,8 +229,8 @@ public sealed class RecoveryPolicyTests
             policy.RecordFailure();
         }
 
-        Assert.IsTrue(policy.FailuresInWindow > 0);
-        Assert.IsTrue(policy.AutoBufferBump > 0);
+        Assert.IsGreaterThan(0, policy.FailuresInWindow);
+        Assert.IsGreaterThan(0, policy.AutoBufferBump);
 
         policy.ResetForStation();
 

@@ -319,27 +319,28 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// App-wide delay between a song change and the popup appearing, in seconds.
-    /// Stations that run further ahead can override this individually.
+    /// App-wide delay between a song change and the app showing it, in seconds. Applies to
+    /// every surface, not just the popup. Stations that run further ahead can override this
+    /// individually.
     /// </summary>
-    public double SongChangePopupDelaySeconds
+    public double TrackInfoDelaySeconds
     {
-        get => SettingsService.SongChangePopupDelaySeconds;
+        get => SettingsService.TrackInfoDelaySeconds;
         set
         {
             double clamped = SongChangeAnnouncementPolicy.ClampDelay(value);
-            if (Math.Abs(clamped - SettingsService.SongChangePopupDelaySeconds) < 0.0001) return;
-            SettingsService.SongChangePopupDelaySeconds = clamped;
+            if (Math.Abs(clamped - SettingsService.TrackInfoDelaySeconds) < 0.0001) return;
+            SettingsService.TrackInfoDelaySeconds = clamped;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(SongChangePopupDelayDescription));
+            OnPropertyChanged(nameof(TrackInfoDelayDescription));
         }
     }
 
-    public string SongChangePopupDelayDescription =>
-        SongChangeAnnouncementPolicy.DescribeDelay(SettingsService.SongChangePopupDelaySeconds);
+    public string TrackInfoDelayDescription =>
+        SongChangeAnnouncementPolicy.DescribeDelay(SettingsService.TrackInfoDelaySeconds);
 
     /// <summary>Upper bound offered by the delay slider.</summary>
-    public double MaxSongChangePopupDelaySeconds => SongChangeAnnouncementPolicy.MaxDelaySeconds;
+    public double MaxTrackInfoDelaySeconds => SongChangeAnnouncementPolicy.MaxDelaySeconds;
 
     /// <summary>
     /// How long the popup stays on screen once it appears, in seconds. App-wide: this is
@@ -417,16 +418,6 @@ public partial class SettingsViewModel : INotifyPropertyChanged
             PlaybackEngineMode.NativePreferred => "Windows first, LibVLC fallback",
             _ => "LibVLC first, Windows fallback"
         };
-
-    /// <summary>
-    /// True on ARM devices, where the LibVLC engine has no native binaries and
-    /// cannot load — only the Windows (native) engine works regardless of the
-    /// selected mode. Used to surface a warning next to the engine picker.
-    /// </summary>
-    public bool IsLibVlcUnavailableOnThisDevice =>
-        System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture
-            is System.Runtime.InteropServices.Architecture.Arm64
-            or System.Runtime.InteropServices.Architecture.Arm;
 
     public bool AllowSleepWhilePlaying
     {

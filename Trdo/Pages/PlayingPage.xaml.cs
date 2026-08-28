@@ -394,7 +394,7 @@ public sealed partial class PlayingPage : Page
         {
             Debug.WriteLine($"[PlayingPage] Visit Station Site clicked: {station.Name}");
             // Navigate to AddStation page in edit mode with the station data
-            ViewModel.VisitWebsite(station);
+            _ = ViewModel.VisitWebsite(station);
         }
     }
 

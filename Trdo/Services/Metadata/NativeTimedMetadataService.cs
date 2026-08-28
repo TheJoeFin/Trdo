@@ -178,8 +178,8 @@ public sealed class NativeTimedMetadataService : IDisposable
             {
                 using JsonDocument doc = JsonDocument.Parse(trimmed);
                 JsonElement root = doc.RootElement;
-                metadata.Artist = GetJsonString(root, "artist", "Artist", "TPE1");
-                metadata.Title = GetJsonString(root, "title", "Title", "TIT2", "song", "track");
+                metadata.Artist = GetJsonString(root, "artist", "Artist", "TPE1") ?? string.Empty;
+                metadata.Title = GetJsonString(root, "title", "Title", "TIT2", "song", "track") ?? string.Empty;
                 metadata.AlbumArtUrl = GetJsonString(root, "artwork", "artworkURL", "albumArtUrl", "image");
                 if (metadata.HasMetadata)
                 {

@@ -236,9 +236,9 @@ public sealed partial class SearchStation : Page
     /// are usually stacked ("Germany" then "jazz"), and closing after each one would mean
     /// reopening to add the next.
     /// </summary>
-    private void FilterSuggestion_ItemClick(object sender, ItemClickEventArgs e)
+    private void FilterSuggestion_Click(object sender, RoutedEventArgs e)
     {
-        if (e.ClickedItem is StationFilterOption option)
+        if (sender is Button button && button.Tag is StationFilterOption option)
         {
             ViewModel.AddFilter(option);
         }
@@ -246,9 +246,9 @@ public sealed partial class SearchStation : Page
 
     private void RemoveFilterButton_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is Button button && button.Tag is StationFilterOption option)
+        if (sender is Button button && button.Tag is IStationFilterChip chip)
         {
-            ViewModel.RemoveFilter(option);
+            ViewModel.RemoveChip(chip);
         }
     }
 

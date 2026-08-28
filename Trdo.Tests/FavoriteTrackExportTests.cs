@@ -43,7 +43,7 @@ public sealed class FavoriteTrackExportTests
 
         Assert.AreEqual("Title,Artist,Album,Station,Favorited", lines[0]);
         Assert.AreEqual("Says,Nils Frahm,,Test FM,2026-01-02 03:04:05", lines[1]);
-        Assert.AreEqual(2, lines.Length);
+        Assert.HasCount(2, lines);
     }
 
     [TestMethod]
@@ -74,7 +74,7 @@ public sealed class FavoriteTrackExportTests
     [TestMethod]
     public void ExportToCsv_EmptyCollectionWritesHeaderOnly()
     {
-        Assert.AreEqual(1, Lines(FavoriteTrackExportService.ExportToCsv([])).Length);
+        Assert.HasCount(1, Lines(FavoriteTrackExportService.ExportToCsv([])));
     }
 
     [TestMethod]
@@ -140,7 +140,7 @@ public sealed class FavoriteTrackExportTests
         XDocument doc = XDocument.Parse(FavoriteTrackExportService.ExportToXspf([]));
         XNamespace ns = "http://xspf.org/ns/0/";
 
-        Assert.IsFalse(doc.Root!.Element(ns + "trackList")!.Elements(ns + "track").Any());
+        Assert.IsEmpty(doc.Root!.Element(ns + "trackList")!.Elements(ns + "track"));
     }
 
     [TestMethod]

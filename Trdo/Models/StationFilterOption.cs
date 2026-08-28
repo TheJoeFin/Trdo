@@ -2,14 +2,26 @@ namespace Trdo.Models;
 
 /// <summary>
 /// The station attributes that have too many possible values to browse in a dropdown.
-/// Codec, bitrate and sort order are deliberately absent: those are short, fixed lists and
-/// are better served by an ordinary ComboBox.
+/// Codec, bitrate and sort order are deliberately absent: those are short, fixed lists, offered
+/// through <see cref="QualityFilterChip"/> instead once picked.
 /// </summary>
 public enum StationFilterFacet
 {
     Country,
     Language,
     Genre
+}
+
+/// <summary>
+/// Something narrowing the search that shows up as a removable chip. Implemented by
+/// <see cref="StationFilterOption"/> (country/language/genre, picked from the search-as-you-type
+/// list) and <see cref="QualityFilterChip"/> (codec/bitrate/sort/hide-broken, picked from the
+/// fixed controls below it) so both flow through one chip row and one removal path.
+/// </summary>
+public interface IStationFilterChip
+{
+    /// <summary>Chip text, already including which attribute this narrows.</summary>
+    string ChipLabel { get; }
 }
 
 /// <summary>
@@ -20,7 +32,7 @@ public enum StationFilterFacet
 /// picking one is just a move between two lists rather than a translation.
 /// </para>
 /// </summary>
-public sealed record StationFilterOption(StationFilterFacet Facet, string Value, int StationCount)
+public sealed record StationFilterOption(StationFilterFacet Facet, string Value, int StationCount) : IStationFilterChip
 {
     /// <summary>Short badge text identifying which attribute this narrows.</summary>
     public string FacetLabel => Facet switch

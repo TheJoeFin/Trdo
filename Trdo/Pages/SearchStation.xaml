@@ -8,6 +8,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:Trdo.Models"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
     mc:Ignorable="d">
 
     <Page.Resources>
@@ -24,7 +25,8 @@
             Grid.Row="0"
             FontSize="20"
             FontWeight="SemiBold"
-            Text="Search Radio Stations" />
+            Text="Search Radio Stations"
+            Visibility="Collapsed" />
 
         <!--  Search Input  -->
         <Grid
@@ -78,15 +80,15 @@
         -->
         <ItemsControl
             Grid.Row="2"
-            ItemsSource="{x:Bind ViewModel.ActiveFilters, Mode=OneWay}"
-            Visibility="{x:Bind ViewModel.ActiveFilters.Count, Mode=OneWay, Converter={StaticResource HasItemsVisibilityConverter}}">
+            ItemsSource="{x:Bind ViewModel.FilterChips, Mode=OneWay}"
+            Visibility="{x:Bind ViewModel.FilterChips.Count, Mode=OneWay, Converter={StaticResource HasItemsVisibilityConverter}}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <controls:WrapPanel ColumnSpacing="6" RowSpacing="6" />
                 </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="models:StationFilterOption">
+                <DataTemplate x:DataType="models:IStationFilterChip">
                     <Button
                         Padding="8,3"
                         AutomationProperties.Name="{x:Bind ChipLabel}"
@@ -123,7 +125,7 @@
         -->
         <Grid
             Grid.Row="4"
-            RowDefinitions="Auto,*,Auto"
+            RowDefinitions="Auto,*"
             RowSpacing="8"
             Visibility="{x:Bind ViewModel.IsFilterPanelOpen, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
 
@@ -144,80 +146,128 @@
                     IsActive="{x:Bind ViewModel.IsLoadingFilterOptions, Mode=OneWay}" />
             </Grid>
 
-            <ListView
+            <!--
+                One scrollable list rather than a scroller (suggestions) next to a second
+                scroller (quality and order, behind an Expander): two independent scroll
+                regions in a 320px window meant whichever one wasn't focused could scroll out
+                of reach. Everything pickable now lives in one column — browse or type to reach
+                a country/language/genre, keep scrolling for codec/bitrate/sort/hide-broken —
+                and every pick, from either half, surfaces as a chip in the row above.
+            -->
+            <Grid
                 Grid.Row="1"
-                Padding="0"
-                IsItemClickEnabled="True"
-                ItemClick="FilterSuggestion_ItemClick"
-                ItemsSource="{x:Bind ViewModel.FilterSuggestions, Mode=OneWay}"
-                SelectionMode="None">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="Padding" Value="8,4" />
-                        <Setter Property="MinHeight" Value="0" />
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="models:StationFilterOption">
-                        <Grid ColumnDefinitions="64,*,Auto" ColumnSpacing="8">
-                            <!--  Which attribute this narrows: the values alone would be ambiguous  -->
+                RowDefinitions="*,Auto"
+                RowSpacing="8">
+                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="16">
+                        <StackPanel Spacing="0">
                             <TextBlock
-                                Grid.Column="0"
-                                FontSize="11"
+                                FontStyle="Italic"
                                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="{x:Bind FacetLabel}"
-                                VerticalAlignment="Center" />
-                            <TextBlock
-                                Grid.Column="1"
-                                Text="{x:Bind Value}"
-                                TextTrimming="CharacterEllipsis"
-                                VerticalAlignment="Center" />
-                            <TextBlock
-                                Grid.Column="2"
-                                FontSize="11"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Text="{x:Bind CountLabel}"
-                                VerticalAlignment="Center" />
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                                Text="No country, language or genre matches that."
+                                TextAlignment="Center"
+                                Visibility="{x:Bind ViewModel.HasNoSuggestions, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
 
-            <StackPanel Grid.Row="2" Spacing="8">
-                <TextBlock
-                    FontStyle="Italic"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="No country, language or genre matches that."
-                    TextAlignment="Center"
-                    Visibility="{x:Bind ViewModel.HasNoSuggestions, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <ItemsControl ItemsSource="{x:Bind ViewModel.FilterSuggestions, Mode=OneWay}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:StationFilterOption">
+                                        <Button
+                                            Padding="8,4"
+                                            HorizontalAlignment="Stretch"
+                                            HorizontalContentAlignment="Stretch"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Click="FilterSuggestion_Click"
+                                            CornerRadius="0"
+                                            Tag="{x:Bind}">
+                                            <Grid ColumnDefinitions="64,*,Auto" ColumnSpacing="8">
+                                                <!--  Which attribute this narrows: the values alone would be ambiguous  -->
+                                                <TextBlock
+                                                    Grid.Column="0"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="11"
+                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                    Text="{x:Bind FacetLabel}" />
+                                                <TextBlock
+                                                    Grid.Column="1"
+                                                    VerticalAlignment="Center"
+                                                    Text="{x:Bind Value}"
+                                                    TextTrimming="CharacterEllipsis" />
+                                                <TextBlock
+                                                    Grid.Column="2"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="11"
+                                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                    Text="{x:Bind CountLabel}" />
+                                            </Grid>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
 
-                <!--  Short, fixed lists: a dropdown is the right control for these  -->
-                <Expander HorizontalAlignment="Stretch" Header="Quality and order">
-                    <StackPanel Spacing="10">
-                        <ComboBox
-                            DisplayMemberPath="Display"
-                            Header="Codec"
-                            HorizontalAlignment="Stretch"
-                            ItemsSource="{x:Bind ViewModel.Codecs}"
-                            SelectedItem="{x:Bind ViewModel.SelectedCodec, Mode=TwoWay}" />
-                        <ComboBox
-                            DisplayMemberPath="Display"
-                            Header="Minimum bitrate"
-                            HorizontalAlignment="Stretch"
-                            ItemsSource="{x:Bind ViewModel.Bitrates}"
-                            SelectedItem="{x:Bind ViewModel.SelectedBitrate, Mode=TwoWay}" />
-                        <ComboBox
-                            DisplayMemberPath="Display"
-                            Header="Sort by"
-                            HorizontalAlignment="Stretch"
-                            ItemsSource="{x:Bind ViewModel.SortOptions}"
-                            SelectedItem="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
-                        <CheckBox Content="Hide broken stations" IsChecked="{x:Bind ViewModel.HideBroken, Mode=TwoWay}" />
+                        <!--
+                            Segmented rather than ComboBox: a dropdown popup gets clipped inside this
+                            already-scrolling panel in a 320px window, making the options unreachable.
+                            Segmented lays every option out inline instead, wrapping to a new row via
+                            WrapPanel when a row runs out of width.
+                        -->
+                        <StackPanel Spacing="10">
+                            <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="Quality and order" />
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Codec" />
+                                <toolkit:Segmented
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Display"
+                                    ItemsSource="{x:Bind ViewModel.Codecs}"
+                                    SelectedItem="{x:Bind ViewModel.SelectedCodec, Mode=TwoWay}"
+                                    SelectionMode="Single">
+                                    <toolkit:Segmented.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <controls:WrapPanel ColumnSpacing="4" RowSpacing="4" />
+                                        </ItemsPanelTemplate>
+                                    </toolkit:Segmented.ItemsPanel>
+                                </toolkit:Segmented>
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Minimum bitrate" />
+                                <toolkit:Segmented
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Display"
+                                    ItemsSource="{x:Bind ViewModel.Bitrates}"
+                                    SelectedItem="{x:Bind ViewModel.SelectedBitrate, Mode=TwoWay}"
+                                    SelectionMode="Single">
+                                    <toolkit:Segmented.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <controls:WrapPanel ColumnSpacing="4" RowSpacing="4" />
+                                        </ItemsPanelTemplate>
+                                    </toolkit:Segmented.ItemsPanel>
+                                </toolkit:Segmented>
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Sort by" />
+                                <toolkit:Segmented
+                                    HorizontalAlignment="Stretch"
+                                    DisplayMemberPath="Display"
+                                    ItemsSource="{x:Bind ViewModel.SortOptions}"
+                                    SelectedItem="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}"
+                                    SelectionMode="Single">
+                                    <toolkit:Segmented.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <controls:WrapPanel ColumnSpacing="4" RowSpacing="4" />
+                                        </ItemsPanelTemplate>
+                                    </toolkit:Segmented.ItemsPanel>
+                                </toolkit:Segmented>
+                            </StackPanel>
+                            <CheckBox Content="Hide broken stations" IsChecked="{x:Bind ViewModel.HideBroken, Mode=TwoWay}" />
+                        </StackPanel>
                     </StackPanel>
-                </Expander>
+                </ScrollViewer>
 
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                <Grid
+                    Grid.Row="1"
+                    ColumnDefinitions="*,*"
+                    ColumnSpacing="8">
                     <Button
                         Grid.Column="0"
                         HorizontalAlignment="Stretch"
@@ -231,7 +281,7 @@
                         Content="Show results"
                         Style="{StaticResource AccentButtonStyle}" />
                 </Grid>
-            </StackPanel>
+            </Grid>
         </Grid>
 
         <!--  Search Results  -->
@@ -286,9 +336,9 @@
                                         Width="40"
                                         Height="40"
                                         VerticalAlignment="Top"
-                                        Visibility="{x:Bind Favicon, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}">
+                                        Visibility="{x:Bind Favicon, Converter={StaticResource NullToVisibilityConverter}, Mode=OneTime}">
                                         <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="6">
-                                            <Image Source="{x:Bind Favicon, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}" Stretch="UniformToFill" />
+                                            <Image Source="{x:Bind Favicon, Converter={StaticResource StringToImageSourceConverter}, Mode=OneTime}" Stretch="UniformToFill" />
                                         </Border>
                                     </Grid>
 

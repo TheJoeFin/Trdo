@@ -27,6 +27,28 @@ internal static partial class WindowPlacementService
             _lastAnchorPoint = new PointInt32(point.X, point.Y);
     }
 
+    /// <summary>
+    /// Discards any captured pointer anchor so the next placement falls back
+    /// to the tray icon (or taskbar) rect instead of a cursor position.
+    /// </summary>
+    /// <remarks>
+    /// Touch and pen taps on the notification icon activate it without ever
+    /// warping the hardware cursor there, since the taskbar handles those
+    /// pointer types directly rather than through the legacy mouse-message
+    /// path. <see cref="CapturePointerAnchor"/> would then capture whatever
+    /// stale position the real mouse was last at, which is almost never over
+    /// the icon — sending placement down the pointer-offset branch in
+    /// <see cref="PositionWindowNearAnchor"/> instead of the icon-centered
+    /// one, and landing the window somewhere unrelated to the tap. Callers
+    /// that already know the invocation came from the tray icon should call
+    /// this instead of <see cref="CapturePointerAnchor"/> so placement always
+    /// derives from the icon's actual geometry.
+    /// </remarks>
+    public static void ClearPointerAnchor()
+    {
+        _lastAnchorPoint = null;
+    }
+
     public static void SetTrayIconSource(TrayIcon trayIcon)
     {
         if (TryGetTrayIconWindowHandle(trayIcon, out nint hwnd))

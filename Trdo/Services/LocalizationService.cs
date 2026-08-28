@@ -22,7 +22,7 @@ public static class LocalizationService
     /// UI languages that ship with a Strings\&lt;tag&gt;\Resources.resw file, in the same order as
     /// the language picker on the settings page (excluding the "System" option).
     /// </summary>
-    public static string[] SupportedLanguages { get; } = ["en-US", "es-ES"];
+    public static string[] SupportedLanguages { get; } = ["en-US", "es-ES", "zh-CN", "de-DE", "pt-BR", "pt-PT", "ar-SA"];
 
     /// <summary>
     /// All selectable options in the settings page language picker, in display order: "System"

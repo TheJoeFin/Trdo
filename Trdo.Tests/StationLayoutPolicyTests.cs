@@ -43,7 +43,7 @@ public sealed class StationLayoutPolicyTests
 
         List<object> rows = StationLayoutPolicy.Flatten([a, b, c], StationSortMode.Manual);
 
-        CollectionAssert.AreEqual(new object[] { a, b, c }, rows);
+        Assert.AreSequenceEqual([a, b, c], rows);
     }
 
     [TestMethod]
@@ -55,7 +55,7 @@ public sealed class StationLayoutPolicyTests
 
         List<object> rows = StationLayoutPolicy.Flatten([group, outside], StationSortMode.Manual);
 
-        CollectionAssert.AreEqual(new object[] { group, inside, outside }, rows);
+        Assert.AreSequenceEqual([group, inside, outside], rows);
         Assert.AreEqual("Jazz", inside.GroupId, "GroupId drives the indentation rail.");
         Assert.IsNull(outside.GroupId);
     }
@@ -68,8 +68,8 @@ public sealed class StationLayoutPolicyTests
 
         List<object> rows = StationLayoutPolicy.Flatten([group], StationSortMode.Manual);
 
-        CollectionAssert.AreEqual(new object[] { group }, rows);
-        Assert.AreEqual(1, group.Children.Count, "Collapsing hides contents; it must not discard them.");
+        Assert.AreSequenceEqual([group], rows);
+        Assert.HasCount(1, group.Children, "Collapsing hides contents; it must not discard them.");
     }
 
     [TestMethod]
@@ -84,9 +84,9 @@ public sealed class StationLayoutPolicyTests
         StationLayoutPolicy.Flatten(tree, StationSortMode.Name);
         StationLayoutPolicy.Flatten(tree, StationSortMode.Manual);
 
-        Assert.AreEqual(2, tree.Count);
+        Assert.HasCount(2, tree);
         Assert.AreSame(group, tree[0]);
-        Assert.AreEqual(1, group.Children.Count);
+        Assert.HasCount(1, group.Children);
         Assert.AreSame(inside, group.Children[0]);
     }
 
@@ -104,7 +104,7 @@ public sealed class StationLayoutPolicyTests
 
         // Including a station hidden inside a collapsed folder: a sorted list that silently
         // omitted stations would be worse than useless for finding one.
-        CollectionAssert.AreEqual(new object[] { alpha, mike, zulu }, rows);
+        Assert.AreSequenceEqual([alpha, mike, zulu], rows);
         Assert.IsNull(mike.GroupId, "Nothing is indented when there are no folders on screen.");
     }
 
@@ -118,7 +118,7 @@ public sealed class StationLayoutPolicyTests
 
         List<object> nodes = StationLayoutPolicy.Reconcile([a, b], null);
 
-        CollectionAssert.AreEqual(new object[] { a, b }, nodes);
+        Assert.AreSequenceEqual([a, b], nodes);
     }
 
     [TestMethod]
@@ -135,7 +135,7 @@ public sealed class StationLayoutPolicyTests
 
         List<object> nodes = StationLayoutPolicy.Reconcile([known, added], document);
 
-        CollectionAssert.AreEqual(new object[] { known, added }, nodes);
+        Assert.AreSequenceEqual([known, added], nodes);
     }
 
     [TestMethod]
@@ -153,7 +153,7 @@ public sealed class StationLayoutPolicyTests
 
         List<object> nodes = StationLayoutPolicy.Reconcile([surviving], document);
 
-        CollectionAssert.AreEqual(new object[] { surviving }, nodes);
+        Assert.AreSequenceEqual([surviving], nodes);
     }
 
     [TestMethod]
@@ -192,9 +192,9 @@ public sealed class StationLayoutPolicyTests
 
         List<object> nodes = StationLayoutPolicy.Reconcile([station], document);
 
-        Assert.AreEqual(1, nodes.Count);
+        Assert.HasCount(1, nodes);
         StationGroup group = (StationGroup)nodes[0];
-        CollectionAssert.AreEqual(new object[] { station }, group.Children);
+        Assert.AreSequenceEqual([station], group.Children);
     }
 
     [TestMethod]
@@ -227,7 +227,7 @@ public sealed class StationLayoutPolicyTests
         List<object> nodes = StationLayoutPolicy.Reconcile([inner], document);
 
         StationGroup outer = (StationGroup)nodes[0];
-        CollectionAssert.AreEqual(new object[] { inner }, outer.Children);
+        Assert.AreSequenceEqual([inner], outer.Children);
     }
 
     [TestMethod]
@@ -245,7 +245,7 @@ public sealed class StationLayoutPolicyTests
 
         List<object> nodes = StationLayoutPolicy.Reconcile([station], document);
 
-        Assert.AreEqual(1, nodes.Count, "One station, one row - never two rows sharing an object.");
+        Assert.HasCount(1, nodes, "One station, one row - never two rows sharing an object.");
     }
 
     [TestMethod]
@@ -265,7 +265,7 @@ public sealed class StationLayoutPolicyTests
 
         List<object> nodes = StationLayoutPolicy.Reconcile([station], document);
 
-        CollectionAssert.AreEqual(new object[] { station }, nodes);
+        Assert.AreSequenceEqual([station], nodes);
     }
 
     [TestMethod]
@@ -280,7 +280,7 @@ public sealed class StationLayoutPolicyTests
             [loose, inside],
             StationLayoutPolicy.ToDocument(original));
 
-        Assert.AreEqual(3, restored.Count);
+        Assert.HasCount(3, restored);
         Assert.AreSame(loose, restored[0]);
         Assert.AreEqual("d2", ((StationDivider)restored[1]).Id);
 
@@ -303,7 +303,7 @@ public sealed class StationLayoutPolicyTests
         List<RadioStation> collected = StationLayoutPolicy.CollectStations(
             [first, Group("G", expanded: false, grouped), last]);
 
-        CollectionAssert.AreEqual(new[] { first, grouped, last }, collected);
+        Assert.AreSequenceEqual([first, grouped, last], collected);
     }
 
     // ---------------------------------------------------------------- ApplyReorder
@@ -318,8 +318,8 @@ public sealed class StationLayoutPolicyTests
         // The user dragged "Loose" between "One" and "Two".
         List<object> nodes = StationLayoutPolicy.ApplyReorder(previous, [group, one, loose, two]);
 
-        Assert.AreEqual(1, nodes.Count);
-        CollectionAssert.AreEqual(new object[] { one, loose, two }, ((StationGroup)nodes[0]).Children);
+        Assert.HasCount(1, nodes);
+        Assert.AreSequenceEqual([one, loose, two], ((StationGroup)nodes[0]).Children);
         Assert.AreEqual("Jazz", loose.GroupId);
     }
 
@@ -334,8 +334,8 @@ public sealed class StationLayoutPolicyTests
 
         List<object> nodes = StationLayoutPolicy.ApplyReorder(previous, [group, one, loose]);
 
-        Assert.AreEqual(1, nodes.Count);
-        CollectionAssert.AreEqual(new object[] { one, loose }, ((StationGroup)nodes[0]).Children);
+        Assert.HasCount(1, nodes);
+        Assert.AreSequenceEqual([one, loose], ((StationGroup)nodes[0]).Children);
     }
 
     [TestMethod]
@@ -350,11 +350,9 @@ public sealed class StationLayoutPolicyTests
 
         List<object> nodes = StationLayoutPolicy.ApplyReorder(previous, [group, dropped]);
 
-        Assert.AreEqual(1, nodes.Count);
-        CollectionAssert.AreEqual(
-            new object[] { dropped, hiddenA, hiddenB },
-            ((StationGroup)nodes[0]).Children,
-            "The dropped station goes in at the top, and nothing already inside is lost.");
+        Assert.HasCount(1, nodes);
+        Assert.AreSequenceEqual(
+            [dropped, hiddenA, hiddenB], ((StationGroup)nodes[0]).Children, "The dropped station goes in at the top, and nothing already inside is lost.");
     }
 
     [TestMethod]
@@ -368,8 +366,8 @@ public sealed class StationLayoutPolicyTests
         // The group was dragged below the loose station.
         List<object> nodes = StationLayoutPolicy.ApplyReorder(previous, [loose, group]);
 
-        CollectionAssert.AreEqual(new object[] { loose, group }, nodes);
-        CollectionAssert.AreEqual(new object[] { hidden }, group.Children);
+        Assert.AreSequenceEqual([loose, group], nodes);
+        Assert.AreSequenceEqual([hidden], group.Children);
     }
 
     [TestMethod]
@@ -383,10 +381,9 @@ public sealed class StationLayoutPolicyTests
         // "Second" was dropped between "First" and its child.
         List<object> nodes = StationLayoutPolicy.ApplyReorder(previous, [first, second, child]);
 
-        CollectionAssert.AreEqual(new object[] { first, second }, nodes);
-        Assert.AreEqual(0, first.Children.Count);
-        CollectionAssert.AreEqual(new object[] { child }, second.Children,
-            "Folders never nest, so the run simply passes to the folder that opened last.");
+        Assert.AreSequenceEqual([first, second], nodes);
+        Assert.IsEmpty(first.Children);
+        Assert.AreSequenceEqual([child], second.Children, "Folders never nest, so the run simply passes to the folder that opened last.");
     }
 
     [TestMethod]
@@ -398,7 +395,7 @@ public sealed class StationLayoutPolicyTests
 
         List<object> nodes = StationLayoutPolicy.ApplyReorder(previous, [divider, a, b]);
 
-        CollectionAssert.AreEqual(new object[] { divider, a, b }, nodes);
+        Assert.AreSequenceEqual([divider, a, b], nodes);
         Assert.IsNull(divider.GroupId);
     }
 
@@ -412,8 +409,8 @@ public sealed class StationLayoutPolicyTests
         // Dragged above the folder header.
         List<object> nodes = StationLayoutPolicy.ApplyReorder(previous, [escaping, group, staying]);
 
-        CollectionAssert.AreEqual(new object[] { escaping, group }, nodes);
-        CollectionAssert.AreEqual(new object[] { staying }, group.Children);
+        Assert.AreSequenceEqual([escaping, group], nodes);
+        Assert.AreSequenceEqual([staying], group.Children);
         Assert.IsNull(escaping.GroupId);
     }
 
@@ -425,6 +422,6 @@ public sealed class StationLayoutPolicyTests
 
         List<object> nodes = StationLayoutPolicy.ApplyReorder(previous, [d, a, b, c]);
 
-        CollectionAssert.AreEqual(new object[] { d, a, b, c }, nodes);
+        Assert.AreSequenceEqual([d, a, b, c], nodes);
     }
 }

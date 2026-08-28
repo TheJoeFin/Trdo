@@ -25,15 +25,13 @@ public partial class App : Application
     private TrayPopupWindow? _trayPopupWindow;
     private MiniPlayerWindow? _miniPlayerWindow;
     private SongChangePopupWindow? _songChangePopupWindow;
-    private DispatcherQueueTimer? _songChangeDelayTimer;
-    private string? _pendingSongChangeText;
     private string? _lastKnownNowPlayingDisplayText;
 
     /// <summary>
     /// When the current station started playing, or null once a metadata observation has
-    /// consumed it. An announcement inside
-    /// <see cref="SongChangeAnnouncementPolicy.StationStartGrace"/> of it describes a track
-    /// that is already audible, so it skips the popup delay.
+    /// consumed it. A track observed inside
+    /// <see cref="SongChangeAnnouncementPolicy.StationStartGrace"/> of it is the one the
+    /// station opened on rather than a mid-stream change.
     /// </summary>
     private DateTimeOffset? _stationStartedAtUtc;
 
@@ -60,7 +58,6 @@ public partial class App : Application
     private Mutex? _singleInstanceMutex;
     private EventWaitHandle? _trayIconRestoreEvent;
     private DispatcherQueue? _uiDispatcherQueue;
-    private DispatcherQueueTimer? _restoreEventMonitorTimer;
 #if DEBUG
     private DispatcherQueueTimer? _songChangePopupPreviewTimer;
 #endif
@@ -131,6 +128,12 @@ public partial class App : Application
     /// popup is currently enabled. Blank metadata is ignored so a transient
     /// clear cannot make the same song appear new.
     /// </summary>
+    /// <remarks>
+    /// The track-info delay is not applied here. It is applied upstream, in
+    /// <see cref="Services.Metadata.MetadataPublishGate"/>, so that the popup, the window, the
+    /// mini player and the media controls all name the same track at the same moment; by the
+    /// time the metadata reaches this method it is already the track the listener can hear.
+    /// </remarks>
     private void HandleSongChangePopup()
     {
         string displayText = _playerVm.CurrentMetadata.DisplayText.Trim();
@@ -142,7 +145,7 @@ public partial class App : Application
 
         // Whatever this observation was — an announcement or just a new baseline — it was the
         // track already playing when the station started. Anything after it is a real
-        // mid-stream change that the delay is meant for.
+        // mid-stream change, which the publish gate has already held back for us.
         bool isFirstSinceStart = SongChangeAnnouncementPolicy.IsWithinStationStartGrace(
             _stationStartedAtUtc, DateTimeOffset.UtcNow);
 
@@ -167,32 +170,7 @@ public partial class App : Application
             return;
 
         _lastAnnouncedDisplayText = displayText;
-
-        double delaySeconds = SongChangeAnnouncementPolicy.ResolveDelaySeconds(
-            _playerVm.SelectedStation?.SongPopupDelaySeconds,
-            SettingsService.SongChangePopupDelaySeconds,
-            isFirstSinceStart);
-
-        LogService.Info("SongChangePopup",
-            $"Announcing '{displayText}' after {delaySeconds}s " +
-            $"(station override={_playerVm.SelectedStation?.SongPopupDelaySeconds?.ToString() ?? "<none>"}, " +
-            $"app={SettingsService.SongChangePopupDelaySeconds}s)");
-
-        if (delaySeconds <= 0)
-        {
-            ShowSongChangePopup(displayText);
-            return;
-        }
-
-        // Hold the announcement so it lands with the audio rather than ahead of it.
-        // A newer song arriving during the wait replaces the pending one and restarts
-        // the timer from its own arrival: showing the superseded track would announce
-        // a song that is already over.
-        _pendingSongChangeText = displayText;
-        EnsureSongChangeDelayTimer();
-        _songChangeDelayTimer!.Stop();
-        _songChangeDelayTimer.Interval = TimeSpan.FromSeconds(delaySeconds);
-        _songChangeDelayTimer.Start();
+        ShowSongChangePopup(displayText);
     }
 
     /// <summary>
@@ -238,41 +216,6 @@ public partial class App : Application
         HandleSongChangePopup();
     }
 
-    private void EnsureSongChangeDelayTimer()
-    {
-        if (_songChangeDelayTimer is not null)
-            return;
-
-        _songChangeDelayTimer = _uiDispatcherQueue?.CreateTimer()
-                                ?? DispatcherQueue.GetForCurrentThread()?.CreateTimer();
-
-        if (_songChangeDelayTimer is null)
-            return;
-
-        _songChangeDelayTimer.IsRepeating = false;
-        _songChangeDelayTimer.Tick += SongChangeDelayTimer_Tick;
-    }
-
-    private void SongChangeDelayTimer_Tick(DispatcherQueueTimer sender, object args)
-    {
-        sender.Stop();
-
-        string? pending = _pendingSongChangeText;
-        _pendingSongChangeText = null;
-
-        if (string.IsNullOrWhiteSpace(pending))
-            return;
-
-        // Re-check the setting: the user may have turned popups off during the wait.
-        if (!SettingsService.IsSongChangePopupEnabled)
-        {
-            LogService.Info("SongChangePopup", $"Delay elapsed for '{pending}' but popups were turned off; dropping");
-            return;
-        }
-
-        ShowSongChangePopup(pending);
-    }
-
     private void ShowSongChangePopup(string displayText)
     {
         EnsureSongChangePopupWindow();
@@ -293,11 +236,10 @@ public partial class App : Application
     /// seeing a real title is the most honest preview, and a sample otherwise.
     /// </summary>
     /// <remarks>
-    /// Deliberately bypasses both the delay and the enabled setting. The delay
-    /// exists to line an <em>announcement</em> up with the audio and has no
-    /// meaning for something the user just asked to see; and the preview is
-    /// most useful precisely when popups are still off and the user is deciding
-    /// whether to turn them on.
+    /// Deliberately bypasses the enabled setting: the preview is most useful precisely when
+    /// popups are still off and the user is deciding whether to turn them on. It shows the
+    /// track currently published rather than whatever the station has most recently
+    /// announced, so the preview names the song the user can hear.
     /// </remarks>
     public void ShowSongChangePopupDemo()
     {
@@ -307,17 +249,6 @@ public partial class App : Application
             displayText = DemoSongText;
 
         ShowSongChangePopup(displayText);
-    }
-
-    /// <summary>
-    /// Drops a popup that is still waiting out its delay. Called when the station changes:
-    /// a delayed announcement belongs to the stream it came from, and firing it after a
-    /// switch would name a song the user is no longer listening to.
-    /// </summary>
-    private void CancelPendingSongChangePopup()
-    {
-        _songChangeDelayTimer?.Stop();
-        _pendingSongChangeText = null;
     }
 
     private void EnsureSongChangePopupWindow()
@@ -339,7 +270,6 @@ public partial class App : Application
     {
         if (!SettingsService.IsSongChangePopupEnabled)
         {
-            CancelPendingSongChangePopup();
             _songChangePopupWindow?.HidePopup();
         }
     }
@@ -486,10 +416,9 @@ public partial class App : Application
         }
         else if (e.PropertyName == nameof(PlayerViewModel.SelectedStation))
         {
-            // The new station has its own delay, and anything still pending belongs to
-            // the previous stream. Reset the baseline too, so the incoming station's
-            // first metadata establishes it rather than announcing immediately.
-            CancelPendingSongChangePopup();
+            // Reset the baseline so the incoming station's first metadata establishes it
+            // rather than announcing immediately. Anything the previous stream was still
+            // holding is dropped upstream, by the publish gate.
             _lastKnownNowPlayingDisplayText = null;
             _lastAnnouncedDisplayText = null;
             _stationStartedAtUtc = DateTimeOffset.UtcNow;
@@ -593,9 +522,9 @@ public partial class App : Application
     /// rather than in response to a metadata change.
     /// </summary>
     /// <remarks>
-    /// Skips the announcement delay, which exists to line an announcement up
-    /// with the audio and has no meaning for something the user just clicked.
-    /// Honours the on/off setting though, so it stays a single master switch
+    /// Shows the currently published track, which is the one the listener can
+    /// hear, rather than anything the station has announced ahead of it.
+    /// Honours the on/off setting, so it stays a single master switch
     /// for "this pill never appears" — unlike the Settings demo button, where
     /// the whole point is to preview the pill before turning it on.
     /// </remarks>
@@ -614,7 +543,13 @@ public partial class App : Application
 
     private void ShowFlyout(TrayIconEventArgs args)
     {
-        WindowPlacementService.CapturePointerAnchor();
+        // Unlike TryShowFlyout/ShowMiniPlayerWindow (invoked from a button
+        // inside the app, where the pointer position is meaningful), this is
+        // always a click/tap/pen activation of the tray icon itself. Touch
+        // and pen taps don't move the hardware cursor, so capturing it here
+        // can anchor the popup to a stale, unrelated position instead of the
+        // icon — clear it so placement always derives from the icon's rect.
+        WindowPlacementService.ClearPointerAnchor();
         ShowTrayPopup();
     }
 

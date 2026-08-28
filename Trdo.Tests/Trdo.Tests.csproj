@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Platforms>x64;ARM64</Platforms>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
@@ -48,6 +48,7 @@
     <Compile Include="..\Trdo\Services\StationFilterSearchPolicy.cs" Link="Services\StationFilterSearchPolicy.cs" />
     <Compile Include="..\Trdo\Models\FavoriteTrack.cs" Link="Models\FavoriteTrack.cs" />
     <Compile Include="..\Trdo\Models\StreamMetadata.cs" Link="Models\StreamMetadata.cs" />
+    <Compile Include="..\Trdo\Services\Metadata\MetadataPublishGate.cs" Link="Services\Metadata\MetadataPublishGate.cs" />
     <Compile Include="..\Trdo\Services\FavoriteTrackExportService.cs" Link="Services\FavoriteTrackExportService.cs" />
   </ItemGroup>
 

@@ -18,17 +18,17 @@ public sealed partial class AboutPage : Page
 
     private void GitHubButton_Click(object sender, RoutedEventArgs e)
     {
-        ViewModel.OpenGitHub();
+        _ = ViewModel.OpenGitHub();
     }
 
     private void DeveloperGitHubButton_Click(object sender, RoutedEventArgs e)
     {
-        ViewModel.OpenDeveloperGitHub();
+        _ = ViewModel.OpenDeveloperGitHub();
     }
 
     private void ReviewButton_Click(object sender, RoutedEventArgs e)
     {
-        ViewModel.OpenRatingWindow();
+        _ = ViewModel.OpenRatingWindow();
     }
 
     private void Star_Click(object sender, RoutedEventArgs e)
@@ -78,17 +78,17 @@ public sealed partial class AboutPage : Page
 
         private void RadioBrowserButton_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel.OpenRadioBrowser();
+            _ = ViewModel.OpenRadioBrowser();
         }
 
         private void WinUIExButton_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel.OpenWinUIEx();
+            _ = ViewModel.OpenWinUIEx();
         }
 
         private void CommunityToolkitButton_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel.OpenCommunityToolkit();
+            _ = ViewModel.OpenCommunityToolkit();
         }
 
         private void BuyMeACoffeeButton_Click(object sender, RoutedEventArgs e)

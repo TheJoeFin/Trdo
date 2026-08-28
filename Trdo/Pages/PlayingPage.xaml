@@ -642,6 +642,7 @@
                 Grid.Column="0"
                 HorizontalAlignment="Stretch"
                 Click="PlayButton_Click"
+                IsEnabled="{x:Bind ViewModel.CanPlay, Mode=OneWay}"
                 Style="{StaticResource AccentButtonStyle}">
                 <StackPanel Orientation="Horizontal" Spacing="12">
                     <FontIcon FontSize="16" Glyph="{x:Bind ViewModel.PlaybackButtonGlyph, Mode=OneWay}" />

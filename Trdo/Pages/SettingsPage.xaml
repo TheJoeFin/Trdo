@@ -62,6 +62,11 @@
                             <ComboBoxItem x:Uid="SettingsPage_Language_System" />
                             <ComboBoxItem x:Uid="SettingsPage_Language_English" />
                             <ComboBoxItem x:Uid="SettingsPage_Language_Spanish" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_Chinese" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_German" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_PortugueseBrazil" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_PortuguesePortugal" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_Arabic" />
                         </ComboBox>
                         <InfoBar
                             x:Uid="SettingsPage_RestartRequiredInfoBar"
@@ -145,6 +150,32 @@
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
+                        <TextBlock x:Uid="SettingsPage_TrackInfoDelayTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock
+                            x:Uid="SettingsPage_SongPopupDelayExplanation"
+                            Style="{StaticResource SettingDescriptionStyle}"
+                            TextWrapping="Wrap" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Slider
+                                x:Uid="SettingsPage_SongPopupDelaySlider"
+                                Grid.Column="0"
+                                Maximum="{x:Bind ViewModel.MaxTrackInfoDelaySeconds}"
+                                Minimum="0"
+                                SnapsTo="StepValues"
+                                StepFrequency="5"
+                                Value="{x:Bind ViewModel.TrackInfoDelaySeconds, Mode=TwoWay}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                MinWidth="92"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.TrackInfoDelayDescription, Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
                         <TextBlock x:Uid="SettingsPage_SongChangePopupTitle" Style="{StaticResource SettingTitleStyle}" />
                         <TextBlock x:Uid="SettingsPage_SongChangePopupDescription" Style="{StaticResource SettingDescriptionStyle}" />
                         <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
@@ -168,27 +199,6 @@
                                 VerticalAlignment="Center"
                                 AutomationProperties.AutomationId="SongChangePopupDemoButton"
                                 Click="SongChangePopupDemoButton_Click" />
-                        </Grid>
-                        <TextBlock
-                            x:Uid="SettingsPage_SongPopupDelayExplanation"
-                            Style="{StaticResource SettingDescriptionStyle}"
-                            TextWrapping="Wrap" />
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <Slider
-                                x:Uid="SettingsPage_SongPopupDelaySlider"
-                                Grid.Column="0"
-                                IsEnabled="{x:Bind ViewModel.IsSongChangePopupEnabled, Mode=OneWay}"
-                                Maximum="{x:Bind ViewModel.MaxSongChangePopupDelaySeconds}"
-                                Minimum="0"
-                                SnapsTo="StepValues"
-                                StepFrequency="5"
-                                Value="{x:Bind ViewModel.SongChangePopupDelaySeconds, Mode=TwoWay}" />
-                            <TextBlock
-                                Grid.Column="1"
-                                MinWidth="92"
-                                VerticalAlignment="Center"
-                                Style="{StaticResource SettingStatusStyle}"
-                                Text="{x:Bind ViewModel.SongChangePopupDelayDescription, Mode=OneWay}" />
                         </Grid>
                         <TextBlock
                             x:Uid="SettingsPage_PopupDwellExplanation"
@@ -346,11 +356,6 @@
                             Style="{StaticResource SettingStatusStyle}"
                             Text="{x:Bind ViewModel.PlaybackEngineModeDescription, Mode=OneWay}"
                             TextWrapping="Wrap" />
-                        <InfoBar
-                            x:Uid="SettingsPage_PlaybackEngine_ArmWarning"
-                            IsClosable="False"
-                            IsOpen="{x:Bind ViewModel.IsLibVlcUnavailableOnThisDevice}"
-                            Severity="Warning" />
                         <TextBlock
                             x:Uid="SettingsPage_PlaybackEngine_RememberedInfo"
                             Style="{StaticResource SettingDescriptionStyle}"

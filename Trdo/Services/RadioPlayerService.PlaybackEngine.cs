@@ -14,6 +14,7 @@ public sealed partial class RadioPlayerService
     private LibVlcMetadataProvider _libVlcMetadataProvider = null!;
     private HlsSegmentMetadataService _hlsSegmentMetadataService = null!;
     private StreamMetadataOrchestrator _metadataOrchestrator = null!;
+    private MetadataPublishGate _publishGate = null!;
     private NativePlaybackBackend _nativeBackend = null!;
     private LibVlcPlaybackBackend? _libVlcBackend;
     private PlaybackEngineSelector _playbackEngineSelector = null!;
@@ -43,9 +44,20 @@ public sealed partial class RadioPlayerService
             _libVlcMetadataProvider,
             _hlsSegmentMetadataService);
 
-        _metadataOrchestrator.MetadataChanged += (_, metadata) =>
+        // Everything the app shows about the current track comes out of the gate, not the
+        // orchestrator: the orchestrator reports what the station has announced, the gate
+        // reports what the listener can actually hear.
+        _publishGate = new MetadataPublishGate
         {
-            Debug.WriteLine($"[RadioPlayerService] Metadata changed: {metadata.DisplayText}");
+            Log = line => LogService.Info("TrackInfoDelay", line),
+            IsPlaybackActive = () => IsPlaying || IsBuffering
+        };
+
+        _metadataOrchestrator.MetadataChanged += (_, metadata) => _publishGate.Submit(metadata);
+
+        _publishGate.MetadataPublished += (_, metadata) =>
+        {
+            Debug.WriteLine($"[RadioPlayerService] Metadata published: {metadata.DisplayText}");
             TryEnqueueOnUi(() =>
             {
                 StreamMetadataChanged?.Invoke(this, metadata);
@@ -502,7 +514,10 @@ public sealed partial class RadioPlayerService
 
     private void StopMetadata()
     {
+        // Order matters: StopAll drives a blank through the gate synchronously, and the reset
+        // has to arm the station-start flag after that blank rather than have it consumed by it.
         _metadataOrchestrator.StopAll();
+        _publishGate.Reset();
     }
 
     public async Task RefreshMetadataAsync(CancellationToken cancellationToken = default)
@@ -729,6 +744,12 @@ public sealed partial class RadioPlayerService
             ResetPlaybackFailureTracking();
             ConfirmActiveBackendHealthy();
         }
+        else if (!IsBuffering)
+        {
+            // Paused, Stopped or EndReached, none of which route through Pause(). A stall
+            // reports buffering instead of a state change, so this cannot fire mid-track.
+            ResetTrackInfoHold();
+        }
 
         TryEnqueueOnUi(() =>
         {
@@ -765,6 +786,7 @@ public sealed partial class RadioPlayerService
 
         _playbackEngineSelector.Dispose();
         _metadataOrchestrator.Dispose();
+        _publishGate.Dispose();
         _icyMetadataService.Dispose();
         _hlsSegmentMetadataService.Dispose();
     }
