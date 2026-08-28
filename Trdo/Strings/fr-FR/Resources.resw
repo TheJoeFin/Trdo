@@ -246,7 +246,7 @@
     <value>Niveau du tampon</value>
   </data>
   <data name="ManualStationWindow_BufferLevelDescription.Text" xml:space="preserve">
-    <value>Un niveau de tampon plus élevé aide avec les connexions instables, mais ajoute un peu de délai au démarrage. Ne le modifiez que pour une station qui en a réellement besoin.</value>
+    <value>TODO Un niveau de tampon plus élevé aide avec les connexions instables, mais ajoute un peu de délai au démarrage. Ne le modifiez que pour une station qui en a réellement besoin.</value>
   </data>
   <data name="ManualStationWindow_BufferOverrideToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Régler le niveau du tampon pour cette station</value>
@@ -261,7 +261,7 @@
     <value>TODO Délai des infos de piste</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayDescription.Text" xml:space="preserve">
-    <value>Certaines stations annoncent le morceau suivant avant qu&apos;il ne commence réellement. Retardez le popup afin qu&apos;il apparaisse au moment où vous entendez la chanson. La décalage d&apos;une station est une propriété de son encodage.</value>
+    <value>TODO Certaines stations annoncent le morceau suivant avant qu&apos;il ne commence réellement. Retardez le popup afin qu&apos;il apparaisse au moment où vous entendez la chanson. La décalage d&apos;une station est une propriété de son encodage.</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>TODO Régler le délai des infos de piste pour cette station</value>
@@ -453,7 +453,7 @@
     <value>Visiter le site Web</value>
   </data>
   <data name="SettingsPage_AllowSleepDescription.Text" xml:space="preserve">
-    <value>Autoriser l&apos;ordinateur à se mettre en veille selon son planning habituel pendant que la radio joue. Notez que Windows peut empêcher la mise en veille tant qu&apos;un flux audio est en cours de lecture.</value>
+    <value>TODO Autoriser l&apos;ordinateur à se mettre en veille selon son planning habituel pendant que la radio joue. Notez que Windows peut empêcher la mise en veille tant qu&apos;un flux audio est en cours de lecture.</value>
   </data>
   <data name="SettingsPage_AllowSleepTitle.Text" xml:space="preserve">
     <value>Autoriser la mise en veille du PC</value>
@@ -495,7 +495,7 @@
     <value>Démo</value>
   </data>
   <data name="SettingsPage_DiagnosticsDescription.Text" xml:space="preserve">
-    <value>Traydio garde un journal de l&apos;activité de lecture (moteur utilisé, état du flux et erreurs). Ouvrez le dossier des journaux ou copiez les diagnostics récents à partager lors de la signalisation d&apos;un problème.</value>
+    <value>TODO Traydio garde un journal de l&apos;activité de lecture (moteur utilisé, état du flux et erreurs). Ouvrez le dossier des journaux ou copiez les diagnostics récents à partager lors de la signalisation d&apos;un problème.</value>
   </data>
   <data name="SettingsPage_DiagnosticsTitle.Text" xml:space="preserve">
     <value>Diagnostics</value>
@@ -585,7 +585,7 @@
     <value>Natif préféré</value>
   </data>
   <data name="SettingsPage_PlaybackEngine_RememberedInfo.Text" xml:space="preserve">
-    <value>Traydio se souvient du moteur utilisé pour chaque station ; une station qui ne fonctionne que sur l&apos;un d&apos;entre eux démarrera toujours avec ce moteur. Réinitialisez ceci si la lecture d&apos;une station a changé.</value>
+    <value>TODO Traydio se souvient du moteur utilisé pour chaque station ; une station qui ne fonctionne que sur l&apos;un d&apos;entre eux démarrera toujours avec ce moteur. Réinitialisez ceci si la lecture d&apos;une station a changé.</value>
   </data>
   <data name="SettingsPage_PlaybackEngineDescription.Text" xml:space="preserve">
     <value>Choisissez comment Traydio lit les flux. Auto utilise LibVLC en priorité et bascule sur Windows Media Foundation si nécessaire.</value>
@@ -630,7 +630,7 @@
     <value>Popup de changement de piste</value>
   </data>
   <data name="SettingsPage_SongPopupDelayExplanation.Text" xml:space="preserve">
-    <value>Beaucoup de stations annoncent un morceau avant qu&apos;il ne commence réellement. Retardez le popup pour qu&apos;il corresponde à l&apos;audio. Les stations individuelles peuvent remplacer ce paramètre — consultez Avancé pour chaque station.</value>
+    <value>TODO Beaucoup de stations annoncent un morceau avant qu&apos;il ne commence réellement. Retardez le popup pour qu&apos;il corresponde à l&apos;audio. Les stations individuelles peuvent remplacer ce paramètre — consultez Avancé pour chaque station.</value>
   </data>
   <data name="SettingsPage_SongPopupDelaySlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>TODO Délai des infos de piste en secondes</value>
