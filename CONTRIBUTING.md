@@ -47,6 +47,13 @@ See the [README.md](README.md) for build instructions.
 - .NET 10.0 SDK
 - Windows App SDK
 
+### Add a new translation
+- Copy the latest Strings\en-US folder and rename appropriately 
+- Translate the new Resources.resw
+- Add the new SettingsPage_Language_name.Content property in all the other Resources.resw files
+- Update the Services\LocalizationService.SupportedLanguages static list
+- Update the ComboBox list in Pages\SettingsPage.xaml
+
 ## Code of Conduct
 
 This project follows a simple code of conduct:

@@ -21,8 +21,9 @@ public static class LocalizationService
     /// <summary>
     /// UI languages that ship with a Strings\&lt;tag&gt;\Resources.resw file, in the same order as
     /// the language picker on the settings page (excluding the "System" option).
+    /// i.e. also add it (in the same order) in the ComboBox in Pages\SettingsPage.xaml
     /// </summary>
-    public static string[] SupportedLanguages { get; } = ["en-US", "es-ES", "zh-CN", "de-DE", "pt-BR", "pt-PT", "ar-SA"];
+    public static string[] SupportedLanguages { get; } = ["en-US", "es-ES", "fr-FR", "zh-CN", "de-DE", "pt-BR", "pt-PT", "ar-SA"];
 
     /// <summary>
     /// All selectable options in the settings page language picker, in display order: "System"
