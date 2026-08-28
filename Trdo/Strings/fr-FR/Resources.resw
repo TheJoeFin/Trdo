@@ -222,7 +222,7 @@
     <value>Exporter les favoris dans un fichier playlist</value>
   </data>
   <data name="FavoritesPage_ExportFailed" xml:space="preserve">
-    <value>TODO Échec de l&apos;exportation</value>
+    <value>Échec de l&apos;exportation</value>
   </data>
   <data name="FavoritesPage_ExportLabel.Text" xml:space="preserve">
     <value>Exporter…</value>
@@ -246,28 +246,28 @@
     <value>Niveau du tampon</value>
   </data>
   <data name="ManualStationWindow_BufferLevelDescription.Text" xml:space="preserve">
-    <value>TODO Un niveau de tampon plus élevé aide avec les connexions instables, mais ajoute un peu de délai au démarrage. Ne le modifiez que pour une station qui en a réellement besoin.</value>
+    <value>Un niveau de tampon plus élevé aide avec les connexions instables, mais ajoute un peu de délai au démarrage. Ne le modifiez que pour une station qui en a réellement besoin.</value>
   </data>
   <data name="ManualStationWindow_BufferOverrideToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Régler le niveau du tampon pour cette station</value>
   </data>
   <data name="ManualStationWindow_BufferOverrideToggle.OffContent" xml:space="preserve">
-    <value>TODO Suivre le paramètre de l&apos;application</value>
+    <value>Appliquer le paramètre global</value>
   </data>
   <data name="ManualStationWindow_BufferOverrideToggle.OnContent" xml:space="preserve">
     <value>Régler pour cette station</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelay.Text" xml:space="preserve">
-    <value>TODO Délai des infos de piste</value>
+    <value>Délai des infos de piste</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayDescription.Text" xml:space="preserve">
-    <value>TODO Certaines stations annoncent le morceau suivant avant qu&apos;il ne commence réellement. Retardez le popup afin qu&apos;il apparaisse au moment où vous entendez la chanson. La décalage d&apos;une station est une propriété de son encodage.</value>
+    <value>Certaines stations annoncent le morceau suivant avant qu&apos;il ne commence. Retardez le popup afin qu&apos;il apparaisse au moment où vous entendez la chanson. La décalage d&apos;une station dépend de son encodage.</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>TODO Régler le délai des infos de piste pour cette station</value>
+    <value>Régler le délai des infos de piste pour cette station</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.OffContent" xml:space="preserve">
-    <value>TODO Suivre le paramètre de l&apos;application</value>
+    <value>Appliquer le paramètre global</value>
   </data>
   <data name="ManualStationWindow_SongPopupDelayOverride.OnContent" xml:space="preserve">
     <value>Régler pour cette station</value>
@@ -279,7 +279,7 @@
     <value>Volume</value>
   </data>
   <data name="ManualStationWindow_VolumeDescription.Text" xml:space="preserve">
-    <value>Enregistré pour cette station, il reste au même niveau lorsque vous changez et revenez.</value>
+    <value>Enregistré pour cette station, il restera au même niveau lorsque vous changez et revenez.</value>
   </data>
   <data name="NowPlayingPage_IdleSubtitle.Text" xml:space="preserve">
     <value>Démarrez la lecture pour voir le titre et l&apos;artiste</value>
@@ -300,61 +300,61 @@
     <value>En Cours</value>
   </data>
   <data name="NowPlayingPage_Tooltip_Favorite.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>TODO Titre favori</value>
+    <value>Titre favori</value>
   </data>
   <data name="NowPlayingPage_Tooltip_SearchSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>Paramètres de recherche titres</value>
   </data>
   <data name="PlaybackFailure_NoDetail" xml:space="preserve">
-    <value>TODO Impossible de lire cette station. Le flux peut être indisponible ou l&apos;URL peut être incorrecte.</value>
+    <value>Impossible de lire cette station. Le flux peut être indisponible ou l&apos;URL est incorrecte.</value>
   </data>
   <data name="PlaybackFailure_NoNetwork" xml:space="preserve">
-    <value>TODO Pas de connexion Internet. Connectez-vous à un réseau et réessayez.</value>
+    <value>Pas de connexion Internet. Connectez-vous à un réseau et réessayez.</value>
   </data>
   <data name="PlaybackFailure_TooManyAttemptsNoDetail" xml:space="preserve">
-    <value>TODO Impossible de lire cette station après plusieurs tentatives. Le flux peut être hors ligne ou l&apos;URL peut être incorrecte.</value>
+    <value>Impossible de lire cette station après plusieurs tentatives. Le flux peut être hors ligne ou l&apos;URL est incorrecte.</value>
   </data>
   <data name="PlaybackFailure_TooManyAttemptsWithDetail" xml:space="preserve">
-    <value>TODO Impossible de lire cette station après plusieurs tentatives ({0}). Le flux peut être hors ligne ou l&apos;URL peut être incorrecte.</value>
+    <value>Impossible de lire cette station après plusieurs tentatives ({0}). Le flux peut être hors ligne ou l&apos;URL est incorrecte.</value>
   </data>
   <data name="PlaybackFailure_WithDetail" xml:space="preserve">
-    <value>TODO Impossible de lire cette station : {0}</value>
+    <value>Impossible de lire cette station : {0}</value>
   </data>
   <data name="PlaybackFailure_WithSentenceDetail" xml:space="preserve">
-    <value>TODO Impossible de lire cette station. {0}</value>
+    <value>Impossible de lire cette station. {0}</value>
   </data>
   <data name="PlayerViewModel_Buffering" xml:space="preserve">
-    <value>TODO Mise en tampon</value>
+    <value>Mise en tampon</value>
   </data>
   <data name="PlayerViewModel_FailedToInitializeStream" xml:space="preserve">
-    <value>TODO Impossible d&apos;initialiser le flux : {0}</value>
+    <value>Impossible d&apos;initialiser le flux : {0}</value>
   </data>
   <data name="PlayerViewModel_FailedToPause" xml:space="preserve">
-    <value>TODO Impossible de mettre en pause {0} : {1}</value>
+    <value>Impossible de mettre en pause {0} : {1}</value>
   </data>
   <data name="PlayerViewModel_FailedToPlay" xml:space="preserve">
-    <value>TODO Impossible de lire {0} : {1}</value>
+    <value>Impossible de lire {0} : {1}</value>
   </data>
   <data name="PlayerViewModel_FailedToRestore" xml:space="preserve">
-    <value>TODO Impossible de restaurer {0} : {1}</value>
+    <value>Impossible de restaurer {0} : {1}</value>
   </data>
   <data name="PlayerViewModel_FailedToSwitch" xml:space="preserve">
-    <value>TODO Impossible de basculer vers {0} : {1}</value>
+    <value>Impossible de basculer vers {0} : {1}</value>
   </data>
   <data name="PlayerViewModel_FailedToUpdateStream" xml:space="preserve">
-    <value>TODO Impossible de mettre à jour le flux : {0}</value>
+    <value>Impossible de mettre à jour le flux : {0}</value>
   </data>
   <data name="PlayerViewModel_InvalidStreamUrl" xml:space="preserve">
-    <value>TODO URL de flux invalide pour {0}</value>
+    <value>URL de flux invalide pour {0}</value>
   </data>
   <data name="PlayerViewModel_Pause" xml:space="preserve">
-    <value>TODO Pause</value>
+    <value>Pause</value>
   </data>
   <data name="PlayerViewModel_PauseAndClose" xml:space="preserve">
-    <value>TODO Pause &amp; fermer</value>
+    <value>Pause &amp; fermer</value>
   </data>
   <data name="PlayerViewModel_Play" xml:space="preserve">
-    <value>TODO Lire</value>
+    <value>Lire</value>
   </data>
   <data name="PlayingPage_About.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
     <value>À propos de Traydio</value>
@@ -375,7 +375,7 @@
     <value>Modifier l&apos;étiquette</value>
   </data>
   <data name="PlayingPage_EmptySubtitle.Text" xml:space="preserve">
-    <value>Commencez en ajoutant votre station de radio favorite pour écouter.</value>
+    <value>Commencez par ajouter votre station de radio favorite pour écouter.</value>
   </data>
   <data name="PlayingPage_EmptyTitle.Text" xml:space="preserve">
     <value>Aucune station pour l&apos;instant</value>
@@ -405,19 +405,19 @@
     <value>Nouveau groupe</value>
   </data>
   <data name="PlayingPage_PlaybackErrorClose" xml:space="preserve">
-    <value>TODO OK</value>
+    <value>OK</value>
   </data>
   <data name="PlayingPage_PlaybackErrorTitle" xml:space="preserve">
-    <value>TODO Erreur de lecture</value>
+    <value>Erreur de lecture</value>
   </data>
   <data name="PlayingPage_PopOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>TODO Ouvrir le mini lecteur</value>
+    <value>Ouvrir le mini lecteur</value>
   </data>
   <data name="PlayingPage_QuitButton.Content" xml:space="preserve">
-    <value>TODO Quitter</value>
+    <value>Quitter</value>
   </data>
   <data name="PlayingPage_QuitButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>TODO Quitter Traydio</value>
+    <value>Quitter Traydio</value>
   </data>
   <data name="PlayingPage_RefreshAllInfo.Text" xml:space="preserve">
     <value>Actualiser les infos de toutes les stations</value>
@@ -453,7 +453,7 @@
     <value>Visiter le site Web</value>
   </data>
   <data name="SettingsPage_AllowSleepDescription.Text" xml:space="preserve">
-    <value>TODO Autoriser l&apos;ordinateur à se mettre en veille selon son planning habituel pendant que la radio joue. Notez que Windows peut empêcher la mise en veille tant qu&apos;un flux audio est en cours de lecture.</value>
+    <value>Autoriser l&apos;ordinateur à se mettre en veille selon son planning habituel pendant que la radio joue. Notez que Windows peut empêcher la mise en veille tant qu&apos;un flux audio est en cours de lecture.</value>
   </data>
   <data name="SettingsPage_AllowSleepTitle.Text" xml:space="preserve">
     <value>Autoriser la mise en veille du PC</value>
@@ -483,7 +483,7 @@
     <value>Copier les diagnostics</value>
   </data>
   <data name="SettingsPage_CopyDiagnosticsFailed" xml:space="preserve">
-    <value>TODO Impossible de copier les diagnostics : {0}</value>
+    <value>Impossible de copier les diagnostics : {0}</value>
   </data>
   <data name="SettingsPage_DemoPopupButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Afficher une démo du popup de changement de piste</value>
@@ -495,7 +495,7 @@
     <value>Démo</value>
   </data>
   <data name="SettingsPage_DiagnosticsDescription.Text" xml:space="preserve">
-    <value>TODO Traydio garde un journal de l&apos;activité de lecture (moteur utilisé, état du flux et erreurs). Ouvrez le dossier des journaux ou copiez les diagnostics récents à partager lors de la signalisation d&apos;un problème.</value>
+    <value>Traydio garde un journal de l&apos;activité de lecture (moteur utilisé, état du flux et erreurs). Ouvrez le dossier des journaux ou copiez les diagnostics récents à partager lors de la signalisation d&apos;un problème.</value>
   </data>
   <data name="SettingsPage_DiagnosticsTitle.Text" xml:space="preserve">
     <value>Diagnostics</value>
@@ -504,7 +504,7 @@
     <value>Activer</value>
   </data>
   <data name="SettingsPage_ExportFailed" xml:space="preserve">
-    <value>TODO Échec de l&apos;exportation : {0}</value>
+    <value>Échec de l&apos;exportation : {0}</value>
   </data>
   <data name="SettingsPage_ExportStations.Content" xml:space="preserve">
     <value>Exporter les stations</value>
@@ -516,7 +516,7 @@
     <value>Importer / Exporter les stations</value>
   </data>
   <data name="SettingsPage_ImportFailed" xml:space="preserve">
-    <value>TODO Échec de l&apos;importation : {0}</value>
+    <value>Échec de l&apos;importation : {0}</value>
   </data>
   <data name="SettingsPage_ImportStations.Content" xml:space="preserve">
     <value>Importer les stations</value>
@@ -530,23 +530,23 @@
   <data name="SettingsPage_Language_Spanish.Content" xml:space="preserve">
     <value>Español</value>
   </data>
-  <data name="SettingsPage_Language_Chinese.Content" xml:space="preserve">
-    <value>TODO Chinois</value>
-  </data>
-  <data name="SettingsPage_Language_German.Content" xml:space="preserve">
-    <value>TODO Allemand</value>
-  </data>
-  <data name="SettingsPage_Language_PortugueseBrazil.Content" xml:space="preserve">
-    <value>TODO Portugais (Brésil)</value>
-  </data>
-  <data name="SettingsPage_Language_PortuguesePortugal.Content" xml:space="preserve">
-    <value>TODO Portugais (Portugal)</value>
-  </data>
-  <data name="SettingsPage_Language_Arabic.Content" xml:space="preserve">
-    <value>TODO Arabe</value>
-  </data>
   <data name="SettingsPage_Language_French.Content" xml:space="preserve">
     <value>Français</value>
+  </data>
+  <data name="SettingsPage_Language_Chinese.Content" xml:space="preserve">
+    <value>Chinois</value>
+  </data>
+  <data name="SettingsPage_Language_German.Content" xml:space="preserve">
+    <value>Allemand</value>
+  </data>
+  <data name="SettingsPage_Language_PortugueseBrazil.Content" xml:space="preserve">
+    <value>Portugais (Brésil)</value>
+  </data>
+  <data name="SettingsPage_Language_PortuguesePortugal.Content" xml:space="preserve">
+    <value>Portugais (Portugal)</value>
+  </data>
+  <data name="SettingsPage_Language_Arabic.Content" xml:space="preserve">
+    <value>Arabe</value>
   </data>
   <data name="SettingsPage_LanguageDescription.Text" xml:space="preserve">
     <value>Choisissez la langue utilisée dans l&apos;application.</value>
@@ -564,10 +564,10 @@
     <value>Ouvrir le dossier des journaux</value>
   </data>
   <data name="SettingsPage_OpenLogsFolderFailed" xml:space="preserve">
-    <value>TODO Impossible d&apos;ouvrir le dossier des journaux : {0}</value>
+    <value>Impossible d&apos;ouvrir le dossier des journaux : {0}</value>
   </data>
   <data name="SettingsPage_OpenLogsFolderFailedLocation" xml:space="preserve">
-    <value>TODO Impossible d&apos;ouvrir le dossier des journaux. Il est situé à : {0}</value>
+    <value>Impossible d&apos;ouvrir le dossier des journaux. Il est situé à : {0}</value>
   </data>
   <data name="SettingsPage_OpenOnStartupDescription.Text" xml:space="preserve">
     <value>Lancer Traydio automatiquement à la connexion afin que le lecteur soit prêt sans l&apos;ouvrir manuellement.</value>
@@ -585,7 +585,7 @@
     <value>Natif préféré</value>
   </data>
   <data name="SettingsPage_PlaybackEngine_RememberedInfo.Text" xml:space="preserve">
-    <value>TODO Traydio se souvient du moteur utilisé pour chaque station ; une station qui ne fonctionne que sur l&apos;un d&apos;entre eux démarrera toujours avec ce moteur. Réinitialisez ceci si la lecture d&apos;une station a changé.</value>
+    <value>Traydio se souvient du moteur utilisé pour chaque station ; une station qui ne fonctionne que sur l&apos;un d&apos;entre eux démarrera toujours avec ce moteur. Réinitialisez ceci si la lecture d&apos;une station a changé.</value>
   </data>
   <data name="SettingsPage_PlaybackEngineDescription.Text" xml:space="preserve">
     <value>Choisissez comment Traydio lit les flux. Auto utilise LibVLC en priorité et bascule sur Windows Media Foundation si nécessaire.</value>
@@ -606,13 +606,13 @@
     <value>Durée d&apos;affichage du popup de piste, en secondes</value>
   </data>
   <data name="SettingsPage_ResetEngineMemoryFailed" xml:space="preserve">
-    <value>TODO Impossible de réinitialiser les moteurs mémorisés : {0}</value>
+    <value>Impossible de réinitialiser les moteurs mémorisés : {0}</value>
   </data>
   <data name="SettingsPage_ResetRememberedEngines.Content" xml:space="preserve">
     <value>Réinitialiser les moteurs mémorisés</value>
   </data>
   <data name="SettingsPage_RestartRequiredInfoBar.Message" xml:space="preserve">
-    <value>Redémarrez Traydio pour terminer le changement de langue.</value>
+    <value>Redémarrez Traydio pour appliquer le changement de langue.</value>
   </data>
   <data name="SettingsPage_SilenceTimeoutDescription.Text" xml:space="preserve">
     <value>Définissez combien de temps la lecture peut rester silencieuse avant que Traydio ne redémarre automatiquement le flux.</value>
@@ -630,16 +630,16 @@
     <value>Popup de changement de piste</value>
   </data>
   <data name="SettingsPage_SongPopupDelayExplanation.Text" xml:space="preserve">
-    <value>TODO Beaucoup de stations annoncent un morceau avant qu&apos;il ne commence réellement. Retardez le popup pour qu&apos;il corresponde à l&apos;audio. Les stations individuelles peuvent remplacer ce paramètre — consultez Avancé pour chaque station.</value>
+    <value>Beaucoup de stations annoncent un morceau avant qu&apos;il ne commence réellement. Retardez le popup pour qu&apos;il corresponde à l&apos;audio. Les stations individuelles peuvent remplacer ce paramètre — consultez Avancé pour chaque station.</value>
   </data>
   <data name="SettingsPage_SongPopupDelaySlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
-    <value>TODO Délai des infos de piste en secondes</value>
+    <value>Délai des infos de piste en secondes</value>
   </data>
   <data name="SettingsPage_Title.Text" xml:space="preserve">
     <value>Paramètres</value>
   </data>
   <data name="SettingsPage_TrackInfoDelayTitle.Text" xml:space="preserve">
-    <value>TODO Délai des infos de piste</value>
+    <value>Délai des infos de piste</value>
   </data>
   <data name="SettingsPage_TrayClickBehavior_Alternate.Content" xml:space="preserve">
     <value>Clic gauche : ouvrir Traydio, clic droit : lecture/pause</value>
@@ -660,19 +660,19 @@
     <value>En cours</value>
   </data>
   <data name="SongChangePopup_Surface.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
-    <value>TODO Cliquez pour fermer, clic droit pour ajuster le délai des infos de piste</value>
+    <value>Cliquez pour fermer, clic droit pour ajuster le délai des infos de piste</value>
   </data>
   <data name="SongChangePopup_Title.Text" xml:space="preserve">
     <value>En Cours</value>
   </data>
   <data name="StreamDiagnosis_EngineFailedHealthyServer" xml:space="preserve">
-    <value>TODO La station est en ligne, mais aucun moteur de lecture ne peut la lire sur ce PC.</value>
+    <value>La station est en ligne, mais aucun moteur de lecture ne peut la lire sur ce PC.</value>
   </data>
   <data name="StreamDiagnosis_EngineFailedHealthyServerWithReason" xml:space="preserve">
-    <value>TODO La station est en ligne, mais la lecture a échoué sur ce PC : {0}</value>
+    <value>La station est en ligne, mais la lecture a échoué sur ce PC : {0}</value>
   </data>
   <data name="StreamDiagnosis_TryPlaylistEntry" xml:space="preserve">
-    <value>TODO {0} Essayez d&apos;utiliser {1} comme adresse de flux à la place.</value>
+    <value>{0} Essayez d&apos;utiliser {1} comme adresse de flux à la place.</value>
   </data>
   <data name="Toggle_Off" xml:space="preserve">
     <value>Désactivé</value>
@@ -681,32 +681,32 @@
     <value>Activé</value>
   </data>
   <data name="TrayIcon_AddStation" xml:space="preserve">
-    <value>TODO Traydio - Ajoutez une station pour commencer à écouter</value>
+    <value>Traydio - Ajoutez une station pour commencer à écouter</value>
   </data>
   <data name="TrayIcon_LeftClickToPause" xml:space="preserve">
-    <value>TODO Clic gauche pour mettre en pause</value>
+    <value>Clic gauche pour mettre en pause</value>
   </data>
   <data name="TrayIcon_LeftClickToPlay" xml:space="preserve">
-    <value>TODO Clic gauche pour lire</value>
+    <value>Clic gauche pour lire</value>
   </data>
   <data name="TrayIcon_Paused" xml:space="preserve">
-    <value>TODO Traydio {0} (En pause)
+    <value>Traydio {0} (En pause)
 {1}</value>
   </data>
   <data name="TrayIcon_Playing" xml:space="preserve">
-    <value>TODO Traydio {0} (En cours de lecture)
+    <value>Traydio {0} (En cours)
 {1}</value>
   </data>
   <data name="TrayIcon_PlayingWithNowPlaying" xml:space="preserve">
-    <value>TODO Traydio {0} (En cours de lecture)
+    <value>Traydio {0} (En cours)
 {1}
 {2}</value>
   </data>
   <data name="TrayIcon_RightClickToPause" xml:space="preserve">
-    <value>TODO Clic droit pour mettre en pause</value>
+    <value>Clic droit pour mettre en pause</value>
   </data>
   <data name="TrayIcon_RightClickToPlay" xml:space="preserve">
-    <value>TODO Clic droit pour lire</value>
+    <value>Clic droit pour lire</value>
   </data>
   <data name="TutorialWindow_Feature_1.Text" xml:space="preserve">
     <value>• Design léger et minimaliste</value>
@@ -730,7 +730,7 @@
     <value>Guide de démarrage rapide</value>
   </data>
   <data name="TutorialWindow_StartButton.Text" xml:space="preserve">
-    <value>TODO C&apos;est parti !</value>
+    <value>C&apos;est parti !</value>
   </data>
   <data name="TutorialWindow_Step_Options_Desc.Text" xml:space="preserve">
     <value>Parcourez les stations, ajustez les paramètres et explorez toutes les fonctionnalités</value>
@@ -751,7 +751,7 @@
     <value>Clic gauche pour lecture/pause</value>
   </data>
   <data name="TutorialWindow_Title" xml:space="preserve">
-    <value>TODO Fenêtre de première exécution de Traydio</value>
+    <value>Accueil de première exécution de Traydio</value>
   </data>
   <data name="TutorialWindow_TitleBar.Title" xml:space="preserve">
     <value>Traydio</value>
