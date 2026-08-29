@@ -548,6 +548,9 @@
   <data name="SettingsPage_Language_Arabic.Content" xml:space="preserve">
     <value>Arabic</value>
   </data>
+  <data name="SettingsPage_Language_Polish.Content" xml:space="preserve">
+    <value>Polish</value>
+  </data>
   <data name="SettingsPage_LanguageDescription.Text" xml:space="preserve">
     <value>Choose the language used throughout the app.</value>
   </data>
