@@ -3,6 +3,7 @@
     x:Class="Trdo.Pages.FavoritesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
     xmlns:converters="using:Trdo.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -30,7 +31,9 @@
                 Spacing="4"
                 Visibility="{x:Bind ViewModel.Favorites.Count,
                                     Mode=OneWay,
-                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}">
+                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}">
                 <Button
                     x:Uid="FavoritesPage_Export"
                     Click="ExportButton_Click">
@@ -75,7 +78,9 @@
                 Spacing="12"
                 Visibility="{x:Bind ViewModel.Favorites.Count,
                                     Mode=OneWay,
-                                    Converter={StaticResource CountToEmptyStateVisibilityConverter}}">
+                                    Converter={StaticResource CountToEmptyStateVisibilityConverter}}"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}">
                 <FontIcon
                     HorizontalAlignment="Center"
                     FontSize="48"
@@ -106,12 +111,22 @@
                 SelectionMode="Single"
                 Visibility="{x:Bind ViewModel.Favorites.Count,
                                     Mode=OneWay,
-                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}">
+                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         <Setter Property="Padding" Value="0,4" />
                         <Setter Property="Margin" Value="0,0,0,4" />
+                        <!--
+                            The ItemsStackPanel arranges these containers, not the DataTemplate's
+                            root Grid one level further in - so this is the element that has to
+                            carry the reflow animation for a row's own expand/collapse to grow
+                            smoothly and for every row below it to glide into its new position
+                            instead of snapping the instant a sibling's height changes.
+                        -->
+                        <Setter Property="animations:Implicit.Animations" Value="{StaticResource ImplicitReflowAnimations}" />
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
@@ -205,7 +220,9 @@
                                 Margin="0,8,0,0"
                                 ColumnDefinitions="*,Auto"
                                 ColumnSpacing="8"
-                                Visibility="Collapsed">
+                                Visibility="Collapsed"
+                                animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
+                                animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}">
                                 <Border
                                     Grid.Column="0"
                                     Padding="4,0"

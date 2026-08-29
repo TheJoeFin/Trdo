@@ -3,6 +3,7 @@
     x:Class="Trdo.Pages.PlayingPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
     xmlns:controls="using:Trdo.Controls"
     xmlns:converters="using:Trdo.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -419,7 +420,9 @@
                 Spacing="2"
                 Visibility="{x:Bind ViewModel.IsViewArrangementActive,
                                     Converter={StaticResource BooleanToVisibilityConverter},
-                                    Mode=OneWay}">
+                                    Mode=OneWay}"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}">
                 <TextBlock
                     VerticalAlignment="Center"
                     FontSize="11"
@@ -435,7 +438,10 @@
         </Grid>
 
         <!--  Stations List  -->
-        <Grid Grid.Row="2" Margin="0,12,0,0">
+        <Grid
+            Grid.Row="2"
+            Margin="0,12,0,0"
+            animations:Implicit.Animations="{StaticResource ImplicitReflowAnimations}">
             <ListView
                 x:Name="StationsListView"
                 AllowDrop="True"
@@ -448,7 +454,9 @@
                 ItemsSource="{x:Bind ViewModel.DisplayRows,
                                      Mode=OneWay}"
                 SelectionChanged="StationsListView_SelectionChanged"
-                SelectionMode="Single" />
+                SelectionMode="Single"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}" />
 
             <!--  Empty State  -->
             <Grid
@@ -458,7 +466,9 @@
                 VerticalAlignment="Center"
                 Visibility="{x:Bind ViewModel.StationCount,
                                     Mode=OneWay,
-                                    Converter={StaticResource CountToEmptyStateVisibilityConverter}}">
+                                    Converter={StaticResource CountToEmptyStateVisibilityConverter}}"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}">
                 <StackPanel
                     MaxWidth="240"
                     HorizontalAlignment="Center"
@@ -511,7 +521,10 @@
             Margin="0,12,0,0"
             Background="Transparent"
             ColumnSpacing="8"
-            PointerWheelChanged="VolumeControl_PointerWheelChanged">
+            PointerWheelChanged="VolumeControl_PointerWheelChanged"
+            animations:Implicit.Animations="{StaticResource ImplicitReflowAnimations}"
+            animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
+            animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}">
             <!--
                 No ContextFlyout of its own: a right-click here falls through to the page's
                 menu on Grid.ContextFlyout above, which already carries a Show/Hide Volume
@@ -563,7 +576,10 @@
             ToolTipService.ToolTip="Click for details"
             Visibility="{x:Bind ViewModel.HasNowPlaying,
                                 Mode=OneWay,
-                                Converter={StaticResource BooleanToVisibilityConverter}}">
+                                Converter={StaticResource BooleanToVisibilityConverter}}"
+            animations:Implicit.Animations="{StaticResource ImplicitReflowAnimations}"
+            animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
+            animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}">
             <Grid VerticalAlignment="Center" ColumnSpacing="6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -576,7 +592,8 @@
                     VerticalAlignment="Center"
                     FontSize="14"
                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                    Glyph="&#xE8D6;" />
+                    Glyph="&#xE8D6;"
+                    animations:Connected.Key="NowPlayingTrackIcon" />
                 <Grid
                     x:Name="NowPlayingTextHost"
                     Grid.Column="1"
@@ -592,7 +609,9 @@
                         Speed="40"
                         Text="{x:Bind ViewModel.NowPlaying,
                                       Mode=OneWay}"
-                        Visibility="Collapsed" />
+                        Visibility="Collapsed"
+                        animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                        animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}" />
                     <TextBlock
                         x:Name="NowPlayingText"
                         VerticalAlignment="Center"
@@ -601,7 +620,9 @@
                         Text="{x:Bind ViewModel.NowPlaying,
                                       Mode=OneWay}"
                         TextTrimming="Clip"
-                        TextWrapping="NoWrap" />
+                        TextWrapping="NoWrap"
+                        animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                        animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}" />
                 </Grid>
                 <!--  Favorite Button  -->
                 <Button
@@ -631,7 +652,8 @@
         <Grid
             Grid.Row="5"
             Margin="0,12,0,0"
-            ColumnSpacing="12">
+            ColumnSpacing="12"
+            animations:Implicit.Animations="{StaticResource ImplicitReflowAnimations}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
