@@ -530,6 +530,9 @@
   <data name="SettingsPage_Language_Spanish.Content" xml:space="preserve">
     <value>西班牙语</value>
   </data>
+  <data name="SettingsPage_Language_French.Content" xml:space="preserve">
+    <value>法語</value>
+  </data>
   <data name="SettingsPage_Language_Chinese.Content" xml:space="preserve">
     <value>中文</value>
   </data>
