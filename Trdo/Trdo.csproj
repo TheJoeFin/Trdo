@@ -19,6 +19,7 @@
     <None Remove="Assets\Radio-Black.ico" />
     <None Remove="Assets\Radio-White.ico" />
     <None Remove="Assets\apple_music.svg" />
+    <None Remove="Assets\bandcamp.svg" />
     <None Remove="Assets\discogs.svg" />
     <None Remove="Assets\spotify.svg" />
     <None Remove="Assets\ytmusic.svg" />
@@ -93,6 +94,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Update="Assets\apple_music.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Update="Assets\bandcamp.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Update="Assets\discogs.svg">

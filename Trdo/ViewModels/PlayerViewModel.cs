@@ -861,6 +861,15 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         await Launcher.LaunchUriAsync(new Uri($"https://music.youtube.com/search?q={query}"));
     }
 
+    public async Task SearchOnBandcamp()
+    {
+        if (!HasNowPlaying)
+            return;
+
+        string query = Uri.EscapeDataString(NowPlaying);
+        await Launcher.LaunchUriAsync(new Uri($"https://bandcamp.com/search?q={query}"));
+    }
+
     public void RestoreSelectedStationPlaybackTarget()
     {
         Debug.WriteLine("=== RestoreSelectedStationPlaybackTarget START ===");

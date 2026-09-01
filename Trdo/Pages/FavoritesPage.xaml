@@ -299,6 +299,22 @@
                                                     <TextBlock FontSize="11" Text="YouTube Music" />
                                                 </StackPanel>
                                             </HyperlinkButton>
+
+                                            <!--  Search on Bandcamp  -->
+                                            <HyperlinkButton
+                                                x:Name="BandcampButton"
+                                                Padding="6,4"
+                                                Click="BandcampLink_Click"
+                                                Tag="{x:Bind}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <Image Width="16" Height="16">
+                                                        <Image.Source>
+                                                            <SvgImageSource UriSource="ms-appx:///Assets/bandcamp.svg" />
+                                                        </Image.Source>
+                                                    </Image>
+                                                    <TextBlock FontSize="11" Text="Bandcamp" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
                                         </StackPanel>
                                     </ScrollViewer>
                                 </Border>

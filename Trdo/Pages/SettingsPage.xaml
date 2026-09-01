@@ -348,6 +348,33 @@
                                     OffContent=""
                                     OnContent="" />
                             </Grid>
+
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                <Image
+                                    Grid.Column="0"
+                                    Width="20"
+                                    Height="20"
+                                    VerticalAlignment="Center">
+                                    <Image.Source>
+                                        <SvgImageSource UriSource="ms-appx:///Assets/bandcamp.svg" />
+                                    </Image.Source>
+                                </Image>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Text="Bandcamp"
+                                    TextWrapping="Wrap" />
+                                <ToggleSwitch
+                                    Grid.Column="2"
+                                    MinWidth="0"
+                                    HorizontalAlignment="Right"
+                                    IsOn="{x:Bind ViewModel.IsBandcampEnabled,
+                                                  Mode=TwoWay}"
+                                    OffContent=""
+                                    OnContent="" />
+                            </Grid>
                         </StackPanel>
                     </StackPanel>
                 </Border>

@@ -17,6 +17,7 @@ public static class SettingsService
     private const string IsDiscogsEnabledKey = "IsDiscogsEnabled";
     private const string IsAppleMusicEnabledKey = "IsAppleMusicEnabled";
     private const string IsYouTubeMusicEnabledKey = "IsYouTubeMusicEnabled";
+    private const string IsBandcampEnabledKey = "IsBandcampEnabled";
     private const string TrayClickBehaviorKey = "TrayClickBehavior";
     private const string PlaybackEngineModeKey = "PlaybackEngineMode";
     private const string IsMiniPlayerVisualizerEnabledKey = "IsMiniPlayerVisualizerEnabled";
@@ -195,6 +196,16 @@ public static class SettingsService
     {
         get => GetBoolSetting(IsYouTubeMusicEnabledKey, defaultValue: false);
         set => SetBoolSetting(IsYouTubeMusicEnabledKey, value);
+    }
+
+    /// <summary>
+    /// Gets or sets whether Bandcamp search links are shown.
+    /// Defaults to false when no saved value exists.
+    /// </summary>
+    public static bool IsBandcampEnabled
+    {
+        get => GetBoolSetting(IsBandcampEnabledKey, defaultValue: false);
+        set => SetBoolSetting(IsBandcampEnabledKey, value);
     }
 
     /// <summary>
@@ -530,7 +541,7 @@ public static class SettingsService
         try
         {
             ApplicationData.Current.LocalSettings.Values[key] = value;
-            if (key is IsSpotifyEnabledKey or IsDiscogsEnabledKey or IsAppleMusicEnabledKey or IsYouTubeMusicEnabledKey)
+            if (key is IsSpotifyEnabledKey or IsDiscogsEnabledKey or IsAppleMusicEnabledKey or IsYouTubeMusicEnabledKey or IsBandcampEnabledKey)
             {
                 MusicSearchServicesChanged?.Invoke(null, EventArgs.Empty);
             }

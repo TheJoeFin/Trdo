@@ -26,6 +26,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     private string _discogsToggleText = LocalizationService.GetString("Toggle_On", "On");
     private string _appleMusicToggleText = LocalizationService.GetString("Toggle_On", "On");
     private string _youtubeMusicToggleText = LocalizationService.GetString("Toggle_On", "On");
+    private string _bandcampToggleText = LocalizationService.GetString("Toggle_Off", "Off");
     private string _songChangePopupToggleText = LocalizationService.GetString("Toggle_Off", "Off");
     private StartupTask? _startupTask;
     private bool _initDone;
@@ -70,6 +71,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         DiscogsToggleText = GetToggleText(SettingsService.IsDiscogsEnabled);
         AppleMusicToggleText = GetToggleText(SettingsService.IsAppleMusicEnabled);
         YouTubeMusicToggleText = GetToggleText(SettingsService.IsYouTubeMusicEnabled);
+        BandcampToggleText = GetToggleText(SettingsService.IsBandcampEnabled);
         SongChangePopupToggleText = GetToggleText(SettingsService.IsSongChangePopupEnabled);
 
         // Initialize startup task
@@ -282,6 +284,32 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         {
             if (value == _youtubeMusicToggleText) return;
             _youtubeMusicToggleText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether Bandcamp search links are shown in Now Playing and Favorites.
+    /// </summary>
+    public bool IsBandcampEnabled
+    {
+        get => SettingsService.IsBandcampEnabled;
+        set
+        {
+            if (value == SettingsService.IsBandcampEnabled) return;
+            SettingsService.IsBandcampEnabled = value;
+            OnPropertyChanged();
+            BandcampToggleText = GetToggleText(value);
+        }
+    }
+
+    public string BandcampToggleText
+    {
+        get => _bandcampToggleText;
+        set
+        {
+            if (value == _bandcampToggleText) return;
+            _bandcampToggleText = value;
             OnPropertyChanged();
         }
     }

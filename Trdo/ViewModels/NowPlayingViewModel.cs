@@ -76,6 +76,7 @@ public partial class NowPlayingViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(IsDiscogsEnabled));
         OnPropertyChanged(nameof(IsAppleMusicEnabled));
         OnPropertyChanged(nameof(IsYouTubeMusicEnabled));
+        OnPropertyChanged(nameof(IsBandcampEnabled));
         OnPropertyChanged(nameof(HasEnabledMusicServices));
     }
 
@@ -99,6 +100,7 @@ public partial class NowPlayingViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(IsDiscogsEnabled));
         OnPropertyChanged(nameof(IsAppleMusicEnabled));
         OnPropertyChanged(nameof(IsYouTubeMusicEnabled));
+        OnPropertyChanged(nameof(IsBandcampEnabled));
         OnPropertyChanged(nameof(HasEnabledMusicServices));
 
         // History is now managed by PlaylistHistoryService singleton
@@ -306,6 +308,19 @@ public partial class NowPlayingViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
+    /// Opens Bandcamp search with the current track information.
+    /// </summary>
+    public async Task SearchOnBandcamp()
+    {
+        if (!HasMetadata)
+            return;
+
+        string query = Uri.EscapeDataString(DisplayText.Length > 0 ? DisplayText : StreamTitle);
+        string url = $"https://bandcamp.com/search?q={query}";
+        await Launcher.LaunchUriAsync(new Uri(url));
+    }
+
+    /// <summary>
     /// Gets whether Spotify search links should be shown.
     /// </summary>
     public bool IsSpotifyEnabled => SettingsService.IsSpotifyEnabled;
@@ -326,13 +341,19 @@ public partial class NowPlayingViewModel : INotifyPropertyChanged
     public bool IsYouTubeMusicEnabled => SettingsService.IsYouTubeMusicEnabled;
 
     /// <summary>
+    /// Gets whether Bandcamp search links should be shown.
+    /// </summary>
+    public bool IsBandcampEnabled => SettingsService.IsBandcampEnabled;
+
+    /// <summary>
     /// Gets whether at least one music service search link should be shown.
     /// </summary>
     public bool HasEnabledMusicServices =>
         IsSpotifyEnabled ||
         IsDiscogsEnabled ||
         IsAppleMusicEnabled ||
-        IsYouTubeMusicEnabled;
+        IsYouTubeMusicEnabled ||
+        IsBandcampEnabled;
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
