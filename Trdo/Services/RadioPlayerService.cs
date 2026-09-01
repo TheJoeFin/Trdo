@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Trdo.Models;
 using Trdo.Services.Playback;
 using Windows.Media;
-using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -36,7 +35,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private readonly object _smtcUpdateLock = new();
     private readonly SemaphoreSlim _volumeFadeLock = new(1, 1);
     private Timer? _internalStateChangeTimer;
-    private DateTime _lastExternalPauseRecovery = DateTime.MinValue;
+    private readonly DateTime _lastExternalPauseRecovery = DateTime.MinValue;
     private bool _hasPlayedOnce;
     private bool _isManuallyBuffering;
     private bool _isVolumeFading;
@@ -811,7 +810,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 LogService.Info("RadioPlayerService", reason);
 
-                PlaybackPrepareResult prepareResult = await PrepareStreamAsync();
+                PlaybackPrepareResult prepareResult = await PrepareStreamAsync(cancellationToken);
                 if (!prepareResult.Success)
                 {
                     LogService.Error("RadioPlayerService", $"Prepare failed: {prepareResult.ErrorMessage}");
@@ -942,7 +941,7 @@ public sealed partial class RadioPlayerService : IDisposable
             try
             {
                 ClearActiveBackendSource();
-                PlaybackPrepareResult prepareResult = await PrepareStreamAsync();
+                PlaybackPrepareResult prepareResult = await PrepareStreamAsync(cancellationToken);
                 if (!prepareResult.Success)
                 {
                     Debug.WriteLine($"[RadioPlayerService] Retry prepare failed: {prepareResult.ErrorMessage}");
@@ -1588,9 +1587,11 @@ public sealed partial class RadioPlayerService : IDisposable
             StopMetadata();
             Debug.WriteLine("[RadioPlayerService] Stopped metadata");
 
-            // Keep the media source intact so media controls remain available
-            // The Play() method will dispose and recreate it to ensure fresh stream
-            Debug.WriteLine("[RadioPlayerService] Media source kept intact for media controls");
+            // Tear down the source on pause rather than just muting playback, so a paused
+            // stream stops using data. Play() already recreates the source whenever
+            // _wasExternalPause is set (see above), so resuming re-opens a fresh connection.
+            ClearActiveBackendSource();
+            Debug.WriteLine("[RadioPlayerService] Cleared active backend source");
         }
         catch (Exception ex)
         {
@@ -1988,10 +1989,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
         CancelPendingPlayAttempt();
 
-        if (_systemMediaControls != null)
-        {
-            _systemMediaControls.ButtonPressed -= OnSystemMediaButtonPressed;
-        }
+        _systemMediaControls?.ButtonPressed -= OnSystemMediaButtonPressed;
 
         PowerManagementService.SetPlaybackActive(false);
 
