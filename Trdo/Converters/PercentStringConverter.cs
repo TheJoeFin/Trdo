@@ -7,7 +7,7 @@ namespace Trdo.Converters;
 /// Converts a numeric value (already expressed as a percentage) to a display
 /// string such as "100%". Used for the volume slider thumb tooltip and label.
 /// </summary>
-public class PercentStringConverter : IValueConverter
+public partial class PercentStringConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

@@ -1,9 +1,9 @@
+using LibVLCSharp.Shared;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using LibVLCSharp.Shared;
 using Windows.Media;
 using VlcMediaPlayer = LibVLCSharp.Shared.MediaPlayer;
 
@@ -12,7 +12,7 @@ namespace Trdo.Services.Playback;
 /// <summary>
 /// LibVLC-based playback fallback for streams Windows Media Foundation cannot play.
 /// </summary>
-public sealed class LibVlcPlaybackBackend : IPlaybackBackend
+public sealed partial class LibVlcPlaybackBackend : IPlaybackBackend
 {
     private readonly LibVLC _libVlc;
     private readonly LibVlcLogCapture? _logCapture;

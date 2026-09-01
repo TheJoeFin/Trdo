@@ -22,7 +22,7 @@ public interface IDelayScheduler
 /// <summary>
 /// The production <see cref="IDelayScheduler"/>: a single reusable thread-pool timer.
 /// </summary>
-public sealed class ThreadPoolDelayScheduler : IDelayScheduler, IDisposable
+public sealed partial class ThreadPoolDelayScheduler : IDelayScheduler, IDisposable
 {
     private readonly Timer _timer;
     private readonly object _callbackLock = new();
@@ -85,7 +85,7 @@ public sealed class ThreadPoolDelayScheduler : IDelayScheduler, IDisposable
 /// arriving right now rather than audio still in the buffer.
 /// </para>
 /// </remarks>
-public sealed class MetadataPublishGate : IDisposable
+public sealed partial class MetadataPublishGate : IDisposable
 {
     private readonly IDelayScheduler _scheduler;
     private readonly bool _ownsScheduler;

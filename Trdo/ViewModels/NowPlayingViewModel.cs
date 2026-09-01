@@ -12,7 +12,7 @@ using Windows.System;
 
 namespace Trdo.ViewModels;
 
-public class NowPlayingViewModel : INotifyPropertyChanged
+public partial class NowPlayingViewModel : INotifyPropertyChanged
 {
     private readonly RadioPlayerService _player = RadioPlayerService.Instance;
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;

@@ -25,7 +25,7 @@ public record FavoritesExportResult(bool Succeeded, int ExportedCount, int Archi
 /// <summary>
 /// ViewModel for the Favorites page.
 /// </summary>
-public class FavoritesViewModel : INotifyPropertyChanged
+public partial class FavoritesViewModel : INotifyPropertyChanged
 {
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;
 

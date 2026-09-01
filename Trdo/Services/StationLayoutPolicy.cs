@@ -78,8 +78,8 @@ public static class StationLayoutPolicy
                         topLevel.Add(ToGroup(row, byId, byUrl, consumed));
                         break;
 
-                    // Anything else came from a newer build. Dropping it is the whole reason
-                    // the row type carries a kind string instead of a type discriminator.
+                        // Anything else came from a newer build. Dropping it is the whole reason
+                        // the row type carries a kind string instead of a type discriminator.
                 }
             }
 

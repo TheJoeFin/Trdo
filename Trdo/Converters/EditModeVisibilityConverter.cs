@@ -8,7 +8,7 @@ namespace Trdo.Converters;
 /// Converts a string to Visibility for edit mode detection.
 /// Returns Collapsed when the title contains "Edit", Visible otherwise.
 /// </summary>
-public class EditModeVisibilityConverter : IValueConverter
+public partial class EditModeVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

@@ -8,7 +8,7 @@ namespace Trdo.Models;
 /// <summary>
 /// Represents an item in the playlist history, wrapping stream metadata with additional context.
 /// </summary>
-public class PlaylistHistoryItem : INotifyPropertyChanged
+public partial class PlaylistHistoryItem : INotifyPropertyChanged
 {
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;
 
@@ -159,7 +159,7 @@ public class PlaylistHistoryItem : INotifyPropertyChanged
     public static PlaylistHistoryItem FromMetadata(StreamMetadata metadata, string stationName)
     {
         FavoritesService favoritesService = FavoritesService.Instance;
-        
+
         return new PlaylistHistoryItem
         {
             Artist = metadata.Artist,

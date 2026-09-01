@@ -108,7 +108,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         };
         _player.BufferingStateChanged += (_, _) =>
         {
-            Debug.WriteLine($"[PlayerViewModel] BufferingStateChanged event fired. IsBuffering={IsBuffering}");        
+            Debug.WriteLine($"[PlayerViewModel] BufferingStateChanged event fired. IsBuffering={IsBuffering}");
             OnPropertyChanged(nameof(IsBuffering));
             OnPropertyChanged(nameof(IsPlaybackActive));
             OnPropertyChanged(nameof(CanRefreshMetadata));
@@ -356,10 +356,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             // Drives the row highlight. Kept on the model rather than resolved by the page,
             // so it survives virtualisation, collapsing and sorting without the page having
             // to hunt for containers.
-            if (previous is not null)
-                previous.IsSelectedStation = false;
-            if (_selectedStation is not null)
-                _selectedStation.IsSelectedStation = true;
+            previous?.IsSelectedStation = false;
+            _selectedStation?.IsSelectedStation = true;
 
             // Drop anything the outgoing station was still holding before applying the new
             // station's delay - re-timing a held track against a shorter delay would publish

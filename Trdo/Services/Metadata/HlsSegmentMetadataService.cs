@@ -11,7 +11,7 @@ namespace Trdo.Services.Metadata;
 /// <summary>
 /// Polls HLS media playlists and extracts ID3 metadata embedded in the latest segment.
 /// </summary>
-public sealed class HlsSegmentMetadataService : IDisposable
+public sealed partial class HlsSegmentMetadataService : IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly object _pollingLock = new();

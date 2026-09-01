@@ -1,9 +1,9 @@
+using LibVLCSharp.Shared;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
-using LibVLCSharp.Shared;
 
 namespace Trdo.Services.Playback;
 
@@ -24,7 +24,7 @@ namespace Trdo.Services.Playback;
 /// lock-guarded, allocation-light, and must never throw back into native code.
 /// </para>
 /// </summary>
-public sealed class LibVlcLogCapture : IDisposable
+public sealed partial class LibVlcLogCapture : IDisposable
 {
     /// <summary>How many recent warning/error lines to retain for diagnostics.</summary>
     private const int MaxRetainedLines = 60;

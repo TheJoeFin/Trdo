@@ -12,7 +12,7 @@ namespace Trdo.Services.Metadata;
 /// <summary>
 /// Routes metadata extraction to ICY polling, native timed metadata, or LibVLC meta based on stream/backend.
 /// </summary>
-public sealed class StreamMetadataOrchestrator : IDisposable
+public sealed partial class StreamMetadataOrchestrator : IDisposable
 {
     private readonly StreamMetadataService _icyMetadataService;
     private readonly NativeTimedMetadataService _nativeTimedMetadataService;

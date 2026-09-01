@@ -14,7 +14,7 @@ namespace Trdo.Models;
 /// scan, and "a folder inside a folder inside a folder" simply cannot be reached.
 /// </para>
 /// </summary>
-public sealed class StationGroup : INotifyPropertyChanged
+public sealed partial class StationGroup : INotifyPropertyChanged
 {
     /// <summary>Segoe Fluent chevron pointing down (expanded).</summary>
     private const string ExpandedGlyph = "";

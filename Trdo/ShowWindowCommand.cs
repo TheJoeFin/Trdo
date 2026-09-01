@@ -5,7 +5,7 @@ using System.Windows.Input;
 
 namespace Trdo;
 
-public sealed class ShowWindowCommand : ICommand
+public sealed partial class ShowWindowCommand : ICommand
 {
     // CanExecute is always true, so this never needs to fire; a no-op accessor
     // (rather than a field-like event) satisfies ICommand without CS0067.

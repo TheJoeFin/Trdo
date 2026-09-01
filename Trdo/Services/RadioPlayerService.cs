@@ -32,7 +32,7 @@ public sealed partial class RadioPlayerService : IDisposable
     private bool _wasExternalPause;
     private Timer? _smtcUpdateTimer;
     private bool _smtcUpdatePending;
-    private readonly object _smtcUpdateLock = new();
+    private readonly Lock _smtcUpdateLock = new();
     private readonly SemaphoreSlim _volumeFadeLock = new(1, 1);
     private Timer? _internalStateChangeTimer;
     private readonly DateTime _lastExternalPauseRecovery = DateTime.MinValue;

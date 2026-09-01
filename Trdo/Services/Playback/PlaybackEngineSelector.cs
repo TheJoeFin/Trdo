@@ -2,11 +2,10 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Trdo.Services;
 
 namespace Trdo.Services.Playback;
 
-public sealed class PlaybackEngineSelector : IDisposable
+public sealed partial class PlaybackEngineSelector : IDisposable
 {
     private readonly NativePlaybackBackend _nativeBackend;
     private readonly LibVlcPlaybackBackend? _libVlcBackend;

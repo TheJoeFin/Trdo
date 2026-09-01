@@ -12,7 +12,7 @@ namespace Trdo.Models;
 /// one deciding the order, a divider has nothing left to mean.
 /// </para>
 /// </summary>
-public sealed class StationDivider : INotifyPropertyChanged
+public sealed partial class StationDivider : INotifyPropertyChanged
 {
     private string _id = string.Empty;
     private string? _label;

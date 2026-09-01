@@ -12,11 +12,11 @@ using Trdo.Models;
 using Trdo.Services;
 using Trdo.ViewModels;
 using Windows.Graphics;
-using WinRT.Interop;
 using Windows.Win32;
 using Windows.Win32.Foundation;
 using Windows.Win32.Graphics.Dwm;
 using Windows.Win32.UI.WindowsAndMessaging;
+using WinRT.Interop;
 
 namespace Trdo.Controls;
 

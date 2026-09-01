@@ -12,7 +12,7 @@ namespace Trdo.Services.Playback;
 /// <summary>
 /// Windows MediaPlayer-based playback with MediaPlaybackItem and AdaptiveMediaSource for HLS.
 /// </summary>
-public sealed class NativePlaybackBackend : IPlaybackBackend
+public sealed partial class NativePlaybackBackend : IPlaybackBackend
 {
     private readonly MediaPlayer _player;
     private readonly HttpClient _httpClient;

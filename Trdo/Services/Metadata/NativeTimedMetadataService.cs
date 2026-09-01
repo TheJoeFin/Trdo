@@ -1,10 +1,8 @@
+using Microsoft.UI.Dispatching;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using Microsoft.UI.Dispatching;
 using Trdo.Models;
 using Windows.Foundation.Collections;
 using Windows.Media.Core;
@@ -16,7 +14,7 @@ namespace Trdo.Services.Metadata;
 /// <summary>
 /// Reads HLS timed metadata (ID3 and emsg) from a MediaPlaybackItem.
 /// </summary>
-public sealed class NativeTimedMetadataService : IDisposable
+public sealed partial class NativeTimedMetadataService : IDisposable
 {
     private const string Id3DispatchTypeGuid = "15260DFFFF49443320FF49443320000F";
     private const string EmsgDispatchType = "emsg:mp4";

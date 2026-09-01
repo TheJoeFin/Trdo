@@ -89,9 +89,7 @@
                     Margin="-8,-6"
                     Background="{ThemeResource AccentAcrylicBackgroundFillColorDefaultBrush}"
                     CornerRadius="2"
-                    Visibility="{x:Bind IsSelectedStation,
-                                        Converter={StaticResource BooleanToVisibilityConverter},
-                                        Mode=OneWay}" />
+                    Visibility="{x:Bind IsSelectedStation, Converter={StaticResource BooleanToVisibilityConverter}, Mode=OneWay}" />
 
                 <!--  Indentation rail, shown only for a station inside a folder  -->
                 <Border
@@ -99,9 +97,7 @@
                     Width="1"
                     Margin="6,0,10,0"
                     Background="{ThemeResource DividerStrokeColorDefaultBrush}"
-                    Visibility="{x:Bind GroupId,
-                                        Converter={StaticResource NullToVisibilityConverter},
-                                        Mode=OneWay}" />
+                    Visibility="{x:Bind GroupId, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}" />
 
                 <!--  Favicon  -->
                 <Grid
@@ -110,9 +106,7 @@
                     Height="24"
                     Margin="0,0,12,0"
                     VerticalAlignment="Center"
-                    Visibility="{x:Bind FaviconUrl,
-                                        Converter={StaticResource NullToVisibilityConverter},
-                                        Mode=OneWay}">
+                    Visibility="{x:Bind FaviconUrl, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}">
                     <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" CornerRadius="4">
                         <Image Source="{x:Bind FaviconUrl, Converter={StaticResource StringToImageSourceConverter}, Mode=OneWay}" Stretch="UniformToFill" />
                     </Border>
@@ -227,9 +221,7 @@
                     Width="1"
                     Margin="6,0,10,0"
                     Background="{ThemeResource DividerStrokeColorDefaultBrush}"
-                    Visibility="{x:Bind GroupId,
-                                        Converter={StaticResource NullToVisibilityConverter},
-                                        Mode=OneWay}" />
+                    Visibility="{x:Bind GroupId, Converter={StaticResource NullToVisibilityConverter}, Mode=OneWay}" />
                 <TextBlock
                     Grid.Column="1"
                     Margin="0,0,8,0"
@@ -237,9 +229,7 @@
                     FontSize="11"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                     Text="{x:Bind Label, Mode=OneWay}"
-                    Visibility="{x:Bind HasLabel,
-                                        Converter={StaticResource BooleanToVisibilityConverter},
-                                        Mode=OneWay}" />
+                    Visibility="{x:Bind HasLabel, Converter={StaticResource BooleanToVisibilityConverter}, Mode=OneWay}" />
                 <Border
                     Grid.Column="2"
                     Height="1"
@@ -284,7 +274,7 @@
         Background="Transparent" so empty stretches of the grid (the Stations header, the
         space left when the volume slider is hidden) are hit-testable - a Grid with no
         background lets pointer input fall through it instead of reaching ContextFlyout below.
-
+        
         Row spacing is applied per-row via Margin rather than Grid.RowSpacing: RowSpacing adds
         its gap on both sides of a row even when that row's content is Collapsed, which is what
         left a phantom gap above the playback buttons whenever the volume slider was hidden.
@@ -416,13 +406,11 @@
             <StackPanel
                 Grid.Column="1"
                 HorizontalAlignment="Right"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}"
                 Orientation="Horizontal"
                 Spacing="2"
-                Visibility="{x:Bind ViewModel.IsViewArrangementActive,
-                                    Converter={StaticResource BooleanToVisibilityConverter},
-                                    Mode=OneWay}"
-                animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
-                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}">
+                Visibility="{x:Bind ViewModel.IsViewArrangementActive, Converter={StaticResource BooleanToVisibilityConverter}, Mode=OneWay}">
                 <TextBlock
                     VerticalAlignment="Center"
                     FontSize="11"
@@ -444,6 +432,8 @@
             animations:Implicit.Animations="{StaticResource ImplicitReflowAnimations}">
             <ListView
                 x:Name="StationsListView"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}"
                 AllowDrop="True"
                 CanDragItems="True"
                 CanReorderItems="True"
@@ -451,12 +441,9 @@
                 DragItemsStarting="StationsListView_DragItemsStarting"
                 ItemContainerStyleSelector="{StaticResource StationRowContainerStyleSelector}"
                 ItemTemplateSelector="{StaticResource StationRowTemplateSelector}"
-                ItemsSource="{x:Bind ViewModel.DisplayRows,
-                                     Mode=OneWay}"
+                ItemsSource="{x:Bind ViewModel.DisplayRows, Mode=OneWay}"
                 SelectionChanged="StationsListView_SelectionChanged"
-                SelectionMode="Single"
-                animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
-                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}" />
+                SelectionMode="Single" />
 
             <!--  Empty State  -->
             <Grid
@@ -464,11 +451,9 @@
                 Padding="6"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
-                Visibility="{x:Bind ViewModel.StationCount,
-                                    Mode=OneWay,
-                                    Converter={StaticResource CountToEmptyStateVisibilityConverter}}"
                 animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
-                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}">
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}"
+                Visibility="{x:Bind ViewModel.StationCount, Mode=OneWay, Converter={StaticResource CountToEmptyStateVisibilityConverter}}">
                 <StackPanel
                     MaxWidth="240"
                     HorizontalAlignment="Center"
@@ -519,12 +504,12 @@
             x:Name="VolumeControlGrid"
             Grid.Row="3"
             Margin="0,12,0,0"
-            Background="Transparent"
-            ColumnSpacing="8"
-            PointerWheelChanged="VolumeControl_PointerWheelChanged"
             animations:Implicit.Animations="{StaticResource ImplicitReflowAnimations}"
             animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
-            animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}">
+            animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}"
+            Background="Transparent"
+            ColumnSpacing="8"
+            PointerWheelChanged="VolumeControl_PointerWheelChanged">
             <!--
                 No ContextFlyout of its own: a right-click here falls through to the page's
                 menu on Grid.ContextFlyout above, which already carries a Show/Hide Volume
@@ -548,16 +533,13 @@
                 SmallChange="1"
                 StepFrequency="1"
                 ThumbToolTipValueConverter="{StaticResource PercentStringConverter}"
-                Value="{x:Bind ViewModel.VolumePercent,
-                               Mode=TwoWay}" />
+                Value="{x:Bind ViewModel.VolumePercent, Mode=TwoWay}" />
             <TextBlock
                 Grid.Column="2"
                 MinWidth="40"
                 VerticalAlignment="Center"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                Text="{x:Bind ViewModel.VolumePercent,
-                              Mode=OneWay,
-                              Converter={StaticResource PercentStringConverter}}"
+                Text="{x:Bind ViewModel.VolumePercent, Mode=OneWay, Converter={StaticResource PercentStringConverter}}"
                 TextAlignment="Right" />
         </Grid>
 
@@ -569,17 +551,15 @@
             Padding="8,4"
             HorizontalAlignment="Stretch"
             HorizontalContentAlignment="Stretch"
+            animations:Implicit.Animations="{StaticResource ImplicitReflowAnimations}"
+            animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
+            animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}"
             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
             BorderThickness="0"
             Click="NowPlayingInfo_Click"
             CornerRadius="4"
             ToolTipService.ToolTip="Click for details"
-            Visibility="{x:Bind ViewModel.HasNowPlaying,
-                                Mode=OneWay,
-                                Converter={StaticResource BooleanToVisibilityConverter}}"
-            animations:Implicit.Animations="{StaticResource ImplicitReflowAnimations}"
-            animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
-            animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}">
+            Visibility="{x:Bind ViewModel.HasNowPlaying, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Grid VerticalAlignment="Center" ColumnSpacing="6">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -590,10 +570,10 @@
                 <FontIcon
                     Grid.Column="0"
                     VerticalAlignment="Center"
+                    animations:Connected.Key="NowPlayingTrackIcon"
                     FontSize="14"
                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                    Glyph="&#xE8D6;"
-                    animations:Connected.Key="NowPlayingTrackIcon" />
+                    Glyph="&#xE8D6;" />
                 <Grid
                     x:Name="NowPlayingTextHost"
                     Grid.Column="1"
@@ -601,28 +581,26 @@
                     <labs:MarqueeText
                         x:Name="NowPlayingMarqueeText"
                         VerticalAlignment="Center"
+                        animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                        animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}"
                         Behavior="Looping"
                         Direction="Left"
                         FontSize="12"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         RepeatBehavior="1x"
                         Speed="40"
-                        Text="{x:Bind ViewModel.NowPlaying,
-                                      Mode=OneWay}"
-                        Visibility="Collapsed"
-                        animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
-                        animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}" />
+                        Text="{x:Bind ViewModel.NowPlaying, Mode=OneWay}"
+                        Visibility="Collapsed" />
                     <TextBlock
                         x:Name="NowPlayingText"
                         VerticalAlignment="Center"
+                        animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                        animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}"
                         FontSize="12"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Text="{x:Bind ViewModel.NowPlaying,
-                                      Mode=OneWay}"
+                        Text="{x:Bind ViewModel.NowPlaying, Mode=OneWay}"
                         TextTrimming="Clip"
-                        TextWrapping="NoWrap"
-                        animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
-                        animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}" />
+                        TextWrapping="NoWrap" />
                 </Grid>
                 <!--  Favorite Button  -->
                 <Button
@@ -652,8 +630,8 @@
         <Grid
             Grid.Row="5"
             Margin="0,12,0,0"
-            ColumnSpacing="12"
-            animations:Implicit.Animations="{StaticResource ImplicitReflowAnimations}">
+            animations:Implicit.Animations="{StaticResource ImplicitReflowAnimations}"
+            ColumnSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />

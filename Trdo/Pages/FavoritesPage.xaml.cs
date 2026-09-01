@@ -184,10 +184,7 @@ public sealed partial class FavoritesPage : Page
         if (_previouslySelectedContainer != null)
         {
             Grid? previousExpandedContent = FindDescendant<Grid>(_previouslySelectedContainer, "ExpandedContent");
-            if (previousExpandedContent != null)
-            {
-                previousExpandedContent.Visibility = Visibility.Collapsed;
-            }
+            previousExpandedContent?.Visibility = Visibility.Collapsed;
         }
 
         // Expand the newly selected item
@@ -277,10 +274,7 @@ public sealed partial class FavoritesPage : Page
             ? element.FindName(buttonName) as HyperlinkButton
             : null;
 
-        if (button != null)
-        {
-            button.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-        }
+        button?.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ApplyMusicServiceVisibility(ListViewItem container)

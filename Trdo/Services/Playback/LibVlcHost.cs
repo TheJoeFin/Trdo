@@ -1,6 +1,6 @@
+using LibVLCSharp.Shared;
 using System;
 using System.Diagnostics;
-using LibVLCSharp.Shared;
 
 namespace Trdo.Services.Playback;
 

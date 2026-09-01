@@ -13,7 +13,7 @@ namespace Trdo.Controls;
 /// horizontal StackPanel would run a long filter set off the side of a 320px window.
 /// </para>
 /// </summary>
-public sealed class WrapPanel : Panel
+public sealed partial class WrapPanel : Panel
 {
     /// <summary>Horizontal gap between children on the same row.</summary>
     public double ColumnSpacing

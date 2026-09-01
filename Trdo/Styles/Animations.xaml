@@ -11,63 +11,63 @@
 
     <animations:ImplicitAnimationSet x:Key="ImplicitFadeShowAnimations">
         <animations:OpacityAnimation
-            Duration="0:0:0.25"
             EasingMode="EaseOut"
             EasingType="Cubic"
             From="0"
-            To="1" />
+            To="1"
+            Duration="0:0:0.25" />
         <animations:TranslationAnimation
-            Duration="0:0:0.25"
             EasingMode="EaseOut"
             EasingType="Cubic"
             From="0,-8,0"
-            To="0,0,0" />
+            To="0,0,0"
+            Duration="0:0:0.25" />
     </animations:ImplicitAnimationSet>
 
     <animations:ImplicitAnimationSet x:Key="ImplicitFadeHideAnimations">
         <animations:OpacityAnimation
-            Duration="0:0:0.15"
             EasingMode="EaseIn"
             EasingType="Cubic"
             From="1"
-            To="0" />
+            To="0"
+            Duration="0:0:0.15" />
         <animations:TranslationAnimation
-            Duration="0:0:0.15"
             EasingMode="EaseIn"
             EasingType="Cubic"
             From="0,0,0"
-            To="0,-8,0" />
+            To="0,-8,0"
+            Duration="0:0:0.15" />
     </animations:ImplicitAnimationSet>
 
     <!--  Plain opacity cross-fade, for elements that swap in place (e.g. static text vs. a marquee).  -->
     <animations:ImplicitAnimationSet x:Key="ImplicitCrossFadeShowAnimations">
         <animations:OpacityAnimation
-            Duration="0:0:0.2"
             EasingMode="EaseOut"
             EasingType="Cubic"
             From="0"
-            To="1" />
+            To="1"
+            Duration="0:0:0.2" />
     </animations:ImplicitAnimationSet>
 
     <animations:ImplicitAnimationSet x:Key="ImplicitCrossFadeHideAnimations">
         <animations:OpacityAnimation
-            Duration="0:0:0.15"
             EasingMode="EaseIn"
             EasingType="Cubic"
             From="1"
-            To="0" />
+            To="0"
+            Duration="0:0:0.15" />
     </animations:ImplicitAnimationSet>
 
     <!--  Glides an element to its new Offset/Size instead of snapping when a sibling's visibility change reflows the layout.  -->
     <animations:ImplicitAnimationSet x:Key="ImplicitReflowAnimations">
         <animations:OffsetAnimation
-            Duration="0:0:0.3"
             EasingMode="EaseOut"
-            EasingType="Cubic" />
+            EasingType="Cubic"
+            Duration="0:0:0.3" />
         <animations:SizeAnimation
-            Duration="0:0:0.3"
             EasingMode="EaseOut"
-            EasingType="Cubic" />
+            EasingType="Cubic"
+            Duration="0:0:0.3" />
     </animations:ImplicitAnimationSet>
 
 </ResourceDictionary>

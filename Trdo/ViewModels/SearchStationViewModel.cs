@@ -30,7 +30,7 @@ public record BitrateOption(string Display, int Value);
 /// </summary>
 public record SortOption(string Display, string Order, bool Reverse);
 
-public class SearchStationViewModel : INotifyPropertyChanged
+public partial class SearchStationViewModel : INotifyPropertyChanged
 {
     private readonly RadioBrowserService _radioBrowserService = new();
     private CancellationTokenSource? _searchCancellationTokenSource;

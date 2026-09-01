@@ -1,6 +1,6 @@
+using LibVLCSharp.Shared;
 using System;
 using System.Diagnostics;
-using LibVLCSharp.Shared;
 using Trdo.Models;
 using VlcMediaPlayer = LibVLCSharp.Shared.MediaPlayer;
 
@@ -9,7 +9,7 @@ namespace Trdo.Services.Metadata;
 /// <summary>
 /// Reads now-playing metadata from LibVLC media meta and parsed events.
 /// </summary>
-public sealed class LibVlcMetadataProvider : IDisposable
+public sealed partial class LibVlcMetadataProvider : IDisposable
 {
     private VlcMediaPlayer? _mediaPlayer;
     private StreamMetadata _currentMetadata = StreamMetadata.Empty;

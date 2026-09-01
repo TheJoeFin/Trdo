@@ -1,14 +1,14 @@
-﻿using System;
+﻿using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using Trdo.Models;
 using Trdo.Services;
 
 namespace Trdo.ViewModels;
 
-public class AddStationViewModel : INotifyPropertyChanged
+public partial class AddStationViewModel : INotifyPropertyChanged
 {
     private string _stationName = string.Empty;
     private string _streamUrl = string.Empty;

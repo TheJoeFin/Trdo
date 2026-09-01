@@ -6,7 +6,7 @@ namespace Trdo.Converters;
 /// <summary>
 /// Converts a boolean favorite status to the appropriate star glyph.
 /// </summary>
-public class BooleanToFavoriteGlyphConverter : IValueConverter
+public partial class BooleanToFavoriteGlyphConverter : IValueConverter
 {
     /// <summary>
     /// Filled star glyph (favorited).

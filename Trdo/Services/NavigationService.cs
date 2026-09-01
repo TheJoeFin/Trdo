@@ -27,13 +27,11 @@ public partial class NavigationService : ObservableObject
             if (_frame == value)
                 return;
 
-            if (_frame is not null)
-                _frame.Navigated -= OnNavigated;
+            _frame?.Navigated -= OnNavigated;
 
             _frame = value;
 
-            if (_frame is not null)
-                _frame.Navigated += OnNavigated;
+            _frame?.Navigated += OnNavigated;
 
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanGoBack));

@@ -13,7 +13,7 @@ namespace Trdo.Services;
 /// <summary>
 /// Service for extracting metadata from internet radio streams using the ICY (Icecast/Shoutcast) protocol.
 /// </summary>
-public sealed class StreamMetadataService : IDisposable
+public sealed partial class StreamMetadataService : IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly object _pollingLock = new();
@@ -468,7 +468,7 @@ public sealed class StreamMetadataService : IDisposable
         }
 
         // Extract album artwork URL (try multiple possible attribute names)
-        string? artworkUrl = ExtractAttribute(metadataStr, "amgArtworkURL") 
+        string? artworkUrl = ExtractAttribute(metadataStr, "amgArtworkURL")
                           ?? ExtractAttribute(metadataStr, "artworkURL")
                           ?? ExtractAttribute(metadataStr, "url");
 

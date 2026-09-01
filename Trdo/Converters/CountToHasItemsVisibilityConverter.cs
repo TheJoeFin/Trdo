@@ -7,7 +7,7 @@ namespace Trdo.Converters;
 /// <summary>
 /// Converts a count to Visibility. Returns Visible when count > 0, Collapsed otherwise.
 /// </summary>
-public class CountToHasItemsVisibilityConverter : IValueConverter
+public partial class CountToHasItemsVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

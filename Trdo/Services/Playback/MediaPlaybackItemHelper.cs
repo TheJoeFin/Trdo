@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 

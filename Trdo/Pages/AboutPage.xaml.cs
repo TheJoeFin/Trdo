@@ -70,29 +70,29 @@ public sealed partial class AboutPage : Page
         _ = ViewModel.ContactDeveloper();
     }
 
-        private void TutorialButton_Click(object sender, RoutedEventArgs e)
-        {
-            TutorialWindow tutorialWindow = new();
-            tutorialWindow.Activate();
-        }
-
-        private void RadioBrowserButton_Click(object sender, RoutedEventArgs e)
-        {
-            _ = ViewModel.OpenRadioBrowser();
-        }
-
-        private void WinUIExButton_Click(object sender, RoutedEventArgs e)
-        {
-            _ = ViewModel.OpenWinUIEx();
-        }
-
-        private void CommunityToolkitButton_Click(object sender, RoutedEventArgs e)
-        {
-            _ = ViewModel.OpenCommunityToolkit();
-        }
-
-        private void BuyMeACoffeeButton_Click(object sender, RoutedEventArgs e)
-        {
-            _ = ViewModel.OpenBuyMeACoffee();
-        }
+    private void TutorialButton_Click(object sender, RoutedEventArgs e)
+    {
+        TutorialWindow tutorialWindow = new();
+        tutorialWindow.Activate();
     }
+
+    private void RadioBrowserButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = ViewModel.OpenRadioBrowser();
+    }
+
+    private void WinUIExButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = ViewModel.OpenWinUIEx();
+    }
+
+    private void CommunityToolkitButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = ViewModel.OpenCommunityToolkit();
+    }
+
+    private void BuyMeACoffeeButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = ViewModel.OpenBuyMeACoffee();
+    }
+}

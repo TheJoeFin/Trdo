@@ -87,10 +87,7 @@ public sealed partial class RadioPlayerService
             throw new InvalidOperationException("No stream URL set. Call SetStreamUrl first.");
         }
 
-        if (_libVlcBackend is not null)
-        {
-            _libVlcBackend.NetworkCachingMs = (int)RequiredBufferDuration.TotalMilliseconds;
-        }
+        _libVlcBackend?.NetworkCachingMs = (int)RequiredBufferDuration.TotalMilliseconds;
 
         // Report the value LibVLC will actually use - a configured 0 becomes its own default.
         int cachingMs = _libVlcBackend?.EffectiveNetworkCachingMs ?? (int)RequiredBufferDuration.TotalMilliseconds;
