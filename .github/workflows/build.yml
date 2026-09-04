@@ -27,7 +27,7 @@ jobs:
       run: dotnet restore Trdo.slnx
       
     - name: Build
-      run: dotnet build Trdo.slnx --configuration Release --no-restore /p:PublishReadyToRun=false
+      run: dotnet build Trdo.slnx --configuration Release --no-restore /p:PublishReadyToRun=false /p:Platform=x64
 
     - name: Test
-      run: dotnet test Trdo.Tests/Trdo.Tests.csproj --configuration Release --no-build
+      run: dotnet test Trdo.Tests/Trdo.Tests.csproj --configuration Release --no-build /p:Platform=x64
