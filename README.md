@@ -21,7 +21,7 @@
 
 > **📢 Now Traydio:** As of version 2.0, Trdo is named **Traydio** — same app, clearer name.
 
-![Traydio flyout](Images/Screenshot-1-10.png)
+![Traydio flyout](Images/Screenshot-2-0.png)
 
 ### Overview
 
