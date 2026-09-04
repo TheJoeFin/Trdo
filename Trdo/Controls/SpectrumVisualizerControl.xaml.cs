@@ -31,7 +31,11 @@ public sealed partial class SpectrumVisualizerControl : UserControl
     private float[] _latestBands = new float[BandCount]; // written on capture thread, read on UI thread
 
     private Rectangle[] _bars = [];
+    // WasapiLoopbackCapture is obsolete in favor of WasapiRecorderBuilder, but that API
+    // reshapes capture setup/teardown significantly; deferred until it can be verified on device.
+#pragma warning disable CS0618
     private WasapiLoopbackCapture? _capture;
+#pragma warning restore CS0618
     private int _sampleRate = 44100;
     private int _channels = 2;
 
@@ -156,7 +160,9 @@ public sealed partial class SpectrumVisualizerControl : UserControl
     {
         try
         {
+#pragma warning disable CS0618
             _capture = new WasapiLoopbackCapture();
+#pragma warning restore CS0618
             _sampleRate = _capture.WaveFormat.SampleRate;
             _channels = _capture.WaveFormat.Channels;
             _capture.DataAvailable += OnDataAvailable;

@@ -42,10 +42,10 @@ public class StreamMetadata
         {
             if (!string.IsNullOrWhiteSpace(Artist) && !string.IsNullOrWhiteSpace(Title))
                 return $"{Artist} - {Title}";
-            
+
             if (!string.IsNullOrWhiteSpace(StreamTitle))
                 return StreamTitle;
-            
+
             return string.Empty;
         }
     }

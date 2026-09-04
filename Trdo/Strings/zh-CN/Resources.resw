@@ -1,0 +1,765 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+    Microsoft ResX Schema
+
+    Version 2.0
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
+    associated with the data types.
+
+    Example:
+
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+  -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="1" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AboutPage_BuiltWithOpenSourceBody.Text" xml:space="preserve">
+    <value>此应用使用了以下开源库：</value>
+  </data>
+  <data name="AboutPage_BuiltWithOpenSourceTitle.Text" xml:space="preserve">
+    <value>基于开源构建</value>
+  </data>
+  <data name="AboutPage_ContactDeveloper.Text" xml:space="preserve">
+    <value>联系开发者</value>
+  </data>
+  <data name="AboutPage_DeveloperTitle.Text" xml:space="preserve">
+    <value>开发者</value>
+  </data>
+  <data name="AboutPage_EnjoyingPrompt.Text" xml:space="preserve">
+    <value>喜欢 Traydio 吗？</value>
+  </data>
+  <data name="AboutPage_Feature_MultiStations.Text" xml:space="preserve">
+    <value>支持多个电台</value>
+  </data>
+  <data name="AboutPage_Feature_StartWithWindows.Text" xml:space="preserve">
+    <value>支持随 Windows 启动</value>
+  </data>
+  <data name="AboutPage_Feature_SystemTray.Text" xml:space="preserve">
+    <value>系统托盘集成，便于访问</value>
+  </data>
+  <data name="AboutPage_Feature_Watchdog.Text" xml:space="preserve">
+    <value>流媒体看门狗，自动重新连接</value>
+  </data>
+  <data name="AboutPage_FeaturesTitle.Text" xml:space="preserve">
+    <value>功能</value>
+  </data>
+  <data name="AboutPage_Formerly.Text" xml:space="preserve">
+    <value>曾用名 Trdo</value>
+  </data>
+  <data name="AboutPage_HelpBody.Text" xml:space="preserve">
+    <value>再次查看教程，了解如何使用 Traydio。</value>
+  </data>
+  <data name="AboutPage_HelpTitle.Text" xml:space="preserve">
+    <value>需要帮助？</value>
+  </data>
+  <data name="AboutPage_IssuePrompt.Text" xml:space="preserve">
+    <value>遇到问题或有建议？</value>
+  </data>
+  <data name="AboutPage_OpenSourceBody.Text" xml:space="preserve">
+    <value>此应用是开源的，可在 GitHub 上获取。</value>
+  </data>
+  <data name="AboutPage_OpenSourceTitle.Text" xml:space="preserve">
+    <value>开源</value>
+  </data>
+  <data name="AboutPage_RadioDatabaseTitle.Text" xml:space="preserve">
+    <value>电台数据库</value>
+  </data>
+  <data name="AboutPage_RateLabel.Text" xml:space="preserve">
+    <value>为您的使用体验评分：</value>
+  </data>
+  <data name="AboutPage_SupportBody.Text" xml:space="preserve">
+    <value>如果你喜欢 Traydio，可以考虑请我喝杯咖啡！</value>
+  </data>
+  <data name="AboutPage_SupportTitle.Text" xml:space="preserve">
+    <value>支持开发者</value>
+  </data>
+  <data name="AboutPage_Title.Text" xml:space="preserve">
+    <value>关于</value>
+  </data>
+  <data name="AboutPage_ViewTutorial.Text" xml:space="preserve">
+    <value>查看教程</value>
+  </data>
+  <data name="AboutPage_VisitDeveloperGitHub.Text" xml:space="preserve">
+    <value>访问开发者的 GitHub</value>
+  </data>
+  <data name="Action_Cancel.Text" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="Action_Save.Text" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="AddStation_AddPageTitle" xml:space="preserve">
+    <value>添加电台</value>
+  </data>
+  <data name="AddStation_EditPageTitle" xml:space="preserve">
+    <value>编辑电台</value>
+  </data>
+  <data name="AddStation_HomepageLabel.Text" xml:space="preserve">
+    <value>主页（可选）</value>
+  </data>
+  <data name="AddStation_HomepagePlaceholder.PlaceholderText" xml:space="preserve">
+    <value>例如：https://example.com</value>
+  </data>
+  <data name="AddStation_LogoUrlLabel.Text" xml:space="preserve">
+    <value>电台标志/图标网址（可选）</value>
+  </data>
+  <data name="AddStation_LogoUrlPlaceholder.PlaceholderText" xml:space="preserve">
+    <value>例如：https://example.com/logo.png</value>
+  </data>
+  <data name="AddStation_InvalidUrl" xml:space="preserve">
+    <value>请输入有效的 HTTP 或 HTTPS 网址。</value>
+  </data>
+  <data name="AddStation_NameRequired" xml:space="preserve">
+    <value>电台名称为必填项。</value>
+  </data>
+  <data name="AddStation_PageTitle.Text" xml:space="preserve">
+    <value>添加电台</value>
+  </data>
+  <data name="AddStation_StationNameLabel.Text" xml:space="preserve">
+    <value>电台名称</value>
+  </data>
+  <data name="AddStation_StationNamePlaceholder.PlaceholderText" xml:space="preserve">
+    <value>例如：FM99.9 - 家乡电台</value>
+  </data>
+  <data name="AddStation_StreamUrlLabel.Text" xml:space="preserve">
+    <value>流媒体网址</value>
+  </data>
+  <data name="AddStation_StreamUrlPlaceholder.PlaceholderText" xml:space="preserve">
+    <value>例如：https://example.com/stream</value>
+  </data>
+  <data name="AddStation_UrlRequired" xml:space="preserve">
+    <value>流媒体网址为必填项。</value>
+  </data>
+  <data name="App_ExitApplicationCommand.Description" xml:space="preserve">
+    <value>退出 Traydio</value>
+  </data>
+  <data name="App_ExitApplicationCommand.Label" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="App_PlayPauseCommand.Description" xml:space="preserve">
+    <value>播放或暂停电台</value>
+  </data>
+  <data name="App_PlayPauseCommand.Label" xml:space="preserve">
+    <value>播放</value>
+  </data>
+  <data name="App_ShowHideWindowCommand.Description" xml:space="preserve">
+    <value>显示或隐藏主窗口</value>
+  </data>
+  <data name="App_ShowHideWindowCommand.Label" xml:space="preserve">
+    <value>显示窗口</value>
+  </data>
+  <data name="FavoritesPage_EmptySubtitle.Text" xml:space="preserve">
+    <value>点击喜欢的歌曲上的星标图标即可保存到这里</value>
+  </data>
+  <data name="FavoritesPage_EmptyTitle.Text" xml:space="preserve">
+    <value>暂无收藏的歌曲</value>
+  </data>
+  <data name="FavoritesPage_Export.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>将收藏导出为播放列表文件</value>
+  </data>
+  <data name="FavoritesPage_ExportFailed" xml:space="preserve">
+    <value>导出失败</value>
+  </data>
+  <data name="FavoritesPage_ExportLabel.Text" xml:space="preserve">
+    <value>导出…</value>
+  </data>
+  <data name="FavoritesPage_IncludeInNextExport.Text" xml:space="preserve">
+    <value>包含在下次导出中</value>
+  </data>
+  <data name="FavoritesPage_Options.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>更多选项</value>
+  </data>
+  <data name="FavoritesPage_Remove.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>从收藏中移除</value>
+  </data>
+  <data name="FavoritesPage_Title.Text" xml:space="preserve">
+    <value>收藏的歌曲</value>
+  </data>
+  <data name="ManualStationWindow_Advanced.Text" xml:space="preserve">
+    <value>高级</value>
+  </data>
+  <data name="ManualStationWindow_BufferLevel.Text" xml:space="preserve">
+    <value>缓冲级别</value>
+  </data>
+  <data name="ManualStationWindow_BufferLevelDescription.Text" xml:space="preserve">
+    <value>较高的缓冲级别有助于应对不稳定的网络连接，但会增加一些播放延迟。仅在电台确实需要时才覆盖此设置。</value>
+  </data>
+  <data name="ManualStationWindow_BufferOverrideToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>为此电台覆盖缓冲级别</value>
+  </data>
+  <data name="ManualStationWindow_BufferOverrideToggle.OffContent" xml:space="preserve">
+    <value>跟随应用设置</value>
+  </data>
+  <data name="ManualStationWindow_BufferOverrideToggle.OnContent" xml:space="preserve">
+    <value>为此电台覆盖</value>
+  </data>
+  <data name="ManualStationWindow_SongPopupDelay.Text" xml:space="preserve">
+    <value>曲目信息延迟</value>
+  </data>
+  <data name="ManualStationWindow_SongPopupDelayDescription.Text" xml:space="preserve">
+    <value>有些电台会在下一首曲目实际开始播放之前就进行播报。延迟显示曲目信息，使其在你听到歌曲时才更新。电台提前播报的时间取决于其编码器，因此请针对每个电台单独设置。</value>
+  </data>
+  <data name="ManualStationWindow_SongPopupDelayOverride.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>为此电台覆盖曲目信息延迟</value>
+  </data>
+  <data name="ManualStationWindow_SongPopupDelayOverride.OffContent" xml:space="preserve">
+    <value>跟随应用设置</value>
+  </data>
+  <data name="ManualStationWindow_SongPopupDelayOverride.OnContent" xml:space="preserve">
+    <value>为此电台覆盖</value>
+  </data>
+  <data name="ManualStationWindow_Title" xml:space="preserve">
+    <value>Traydio - 添加电台</value>
+  </data>
+  <data name="ManualStationWindow_Volume.Text" xml:space="preserve">
+    <value>音量</value>
+  </data>
+  <data name="ManualStationWindow_VolumeDescription.Text" xml:space="preserve">
+    <value>会记住此电台的音量，切换离开再切回时保持不变。</value>
+  </data>
+  <data name="NowPlayingPage_IdleSubtitle.Text" xml:space="preserve">
+    <value>开始播放以查看曲目和艺术家信息</value>
+  </data>
+  <data name="NowPlayingPage_IdleTitle.Text" xml:space="preserve">
+    <value>当前没有播放电台</value>
+  </data>
+  <data name="NowPlayingPage_Label_Artist.Text" xml:space="preserve">
+    <value>艺术家</value>
+  </data>
+  <data name="NowPlayingPage_Label_Title.Text" xml:space="preserve">
+    <value>曲目</value>
+  </data>
+  <data name="NowPlayingPage_RecentTracks.Text" xml:space="preserve">
+    <value>最近播放</value>
+  </data>
+  <data name="NowPlayingPage_Title.Text" xml:space="preserve">
+    <value>正在播放</value>
+  </data>
+  <data name="NowPlayingPage_Tooltip_Favorite.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>收藏歌曲</value>
+  </data>
+  <data name="NowPlayingPage_Tooltip_SearchSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>音乐搜索设置</value>
+  </data>
+  <data name="PlaybackFailure_NoDetail" xml:space="preserve">
+    <value>无法播放此电台。流媒体可能不可用，或网址有误。</value>
+  </data>
+  <data name="PlaybackFailure_NoNetwork" xml:space="preserve">
+    <value>没有网络连接。请连接网络后重试。</value>
+  </data>
+  <data name="PlaybackFailure_TooManyAttemptsNoDetail" xml:space="preserve">
+    <value>多次尝试后仍无法播放此电台。流媒体可能已离线，或网址有误。</value>
+  </data>
+  <data name="PlaybackFailure_TooManyAttemptsWithDetail" xml:space="preserve">
+    <value>多次尝试后仍无法播放此电台（{0}）。流媒体可能已离线，或网址有误。</value>
+  </data>
+  <data name="PlaybackFailure_WithDetail" xml:space="preserve">
+    <value>无法播放此电台：{0}</value>
+  </data>
+  <data name="PlaybackFailure_WithSentenceDetail" xml:space="preserve">
+    <value>无法播放此电台。{0}</value>
+  </data>
+  <data name="PlayerViewModel_Buffering" xml:space="preserve">
+    <value>缓冲中</value>
+  </data>
+  <data name="PlayerViewModel_FailedToInitializeStream" xml:space="preserve">
+    <value>初始化流媒体失败：{0}</value>
+  </data>
+  <data name="PlayerViewModel_FailedToPause" xml:space="preserve">
+    <value>暂停 {0} 失败：{1}</value>
+  </data>
+  <data name="PlayerViewModel_FailedToPlay" xml:space="preserve">
+    <value>播放 {0} 失败：{1}</value>
+  </data>
+  <data name="PlayerViewModel_FailedToRestore" xml:space="preserve">
+    <value>恢复 {0} 失败：{1}</value>
+  </data>
+  <data name="PlayerViewModel_FailedToSwitch" xml:space="preserve">
+    <value>切换到 {0} 失败：{1}</value>
+  </data>
+  <data name="PlayerViewModel_FailedToUpdateStream" xml:space="preserve">
+    <value>更新流媒体失败：{0}</value>
+  </data>
+  <data name="PlayerViewModel_InvalidStreamUrl" xml:space="preserve">
+    <value>{0} 的流媒体网址无效</value>
+  </data>
+  <data name="PlayerViewModel_Pause" xml:space="preserve">
+    <value>暂停</value>
+  </data>
+  <data name="PlayerViewModel_PauseAndClose" xml:space="preserve">
+    <value>暂停并关闭</value>
+  </data>
+  <data name="PlayerViewModel_Play" xml:space="preserve">
+    <value>播放</value>
+  </data>
+  <data name="PlayingPage_About.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>关于 Traydio</value>
+  </data>
+  <data name="PlayingPage_AddFirstStation.Text" xml:space="preserve">
+    <value>添加您的第一个电台</value>
+  </data>
+  <data name="PlayingPage_DeleteGroup.Text" xml:space="preserve">
+    <value>删除分组</value>
+  </data>
+  <data name="PlayingPage_DeleteGroupAndStations.Text" xml:space="preserve">
+    <value>删除分组及其电台</value>
+  </data>
+  <data name="PlayingPage_Edit.Text" xml:space="preserve">
+    <value>编辑</value>
+  </data>
+  <data name="PlayingPage_EditLabel.Text" xml:space="preserve">
+    <value>编辑标签</value>
+  </data>
+  <data name="PlayingPage_EmptySubtitle.Text" xml:space="preserve">
+    <value>添加您喜欢的电台即可开始收听。</value>
+  </data>
+  <data name="PlayingPage_EmptyTitle.Text" xml:space="preserve">
+    <value>暂无电台</value>
+  </data>
+  <data name="PlayingPage_Favorites.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>收藏的歌曲</value>
+  </data>
+  <data name="PlayingPage_GroupBy.Text" xml:space="preserve">
+    <value>分组方式</value>
+  </data>
+  <data name="PlayingPage_HideVolumeSlider" xml:space="preserve">
+    <value>隐藏音量滑块</value>
+  </data>
+  <data name="PlayingPage_InsertDividerAbove.Text" xml:space="preserve">
+    <value>在上方插入分隔线</value>
+  </data>
+  <data name="PlayingPage_Manual.Content" xml:space="preserve">
+    <value>手动</value>
+  </data>
+  <data name="PlayingPage_MoveToGroup.Text" xml:space="preserve">
+    <value>移动到分组</value>
+  </data>
+  <data name="PlayingPage_NewDivider.Text" xml:space="preserve">
+    <value>新建分隔线</value>
+  </data>
+  <data name="PlayingPage_NewGroup.Text" xml:space="preserve">
+    <value>新建分组</value>
+  </data>
+  <data name="PlayingPage_PlaybackErrorClose" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="PlayingPage_PlaybackErrorTitle" xml:space="preserve">
+    <value>播放错误</value>
+  </data>
+  <data name="PlayingPage_PopOutButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>打开迷你播放器</value>
+  </data>
+  <data name="PlayingPage_QuitButton.Content" xml:space="preserve">
+    <value>退出</value>
+  </data>
+  <data name="PlayingPage_QuitButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>退出 Traydio</value>
+  </data>
+  <data name="PlayingPage_RefreshAllInfo.Text" xml:space="preserve">
+    <value>刷新所有电台的信息</value>
+  </data>
+  <data name="PlayingPage_RefreshStationInfo.Text" xml:space="preserve">
+    <value>刷新电台信息</value>
+  </data>
+  <data name="PlayingPage_Remove.Text" xml:space="preserve">
+    <value>移除</value>
+  </data>
+  <data name="PlayingPage_RemoveDivider.Text" xml:space="preserve">
+    <value>移除分隔线</value>
+  </data>
+  <data name="PlayingPage_Rename.Text" xml:space="preserve">
+    <value>重命名</value>
+  </data>
+  <data name="PlayingPage_Settings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="PlayingPage_ShowVolume.Text" xml:space="preserve">
+    <value>显示音量滑块</value>
+  </data>
+  <data name="PlayingPage_SortBy.Text" xml:space="preserve">
+    <value>排序方式</value>
+  </data>
+  <data name="PlayingPage_StationButton.Text" xml:space="preserve">
+    <value>电台</value>
+  </data>
+  <data name="PlayingPage_StationsHeader.Text" xml:space="preserve">
+    <value>电台</value>
+  </data>
+  <data name="PlayingPage_VisitWebsite.Text" xml:space="preserve">
+    <value>访问网站</value>
+  </data>
+  <data name="SettingsPage_AllowSleepDescription.Text" xml:space="preserve">
+    <value>允许电脑在播放电台时按正常计划进入睡眠。请注意，只要有音频在播放，Windows 本身可能会让电脑保持唤醒状态。</value>
+  </data>
+  <data name="SettingsPage_AllowSleepTitle.Text" xml:space="preserve">
+    <value>允许电脑睡眠</value>
+  </data>
+  <data name="SettingsPage_AutoIncreaseBufferDescription.Text" xml:space="preserve">
+    <value>当流媒体播放不流畅时，让 Traydio 自动提高缓冲。</value>
+  </data>
+  <data name="SettingsPage_AutoIncreaseBufferTitle.Text" xml:space="preserve">
+    <value>卡顿时自动增加缓冲</value>
+  </data>
+  <data name="SettingsPage_AutoPlayWarning.Message" xml:space="preserve">
+    <value>这意味着 Traydio 启动时会自动开始播放音频，可能会造成干扰。您确定要启用此功能吗？</value>
+  </data>
+  <data name="SettingsPage_AutoRecoverDescription.Text" xml:space="preserve">
+    <value>监控播放状态，并在流媒体卡顿、中断或无声时自动尝试恢复。</value>
+  </data>
+  <data name="SettingsPage_AutoRecoverTitle.Text" xml:space="preserve">
+    <value>自动恢复</value>
+  </data>
+  <data name="SettingsPage_BufferLevelDescription.Text" xml:space="preserve">
+    <value>较高的缓冲级别有助于应对不稳定的网络连接，但可能会增加一些播放延迟。</value>
+  </data>
+  <data name="SettingsPage_BufferLevelTitle.Text" xml:space="preserve">
+    <value>缓冲级别</value>
+  </data>
+  <data name="SettingsPage_CopyDiagnostics.Content" xml:space="preserve">
+    <value>复制诊断信息</value>
+  </data>
+  <data name="SettingsPage_CopyDiagnosticsFailed" xml:space="preserve">
+    <value>无法复制诊断信息：{0}</value>
+  </data>
+  <data name="SettingsPage_DemoPopupButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>演示歌曲切换弹窗</value>
+  </data>
+  <data name="SettingsPage_DemoPopupButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>立即显示弹窗，以便查看其效果</value>
+  </data>
+  <data name="SettingsPage_DemoPopupButton.Content" xml:space="preserve">
+    <value>演示</value>
+  </data>
+  <data name="SettingsPage_DiagnosticsDescription.Text" xml:space="preserve">
+    <value>Traydio 会记录播放活动日志（使用的引擎、流媒体状态和错误信息）。报告问题时，可以打开日志文件夹或复制最近的诊断信息进行分享。</value>
+  </data>
+  <data name="SettingsPage_DiagnosticsTitle.Text" xml:space="preserve">
+    <value>诊断</value>
+  </data>
+  <data name="SettingsPage_Enable.Content" xml:space="preserve">
+    <value>启用</value>
+  </data>
+  <data name="SettingsPage_ExportFailed" xml:space="preserve">
+    <value>导出失败：{0}</value>
+  </data>
+  <data name="SettingsPage_ExportStations.Content" xml:space="preserve">
+    <value>导出电台</value>
+  </data>
+  <data name="SettingsPage_ImportExportDescription.Text" xml:space="preserve">
+    <value>使用 M3U 和 PLS 播放列表文件备份您的电台列表，或将其转移到其他设备。</value>
+  </data>
+  <data name="SettingsPage_ImportExportTitle.Text" xml:space="preserve">
+    <value>导入/导出电台</value>
+  </data>
+  <data name="SettingsPage_ImportFailed" xml:space="preserve">
+    <value>导入失败：{0}</value>
+  </data>
+  <data name="SettingsPage_ImportStations.Content" xml:space="preserve">
+    <value>导入电台</value>
+  </data>
+  <data name="SettingsPage_Language_English.Content" xml:space="preserve">
+    <value>英语</value>
+  </data>
+  <data name="SettingsPage_Language_System.Content" xml:space="preserve">
+    <value>系统</value>
+  </data>
+  <data name="SettingsPage_Language_Spanish.Content" xml:space="preserve">
+    <value>西班牙语</value>
+  </data>
+  <data name="SettingsPage_Language_French.Content" xml:space="preserve">
+    <value>法語</value>
+  </data>
+  <data name="SettingsPage_Language_Chinese.Content" xml:space="preserve">
+    <value>中文</value>
+  </data>
+  <data name="SettingsPage_Language_German.Content" xml:space="preserve">
+    <value>德语</value>
+  </data>
+  <data name="SettingsPage_Language_PortugueseBrazil.Content" xml:space="preserve">
+    <value>葡萄牙语（巴西）</value>
+  </data>
+  <data name="SettingsPage_Language_PortuguesePortugal.Content" xml:space="preserve">
+    <value>葡萄牙语（葡萄牙）</value>
+  </data>
+  <data name="SettingsPage_Language_Arabic.Content" xml:space="preserve">
+    <value>阿拉伯语</value>
+  </data>
+  <data name="SettingsPage_Language_Polish.Content" xml:space="preserve">
+    <value>波兰语</value>
+  </data>
+  <data name="SettingsPage_LanguageDescription.Text" xml:space="preserve">
+    <value>选择应用中使用的语言。</value>
+  </data>
+  <data name="SettingsPage_LanguageTitle.Text" xml:space="preserve">
+    <value>语言</value>
+  </data>
+  <data name="SettingsPage_MusicSearchServicesDescription.Text" xml:space="preserve">
+    <value>选择在“正在播放”和“收藏”页面上显示哪些快捷方式，以便在其他地方搜索当前歌曲。</value>
+  </data>
+  <data name="SettingsPage_MusicSearchServicesTitle.Text" xml:space="preserve">
+    <value>音乐搜索服务</value>
+  </data>
+  <data name="SettingsPage_OpenLogsFolder.Content" xml:space="preserve">
+    <value>打开日志文件夹</value>
+  </data>
+  <data name="SettingsPage_OpenLogsFolderFailed" xml:space="preserve">
+    <value>无法打开日志文件夹：{0}</value>
+  </data>
+  <data name="SettingsPage_OpenLogsFolderFailedLocation" xml:space="preserve">
+    <value>无法打开日志文件夹。其位置为：{0}</value>
+  </data>
+  <data name="SettingsPage_OpenOnStartupDescription.Text" xml:space="preserve">
+    <value>在您登录时自动启动 Traydio，无需手动打开即可使用播放器。</value>
+  </data>
+  <data name="SettingsPage_OpenOnStartupTitle.Text" xml:space="preserve">
+    <value>开机启动</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngine_Auto.Content" xml:space="preserve">
+    <value>自动（推荐）</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngine_NativeOnly.Content" xml:space="preserve">
+    <value>仅原生</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngine_NativePreferred.Content" xml:space="preserve">
+    <value>优先原生</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngine_RememberedInfo.Text" xml:space="preserve">
+    <value>Traydio 会记住每个电台实际使用的播放引擎，因此只能在其中一种引擎上播放的电台下次会直接使用该引擎启动。如果某个电台的播放情况发生变化，请重置此项。</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngineDescription.Text" xml:space="preserve">
+    <value>选择 Traydio 播放流媒体的方式。自动模式会优先使用 LibVLC，并在需要时回退到 Windows Media Foundation。</value>
+  </data>
+  <data name="SettingsPage_PlaybackEngineTitle.Text" xml:space="preserve">
+    <value>播放引擎</value>
+  </data>
+  <data name="SettingsPage_PlayOnStartupDescription.Text" xml:space="preserve">
+    <value>Traydio 打开后自动恢复播放上次的电台。</value>
+  </data>
+  <data name="SettingsPage_PlayOnStartupTitle.Text" xml:space="preserve">
+    <value>启动时播放</value>
+  </data>
+  <data name="SettingsPage_PopupDwellExplanation.Text" xml:space="preserve">
+    <value>弹窗在消失前停留在屏幕上的时长。点击弹窗可以提前将其关闭。</value>
+  </data>
+  <data name="SettingsPage_PopupDwellSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>歌曲弹窗在屏幕上停留的时长（秒）</value>
+  </data>
+  <data name="SettingsPage_ResetEngineMemoryFailed" xml:space="preserve">
+    <value>无法重置已记住的引擎：{0}</value>
+  </data>
+  <data name="SettingsPage_ResetRememberedEngines.Content" xml:space="preserve">
+    <value>重置已记住的引擎</value>
+  </data>
+  <data name="SettingsPage_RestartRequiredInfoBar.Message" xml:space="preserve">
+    <value>重启 Traydio 以完成语言切换。</value>
+  </data>
+  <data name="SettingsPage_SilenceTimeoutDescription.Text" xml:space="preserve">
+    <value>设置播放静音多长时间后，Traydio 会自动重启流媒体。</value>
+  </data>
+  <data name="SettingsPage_SilenceTimeoutTitle.Text" xml:space="preserve">
+    <value>静音检测超时</value>
+  </data>
+  <data name="SettingsPage_SongChangePopupDescription.Text" xml:space="preserve">
+    <value>每当播放的歌曲发生变化时，在任务栏附近显示简短的屏幕通知。</value>
+  </data>
+  <data name="SettingsPage_SongChangePopupTitle.Text" xml:space="preserve">
+    <value>歌曲切换弹窗</value>
+  </data>
+  <data name="SettingsPage_SongChangePopupToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>歌曲切换弹窗</value>
+  </data>
+  <data name="SettingsPage_SongPopupDelayExplanation.Text" xml:space="preserve">
+    <value>许多电台会在曲目实际开始播放之前进行播报。延迟显示曲目信息，使其在您听到歌曲时才更新——包括主窗口、迷你播放器、媒体控件、播放列表历史记录和弹窗。您调台后的第一首曲目会立即显示。各电台可以在其“高级”设置中覆盖此设置，或通过右键单击弹窗本身进行调整。</value>
+  </data>
+  <data name="SettingsPage_SongPopupDelaySlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>曲目信息延迟（秒）</value>
+  </data>
+  <data name="SettingsPage_Title.Text" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="SettingsPage_TrackInfoDelayTitle.Text" xml:space="preserve">
+    <value>曲目信息延迟</value>
+  </data>
+  <data name="SettingsPage_TrayClickBehavior_Alternate.Content" xml:space="preserve">
+    <value>左键单击：打开 Traydio，右键单击：播放/暂停</value>
+  </data>
+  <data name="SettingsPage_TrayClickBehavior_Default.Content" xml:space="preserve">
+    <value>左键单击：播放/暂停，右键单击：打开 Traydio（默认）</value>
+  </data>
+  <data name="SettingsPage_TrayClickBehaviorDescription.Text" xml:space="preserve">
+    <value>选择托盘图标优先执行播放控制还是打开播放器。</value>
+  </data>
+  <data name="SettingsPage_TrayClickBehaviorTitle.Text" xml:space="preserve">
+    <value>托盘图标点击行为</value>
+  </data>
+  <data name="ShellPage_TitleBar.Title" xml:space="preserve">
+    <value>Traydio</value>
+  </data>
+  <data name="SongChangePopup_Surface.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>正在播放</value>
+  </data>
+  <data name="SongChangePopup_Surface.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>点击关闭，右键单击调整曲目信息延迟</value>
+  </data>
+  <data name="SongChangePopup_Title.Text" xml:space="preserve">
+    <value>正在播放</value>
+  </data>
+  <data name="StreamDiagnosis_EngineFailedHealthyServer" xml:space="preserve">
+    <value>该电台在线，但此电脑上的两种播放引擎均无法播放。</value>
+  </data>
+  <data name="StreamDiagnosis_EngineFailedHealthyServerWithReason" xml:space="preserve">
+    <value>该电台在线，但此电脑播放失败：{0}</value>
+  </data>
+  <data name="StreamDiagnosis_TryPlaylistEntry" xml:space="preserve">
+    <value>{0}请尝试改用 {1} 作为流媒体地址。</value>
+  </data>
+  <data name="Toggle_Off" xml:space="preserve">
+    <value>关</value>
+  </data>
+  <data name="Toggle_On" xml:space="preserve">
+    <value>开</value>
+  </data>
+  <data name="TrayIcon_AddStation" xml:space="preserve">
+    <value>Traydio - 添加电台以开始收听</value>
+  </data>
+  <data name="TrayIcon_LeftClickToPause" xml:space="preserve">
+    <value>左键单击暂停</value>
+  </data>
+  <data name="TrayIcon_LeftClickToPlay" xml:space="preserve">
+    <value>左键单击播放</value>
+  </data>
+  <data name="TrayIcon_Paused" xml:space="preserve">
+    <value>Traydio {0}（已暂停）
+{1}</value>
+  </data>
+  <data name="TrayIcon_Playing" xml:space="preserve">
+    <value>Traydio {0}（播放中）
+{1}</value>
+  </data>
+  <data name="TrayIcon_PlayingWithNowPlaying" xml:space="preserve">
+    <value>Traydio {0}（播放中）
+{1}
+{2}</value>
+  </data>
+  <data name="TrayIcon_RightClickToPause" xml:space="preserve">
+    <value>右键单击暂停</value>
+  </data>
+  <data name="TrayIcon_RightClickToPlay" xml:space="preserve">
+    <value>右键单击播放</value>
+  </data>
+  <data name="TutorialWindow_Feature_1.Text" xml:space="preserve">
+    <value>• 轻量简约的设计</value>
+  </data>
+  <data name="TutorialWindow_Feature_2.Text" xml:space="preserve">
+    <value>• 畅听全球数千个电台</value>
+  </data>
+  <data name="TutorialWindow_Feature_3.Text" xml:space="preserve">
+    <value>• 精美的 Mica 背景和现代化界面</value>
+  </data>
+  <data name="TutorialWindow_Feature_4.Text" xml:space="preserve">
+    <value>• 静静驻留在您的系统托盘中</value>
+  </data>
+  <data name="TutorialWindow_FeaturesTitle.Text" xml:space="preserve">
+    <value>✨ Traydio 的特别之处：</value>
+  </data>
+  <data name="TutorialWindow_Intro.Text" xml:space="preserve">
+    <value>适用于 Windows 的小巧托盘电台</value>
+  </data>
+  <data name="TutorialWindow_QuickStart.Text" xml:space="preserve">
+    <value>快速入门指南</value>
+  </data>
+  <data name="TutorialWindow_StartButton.Text" xml:space="preserve">
+    <value>开始使用！</value>
+  </data>
+  <data name="TutorialWindow_Step_Options_Desc.Text" xml:space="preserve">
+    <value>浏览电台、调整设置，探索所有功能</value>
+  </data>
+  <data name="TutorialWindow_Step_Options_Title.Text" xml:space="preserve">
+    <value>右键单击查看更多选项</value>
+  </data>
+  <data name="TutorialWindow_Step_Pin_Desc.Text" xml:space="preserve">
+    <value>确保 Traydio 图标始终显示在您的系统托盘中</value>
+  </data>
+  <data name="TutorialWindow_Step_Pin_Title.Text" xml:space="preserve">
+    <value>固定托盘图标</value>
+  </data>
+  <data name="TutorialWindow_Step_Play_Desc.Text" xml:space="preserve">
+    <value>轻松快捷的播放控制，触手可及</value>
+  </data>
+  <data name="TutorialWindow_Step_Play_Title.Text" xml:space="preserve">
+    <value>左键单击播放/暂停</value>
+  </data>
+  <data name="TutorialWindow_Title" xml:space="preserve">
+    <value>Traydio 首次运行窗口</value>
+  </data>
+  <data name="TutorialWindow_TitleBar.Title" xml:space="preserve">
+    <value>Traydio</value>
+  </data>
+  <data name="TutorialWindow_WelcomeTitle.Text" xml:space="preserve">
+    <value>欢迎使用 Traydio！</value>
+  </data>
+</root>

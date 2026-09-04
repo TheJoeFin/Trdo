@@ -3,6 +3,7 @@
     x:Class="Trdo.Pages.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
     xmlns:converters="using:Trdo.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -16,6 +17,14 @@
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="10" />
+            <!--
+                So a card that shows or hides conditionally (e.g. the silence-timeout card, gated
+                on IsWatchdogEnabled) fades in/out instead of popping, and every other card in the
+                StackPanel glides to its new position instead of snapping when that happens.
+            -->
+            <Setter Property="animations:Implicit.Animations" Value="{StaticResource ImplicitReflowAnimations}" />
+            <Setter Property="animations:Implicit.HideAnimations" Value="{StaticResource ImplicitFadeHideAnimations}" />
+            <Setter Property="animations:Implicit.ShowAnimations" Value="{StaticResource ImplicitFadeShowAnimations}" />
         </Style>
         <Style x:Key="NestedSettingCardStyle" TargetType="Border">
             <Setter Property="Padding" Value="10" />
@@ -44,18 +53,44 @@
     <Grid RowDefinitions="Auto,*" RowSpacing="24">
         <!--  Settings Title  -->
         <TextBlock
+            x:Uid="SettingsPage_Title"
             Grid.Row="0"
             FontSize="24"
-            FontWeight="SemiBold"
-            Text="Settings" />
+            FontWeight="SemiBold" />
 
         <!--  Settings Content  -->
         <ScrollView Grid.Row="1">
             <StackPanel Padding="0,0,8,8" Spacing="12">
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Open on startup" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Launch Trdo automatically when you sign in so the player is ready without opening it manually." />
+                        <TextBlock x:Uid="SettingsPage_LanguageTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_LanguageDescription" Style="{StaticResource SettingDescriptionStyle}" />
+                        <ComboBox
+                            HorizontalAlignment="Stretch"
+                            SelectedIndex="{x:Bind ViewModel.LanguageSelectionIndex, Mode=TwoWay}">
+                            <ComboBoxItem x:Uid="SettingsPage_Language_System" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_English" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_Spanish" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_French" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_Chinese" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_German" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_PortugueseBrazil" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_PortuguesePortugal" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_Arabic" />
+                            <ComboBoxItem x:Uid="SettingsPage_Language_Polish" />
+                        </ComboBox>
+                        <InfoBar
+                            x:Uid="SettingsPage_RestartRequiredInfoBar"
+                            IsClosable="False"
+                            IsOpen="{x:Bind ViewModel.IsLanguageRestartPending, Mode=OneWay}"
+                            Severity="Informational" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Uid="SettingsPage_OpenOnStartupTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_OpenOnStartupDescription" Style="{StaticResource SettingDescriptionStyle}" />
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                             <ToggleSwitch
                                 x:Name="StartupToggle"
@@ -78,20 +113,20 @@
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Play on startup" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Automatically resume the last station as soon as Trdo opens." />
+                        <TextBlock x:Uid="SettingsPage_PlayOnStartupTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_PlayOnStartupDescription" Style="{StaticResource SettingDescriptionStyle}" />
                         <InfoBar
                             x:Name="AutoPlayWarningInfoBar"
+                            x:Uid="SettingsPage_AutoPlayWarning"
                             Margin="-12"
                             IsClosable="True"
                             IsOpen="False"
-                            Message="This means audio will begin playing when Trdo is launched. It could be disruptive. Are you sure you want to enable this?"
                             Severity="Warning">
                             <InfoBar.ActionButton>
                                 <Button
                                     x:Name="ConfirmAutoPlayButton"
-                                    Click="ConfirmAutoPlayButton_Click"
-                                    Content="Enable" />
+                                    x:Uid="SettingsPage_Enable"
+                                    Click="ConfirmAutoPlayButton_Click" />
                             </InfoBar.ActionButton>
                         </InfoBar>
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
@@ -115,19 +150,95 @@
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Tray icon click behavior" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose whether the tray icon prioritizes playback controls or opening the flyout menu." />
+                        <TextBlock x:Uid="SettingsPage_TrayClickBehaviorTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_TrayClickBehaviorDescription" Style="{StaticResource SettingDescriptionStyle}" />
                         <ComboBox SelectedIndex="{x:Bind ViewModel.TrayClickBehavior, Mode=TwoWay}">
-                            <ComboBoxItem Content="Left click: play/pause, right click: open flyout (Default)" />
-                            <ComboBoxItem Content="Left click: open flyout, right click: play/pause" />
+                            <ComboBoxItem x:Uid="SettingsPage_TrayClickBehavior_Default" />
+                            <ComboBoxItem x:Uid="SettingsPage_TrayClickBehavior_Alternate" />
                         </ComboBox>
                     </StackPanel>
                 </Border>
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Music search services" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Choose which shortcuts appear on Now Playing and Favorites when you want to search for the current song elsewhere." />
+                        <TextBlock x:Uid="SettingsPage_TrackInfoDelayTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock
+                            x:Uid="SettingsPage_SongPopupDelayExplanation"
+                            Style="{StaticResource SettingDescriptionStyle}"
+                            TextWrapping="Wrap" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Slider
+                                x:Uid="SettingsPage_SongPopupDelaySlider"
+                                Grid.Column="0"
+                                Maximum="{x:Bind ViewModel.MaxTrackInfoDelaySeconds}"
+                                Minimum="0"
+                                SnapsTo="StepValues"
+                                StepFrequency="5"
+                                Value="{x:Bind ViewModel.TrackInfoDelaySeconds, Mode=TwoWay}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                MinWidth="92"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.TrackInfoDelayDescription, Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Uid="SettingsPage_SongChangePopupTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_SongChangePopupDescription" Style="{StaticResource SettingDescriptionStyle}" />
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                            <ToggleSwitch
+                                x:Name="SongChangePopupToggle"
+                                x:Uid="SettingsPage_SongChangePopupToggle"
+                                AutomationProperties.AutomationId="SongChangePopupToggle"
+                                Grid.Column="0"
+                                MinWidth="0"
+                                IsOn="{x:Bind ViewModel.IsSongChangePopupEnabled, Mode=TwoWay}"
+                                OffContent=""
+                                OnContent="" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.SongChangePopupToggleText, Mode=OneWay}" />
+                            <Button
+                                x:Name="SongChangePopupDemoButton"
+                                x:Uid="SettingsPage_DemoPopupButton"
+                                Grid.Column="2"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="SongChangePopupDemoButton"
+                                Click="SongChangePopupDemoButton_Click" />
+                        </Grid>
+                        <TextBlock
+                            x:Uid="SettingsPage_PopupDwellExplanation"
+                            Style="{StaticResource SettingDescriptionStyle}"
+                            TextWrapping="Wrap" />
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <Slider
+                                x:Uid="SettingsPage_PopupDwellSlider"
+                                Grid.Column="0"
+                                IsEnabled="{x:Bind ViewModel.IsSongChangePopupEnabled, Mode=OneWay}"
+                                Maximum="{x:Bind ViewModel.MaxSongChangePopupDwellSeconds}"
+                                Minimum="{x:Bind ViewModel.MinSongChangePopupDwellSeconds}"
+                                SnapsTo="StepValues"
+                                StepFrequency="0.5"
+                                Value="{x:Bind ViewModel.SongChangePopupDwellSeconds, Mode=TwoWay}" />
+                            <TextBlock
+                                Grid.Column="1"
+                                MinWidth="92"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.SongChangePopupDwellDescription, Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Uid="SettingsPage_MusicSearchServicesTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_MusicSearchServicesDescription" Style="{StaticResource SettingDescriptionStyle}" />
 
                         <StackPanel Spacing="6">
                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
@@ -237,14 +348,71 @@
                                     OffContent=""
                                     OnContent="" />
                             </Grid>
+
+                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                                <Image
+                                    Grid.Column="0"
+                                    Width="20"
+                                    Height="20"
+                                    VerticalAlignment="Center">
+                                    <Image.Source>
+                                        <SvgImageSource UriSource="ms-appx:///Assets/bandcamp.svg" />
+                                    </Image.Source>
+                                </Image>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    VerticalAlignment="Center"
+                                    FontSize="14"
+                                    FontWeight="SemiBold"
+                                    Text="Bandcamp"
+                                    TextWrapping="Wrap" />
+                                <ToggleSwitch
+                                    Grid.Column="2"
+                                    MinWidth="0"
+                                    HorizontalAlignment="Right"
+                                    IsOn="{x:Bind ViewModel.IsBandcampEnabled,
+                                                  Mode=TwoWay}"
+                                    OffContent=""
+                                    OnContent="" />
+                            </Grid>
                         </StackPanel>
                     </StackPanel>
                 </Border>
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Auto-recover" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Monitor playback and automatically try to recover when a stream stalls, drops out, or goes silent." />
+                        <TextBlock x:Uid="SettingsPage_PlaybackEngineTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_PlaybackEngineDescription" Style="{StaticResource SettingDescriptionStyle}" />
+                        <ComboBox
+                            HorizontalAlignment="Stretch"
+                            SelectedIndex="{x:Bind ViewModel.PlaybackEngineModeIndex, Mode=TwoWay}">
+                            <ComboBoxItem x:Uid="SettingsPage_PlaybackEngine_Auto" />
+                            <ComboBoxItem x:Uid="SettingsPage_PlaybackEngine_NativeOnly" />
+                            <ComboBoxItem x:Uid="SettingsPage_PlaybackEngine_NativePreferred" />
+                        </ComboBox>
+                        <TextBlock
+                            Style="{StaticResource SettingStatusStyle}"
+                            Text="{x:Bind ViewModel.PlaybackEngineModeDescription, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Uid="SettingsPage_PlaybackEngine_RememberedInfo"
+                            Style="{StaticResource SettingDescriptionStyle}"
+                            TextWrapping="Wrap" />
+                        <Button
+                            x:Name="ResetEngineMemoryButton"
+                            x:Uid="SettingsPage_ResetRememberedEngines"
+                            Click="ResetEngineMemoryButton_Click" />
+                        <InfoBar
+                            x:Name="EngineMemoryInfoBar"
+                            IsClosable="True"
+                            IsOpen="False" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Uid="SettingsPage_AutoRecoverTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_AutoRecoverDescription" Style="{StaticResource SettingDescriptionStyle}" />
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                             <ToggleSwitch
                                 x:Name="WatchdogToggle"
@@ -265,8 +433,8 @@
 
                 <Border Style="{StaticResource SettingCardStyle}" Visibility="{x:Bind ViewModel.IsWatchdogEnabled, Mode=OneWay, Converter={StaticResource BoolToVis}}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Silence detection timeout" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Set how long playback can stay silent before Trdo restarts the stream automatically." />
+                        <TextBlock x:Uid="SettingsPage_SilenceTimeoutTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_SilenceTimeoutDescription" Style="{StaticResource SettingDescriptionStyle}" />
                         <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
                             <Slider
                                 x:Name="SilenceTimeoutSlider"
@@ -341,8 +509,8 @@
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Auto-increase buffer on stutter" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Let Trdo raise the buffer automatically when the stream is struggling to stay smooth." />
+                        <TextBlock x:Uid="SettingsPage_AutoIncreaseBufferTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_AutoIncreaseBufferDescription" Style="{StaticResource SettingDescriptionStyle}" />
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
                             <ToggleSwitch
                                 x:Name="AutoBufferToggle"
@@ -363,8 +531,8 @@
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Buffer level" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Higher buffer levels help on unstable connections, but they can add a little more playback delay." />
+                        <TextBlock x:Uid="SettingsPage_BufferLevelTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_BufferLevelDescription" Style="{StaticResource SettingDescriptionStyle}" />
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <Slider
                                 x:Name="BufferLevelSlider"
@@ -387,20 +555,63 @@
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
-                        <TextBlock Style="{StaticResource SettingTitleStyle}" Text="Import / Export stations" />
-                        <TextBlock Style="{StaticResource SettingDescriptionStyle}" Text="Back up your station list or move it to another device with M3U and PLS playlist files." />
+                        <TextBlock x:Uid="SettingsPage_AllowSleepTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_AllowSleepDescription" Style="{StaticResource SettingDescriptionStyle}" />
+                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                            <ToggleSwitch
+                                x:Name="AllowSleepToggle"
+                                Grid.Column="0"
+                                MinWidth="0"
+                                IsOn="{x:Bind ViewModel.AllowSleepWhilePlaying,
+                                              Mode=TwoWay}"
+                                OffContent=""
+                                OnContent="" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.AllowSleepToggleText,
+                                              Mode=OneWay}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Uid="SettingsPage_ImportExportTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_ImportExportDescription" Style="{StaticResource SettingDescriptionStyle}" />
                         <StackPanel Orientation="Vertical" Spacing="8">
                             <Button
                                 x:Name="ImportButton"
-                                Click="ImportButton_Click"
-                                Content="Import stations" />
+                                x:Uid="SettingsPage_ImportStations"
+                                Click="ImportButton_Click" />
                             <Button
                                 x:Name="ExportButton"
-                                Click="ExportButton_Click"
-                                Content="Export stations" />
+                                x:Uid="SettingsPage_ExportStations"
+                                Click="ExportButton_Click" />
                         </StackPanel>
                         <InfoBar
                             x:Name="ImportExportInfoBar"
+                            IsClosable="True"
+                            IsOpen="False" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Uid="SettingsPage_DiagnosticsTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_DiagnosticsDescription" Style="{StaticResource SettingDescriptionStyle}" />
+                        <StackPanel Orientation="Vertical" Spacing="8">
+                            <Button
+                                x:Name="OpenLogsFolderButton"
+                                x:Uid="SettingsPage_OpenLogsFolder"
+                                Click="OpenLogsFolderButton_Click" />
+                            <Button
+                                x:Name="CopyDiagnosticsButton"
+                                x:Uid="SettingsPage_CopyDiagnostics"
+                                Click="CopyDiagnosticsButton_Click" />
+                        </StackPanel>
+                        <InfoBar
+                            x:Name="DiagnosticsInfoBar"
                             IsClosable="True"
                             IsOpen="False" />
                     </StackPanel>

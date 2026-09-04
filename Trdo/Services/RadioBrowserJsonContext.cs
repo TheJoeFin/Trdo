@@ -10,6 +10,12 @@ namespace Trdo.Services;
 /// </summary>
 [JsonSerializable(typeof(List<RadioBrowserStation>))]
 [JsonSerializable(typeof(RadioBrowserStation))]
+[JsonSerializable(typeof(List<RadioBrowserCountry>))]
+[JsonSerializable(typeof(RadioBrowserCountry))]
+[JsonSerializable(typeof(List<RadioBrowserLanguage>))]
+[JsonSerializable(typeof(RadioBrowserLanguage))]
+[JsonSerializable(typeof(List<RadioBrowserTag>))]
+[JsonSerializable(typeof(RadioBrowserTag))]
 [JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
 internal partial class RadioBrowserJsonContext : JsonSerializerContext
 {

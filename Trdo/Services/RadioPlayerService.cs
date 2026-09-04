@@ -6,8 +6,8 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Trdo.Models;
+using Trdo.Services.Playback;
 using Windows.Media;
-using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -19,10 +19,9 @@ public sealed partial class RadioPlayerService : IDisposable
     private readonly MediaPlayer _player;
     private readonly DispatcherQueue? _uiQueue;
     private readonly StreamWatchdogService _watchdog;
-    private readonly StreamMetadataService _metadataService;
     private readonly SystemMediaTransportControls? _systemMediaControls;
     private readonly HttpClient _httpClient;
-    private double _volume = 0.5;
+    private double _volume = 1.0;
     private const string VolumeKey = "RadioVolume";
     private const string WatchdogEnabledKey = "WatchdogEnabled";
     private string? _streamUrl;
@@ -33,13 +32,23 @@ public sealed partial class RadioPlayerService : IDisposable
     private bool _wasExternalPause;
     private Timer? _smtcUpdateTimer;
     private bool _smtcUpdatePending;
-    private readonly object _smtcUpdateLock = new();
+    private readonly Lock _smtcUpdateLock = new();
+    private readonly SemaphoreSlim _volumeFadeLock = new(1, 1);
     private Timer? _internalStateChangeTimer;
-    private DateTime _lastExternalPauseRecovery = DateTime.MinValue;
+    private readonly DateTime _lastExternalPauseRecovery = DateTime.MinValue;
     private bool _hasPlayedOnce;
     private bool _isManuallyBuffering;
+    private bool _isVolumeFading;
+    private double _activeBackendVolume = 1.0;
     private bool _isStationCyclingEnabled;
     private CancellationTokenSource? _playAttemptCts;
+    private int _consecutivePlaybackFailures;
+    private bool _hasReportedPlaybackFailure;
+    private const int MaxConsecutivePlaybackFailures = 3;
+    private static readonly TimeSpan MinPlaybackConfirmationTimeout = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan FadeInDuration = TimeSpan.FromMilliseconds(350);
+    private static readonly TimeSpan FadeOutDuration = TimeSpan.FromMilliseconds(220);
+    private static readonly TimeSpan FadeStepInterval = TimeSpan.FromMilliseconds(20);
 
     public static RadioPlayerService Instance { get; } = new();
 
@@ -50,12 +59,23 @@ public sealed partial class RadioPlayerService : IDisposable
     public event EventHandler? NextStationRequested;
     public event EventHandler? PreviousStationRequested;
 
+    /// <summary>
+    /// Raised when a play attempt cannot proceed or fails. The string payload is a
+    /// user-facing message describing the failure (e.g. no network connection).
+    /// </summary>
+    public event EventHandler<string>? PlaybackFailed;
+
+    internal static string NoNetworkMessage =>
+        LocalizationService.GetString(
+            "PlaybackFailure_NoNetwork",
+            "No internet connection. Connect to a network and try again.");
+
     public bool IsPlaying
     {
         get
         {
-            bool isPlaying = _player.PlaybackSession.PlaybackState == MediaPlaybackState.Playing;
-            Debug.WriteLine($"[RadioPlayerService] IsPlaying getter: {isPlaying}, PlaybackState: {_player.PlaybackSession.PlaybackState}");
+            bool isPlaying = ActiveBackend.IsPlaying;
+            Debug.WriteLine($"[RadioPlayerService] IsPlaying getter: {isPlaying}, Backend: {ActivePlaybackBackend}");
             return isPlaying;
         }
     }
@@ -66,6 +86,11 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             try
             {
+                if (ActivePlaybackBackend == PlaybackBackendKind.LibVlc)
+                {
+                    return ActiveBackend.IsBuffering || _isManuallyBuffering;
+                }
+
                 MediaPlaybackState state = _player.PlaybackSession.PlaybackState;
                 bool isPlayerBuffering = state is MediaPlaybackState.Opening or MediaPlaybackState.Buffering;
                 bool isBuffering = isPlayerBuffering || _isManuallyBuffering;
@@ -98,7 +123,7 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             try
             {
-                return _player.PlaybackSession.BufferingProgress;
+                return ActiveBackend.BufferingProgress;
             }
             catch
             {
@@ -117,7 +142,7 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             try
             {
-                return _player.PlaybackSession.Position;
+                return ActiveBackend.Position;
             }
             catch
             {
@@ -136,7 +161,7 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             try
             {
-                IReadOnlyList<MediaTimeRange> bufferedRanges = _player.PlaybackSession.GetBufferedRanges();
+                IReadOnlyList<MediaTimeRange> bufferedRanges = ActiveBackend.GetBufferedRanges();
                 TimeSpan totalBuffered = TimeSpan.Zero;
                 foreach (MediaTimeRange range in bufferedRanges)
                 {
@@ -159,7 +184,7 @@ public sealed partial class RadioPlayerService : IDisposable
     {
         try
         {
-            return _player.PlaybackSession.GetBufferedRanges();
+            return ActiveBackend.GetBufferedRanges();
         }
         catch
         {
@@ -192,20 +217,50 @@ public sealed partial class RadioPlayerService : IDisposable
     public StreamWatchdogService Watchdog => _watchdog;
 
     /// <summary>
-    /// Gets the current stream metadata (now playing information).
+    /// Gets the current stream metadata (now playing information) as published to the app -
+    /// which during a track-info delay is still the previous track, because that is the one
+    /// the listener can hear. The orchestrator's own value runs ahead of the audio and is
+    /// deliberately not exposed.
     /// </summary>
-    public StreamMetadata CurrentMetadata => _metadataService.CurrentMetadata;
+    public StreamMetadata CurrentMetadata => _publishGate.Current;
+
+    /// <summary>
+    /// How long a mid-stream track change is held back before the app shows it, in seconds.
+    /// Set by <see cref="ViewModels.PlayerViewModel"/>, which is the only thing that knows both
+    /// the app setting and the selected station's override.
+    /// </summary>
+    public double TrackInfoDelaySeconds
+    {
+        get => _publishGate.DelaySeconds;
+        set => _publishGate.DelaySeconds = value;
+    }
+
+    /// <summary>
+    /// Drops a track that is still being held and treats the next one as a fresh start.
+    /// </summary>
+    /// <remarks>
+    /// The single place anything says "whatever was waiting to be shown no longer applies".
+    /// Every route out of audio funnels here - pausing, a hardware button, a backend
+    /// reporting Stopped or EndReached, a stream failing, and the user picking a different
+    /// station, which resets eagerly because its transition runs asynchronously and would
+    /// otherwise leave a window for the outgoing stream's track to surface. Null-tolerant
+    /// because playback state can be reported before the engine has finished initialising.
+    /// </remarks>
+    public void ResetTrackInfoHold() => _publishGate?.Reset();
 
     public double Volume
     {
         get => _volume;
         set
         {
-            value = Math.Clamp(value, 0, 1);
+            value = Math.Clamp(value, 0, 2);
             if (Math.Abs(_volume - value) < 0.0001) return;
             Debug.WriteLine($"[RadioPlayerService] Setting Volume from {_volume} to {value}");
             _volume = value;
-            _player.Volume = _volume;
+            if (!_isVolumeFading)
+            {
+                SyncActiveBackendVolume();
+            }
             try
             {
                 ApplicationData.Current.LocalSettings.Values[VolumeKey] = _volume;
@@ -260,7 +315,9 @@ public sealed partial class RadioPlayerService : IDisposable
             AudioCategory = MediaPlayerAudioCategory.Media,
             AutoPlay = false,
             IsLoopingEnabled = false,
-            Volume = _volume
+            // Windows MediaPlayer only supports 0.0-1.0; higher amplification is
+            // applied by the LibVLC backend. Clamp so the native player never throws.
+            Volume = Math.Clamp(_volume, 0, 1)
         };
         Debug.WriteLine($"[RadioPlayerService] MediaPlayer created with Volume={_volume}, AutoPlay=false");
 
@@ -274,7 +331,15 @@ public sealed partial class RadioPlayerService : IDisposable
                 currentState = _player.PlaybackSession.PlaybackState;
                 isPlaying = currentState == MediaPlaybackState.Playing;
                 isBuffering = currentState is MediaPlaybackState.Opening or MediaPlaybackState.Buffering;
+                LogService.Info("RadioPlayerService", $"Native state -> {currentState} (isPlaying={isPlaying}, isBuffering={isBuffering})");
                 Debug.WriteLine($"[RadioPlayerService] PlaybackStateChanged event: IsPlaying={isPlaying}, IsBuffering={isBuffering}, State={currentState}, IsInternalChange={_isInternalStateChange}");
+
+                // Reaching Playing means the current attempt succeeded - reset failure tracking.
+                if (isPlaying)
+                {
+                    ResetPlaybackFailureTracking();
+                    ConfirmActiveBackendHealthy();
+                }
 
                 // If state change was not initiated internally (e.g., from hardware buttons),
                 // notify the watchdog of user intention
@@ -295,17 +360,30 @@ public sealed partial class RadioPlayerService : IDisposable
                     }
                     else if (currentState == MediaPlaybackState.Paused)
                     {
-                        // Only notify pause intent if explicitly paused (not buffering, opening, or other states)
-                        _watchdog?.NotifyUserIntentionToPause();
-                        Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause (hardware button)");
+                        if (_isManuallyBuffering)
+                        {
+                            Debug.WriteLine("[RadioPlayerService] Ignoring pause during manual buffering");
+                        }
+                        else
+                        {
+                            // Only notify pause intent if explicitly paused (not buffering, opening, or other states)
+                            _watchdog?.NotifyUserIntentionToPause();
+                            Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause (hardware button)");
 
-                        // Mark that this was an external pause
-                        _wasExternalPause = true;
-                        Debug.WriteLine("[RadioPlayerService] Marked as external pause - will refresh stream on next play");
+                            // Mark that this was an external pause
+                            _wasExternalPause = true;
+                            Debug.WriteLine("[RadioPlayerService] Marked as external pause - will refresh stream on next play");
 
-                        // Stop metadata polling when paused
-                        _metadataService?.StopPolling();
-                        Debug.WriteLine("[RadioPlayerService] Stopped metadata polling after external pause");
+                            // An external pause is the user asking for silence just as much as
+                            // Pause() is, so drop any in-flight play attempt with it. Otherwise
+                            // it stays live as evidence of intent and a later recovery restarts
+                            // audio the user had already stopped.
+                            CancelPendingPlayAttempt();
+
+                            // Stop metadata polling when paused
+                            StopMetadata();
+                            Debug.WriteLine("[RadioPlayerService] Stopped metadata after external pause");
+                        }
                     }
                     // For other states (Buffering, Opening, None), don't change watchdog intent
                     // This allows the watchdog to recover if a stream stops unexpectedly
@@ -316,6 +394,15 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine($"[RadioPlayerService] EXCEPTION in PlaybackStateChanged: {ex.Message}");
                 return;
             }
+            // Covers the states Pause() does not run through - a stream that ends or is
+            // stopped outright. Buffering and Opening are excluded: a stream stuttering
+            // mid-track is still playing that track, and dropping the held info there would
+            // mean the track never appeared at all.
+            if (!isPlaying && !isBuffering)
+            {
+                ResetTrackInfoHold();
+            }
+
             TryEnqueueOnUi(() =>
             {
                 PlaybackStateChanged?.Invoke(this, isPlaying);
@@ -327,21 +414,28 @@ public sealed partial class RadioPlayerService : IDisposable
         _watchdog = new StreamWatchdogService(this);
         Debug.WriteLine("[RadioPlayerService] StreamWatchdogService created");
 
-        _metadataService = new StreamMetadataService();
-        _metadataService.MetadataChanged += (_, metadata) =>
+        // Keep the PC awake while playing (unless the user allows sleep).
+        PlaybackStateChanged += (_, isPlaying) => PowerManagementService.SetPlaybackActive(isPlaying);
+
+        try
         {
-            Debug.WriteLine($"[RadioPlayerService] Metadata changed: {metadata.DisplayText}");
-            TryEnqueueOnUi(() =>
-            {
-                StreamMetadataChanged?.Invoke(this, metadata);
-                ScheduleSystemMediaTransportControlsUpdate();
-            });
-        };
-        Debug.WriteLine("[RadioPlayerService] StreamMetadataService created");
+            Microsoft.Win32.SystemEvents.PowerModeChanged += OnPowerModeChanged;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RadioPlayerService] Failed to subscribe to PowerModeChanged: {ex.Message}");
+        }
+
+        InitializePlaybackEngine();
 
         // Initialize SystemMediaTransportControls
         try
         {
+            // Manual SMTC control: without this the auto command manager ignores
+            // the button configuration whenever the MediaPlayer has no source,
+            // which is always the case when LibVLC is the active backend.
+            _player.CommandManager.IsEnabled = false;
+
             _systemMediaControls = _player.SystemMediaTransportControls;
             if (_systemMediaControls != null)
             {
@@ -366,6 +460,17 @@ public sealed partial class RadioPlayerService : IDisposable
         Debug.WriteLine("=== RadioPlayerService Constructor END ===");
     }
 
+    private void OnPowerModeChanged(object? sender, Microsoft.Win32.PowerModeChangedEventArgs e)
+    {
+        if (e.Mode != Microsoft.Win32.PowerModes.Suspend || !IsPlaying)
+            return;
+
+        // A live stream position is meaningless after resume; mark it so the
+        // next play (user or watchdog recovery) recreates the source at live.
+        Debug.WriteLine("[RadioPlayerService] System suspending during playback - marking stream for recreation");
+        _wasExternalPause = true;
+    }
+
     private void LoadSettings()
     {
         Debug.WriteLine("[RadioPlayerService] LoadSettings START");
@@ -379,8 +484,8 @@ public sealed partial class RadioPlayerService : IDisposable
                     string s when double.TryParse(s, out double d2) => d2,
                     _ => _volume
                 };
-                _volume = Math.Clamp(parsed, 0, 1);
-                _player.Volume = _volume;
+                _volume = Math.Clamp(parsed, 0, 2);
+                SyncActiveBackendVolume();
                 Debug.WriteLine($"[RadioPlayerService] Loaded volume from settings: {_volume}");
             }
 
@@ -460,6 +565,11 @@ public sealed partial class RadioPlayerService : IDisposable
         if (_streamUrl != streamUrl)
         {
             _hasPlayedOnce = false;
+            ResetPlaybackFailureTracking();
+
+            // A new stream must not inherit the previous one's recovery escalation or
+            // auto-buffer bump - one bad station shouldn't degrade every station after it.
+            _watchdog.ResetForStation();
             Debug.WriteLine("[RadioPlayerService] Station changed - reset first play flag");
         }
 
@@ -472,18 +582,8 @@ public sealed partial class RadioPlayerService : IDisposable
         _player.RealTimePlayback = true;
         Debug.WriteLine("[RadioPlayerService] Player configured for live streaming");
 
-        // Dispose old source if exists
-        if (_player.Source is MediaSource oldMedia)
-        {
-            Debug.WriteLine("[RadioPlayerService] Disposing old MediaSource");
-            oldMedia.Reset();
-            oldMedia.Dispose();
-        }
-
-        // Set new media source
-        Debug.WriteLine($"[RadioPlayerService] Creating new MediaSource from URI: {uri}");
-        _player.Source = MediaSource.CreateFromUri(uri);
-        Debug.WriteLine("[RadioPlayerService] New MediaSource set on player");
+        ClearActiveBackendSource();
+        StopMetadata();
 
         // Update SMTC with new station
         ScheduleSystemMediaTransportControlsUpdate();
@@ -511,6 +611,65 @@ public sealed partial class RadioPlayerService : IDisposable
         ScheduleSystemMediaTransportControlsUpdate();
     }
 
+    public async Task TransitionToStationAsync(
+        string streamUrl,
+        string stationName,
+        string? faviconUrl,
+        double volume,
+        bool playAfterSwitch,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (IsPlaying || IsBuffering)
+            {
+                await FadeOutAndPauseAsync(cancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            SetStreamUrl(streamUrl);
+            Volume = volume;
+            SetStationName(stationName);
+            SetStationFavicon(faviconUrl);
+
+            if (playAfterSwitch)
+            {
+                Play();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            SyncActiveBackendVolume();
+            throw;
+        }
+    }
+
+    public async Task FadeOutAndPauseAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            CancelPendingPlayAttempt();
+
+            if (ActiveBackend.IsPlaying)
+            {
+                await FadeActiveBackendVolumeAsync(
+                    targetVolume: 0,
+                    FadeOutDuration,
+                    followUserVolume: false,
+                    cancellationToken);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            Pause();
+        }
+        catch (OperationCanceledException)
+        {
+            SyncActiveBackendVolume();
+            throw;
+        }
+    }
+
     public void ClearPlaybackTarget()
     {
         Debug.WriteLine("=== ClearPlaybackTarget START ===");
@@ -522,23 +681,17 @@ public sealed partial class RadioPlayerService : IDisposable
         else
         {
             SetManualBuffering(false);
-            _metadataService.StopPolling();
+            StopMetadata();
         }
 
-        if (_player.Source is MediaSource oldMedia)
-        {
-            Debug.WriteLine("[RadioPlayerService] Disposing MediaSource while clearing playback target");
-            oldMedia.Reset();
-            oldMedia.Dispose();
-        }
-
-        _player.Source = null;
+        ClearActiveBackendSource();
         _streamUrl = null;
         _currentStationName = null;
         _currentStationFaviconUrl = null;
         _currentAlbumArtUrl = null;
         _hasPlayedOnce = false;
         _wasExternalPause = false;
+        _watchdog.ResetForStation();
 
         ScheduleSystemMediaTransportControlsUpdate();
         Debug.WriteLine("=== ClearPlaybackTarget END ===");
@@ -565,6 +718,26 @@ public sealed partial class RadioPlayerService : IDisposable
             throw new InvalidOperationException("No stream URL set. Call SetStreamUrl first.");
         }
 
+        LogService.Info("RadioPlayerService",
+            $"Play requested for {LogService.Redact(_streamUrl)} (hasPlayedOnce={_hasPlayedOnce}, wasExternalPause={_wasExternalPause})");
+
+        // Fresh user-initiated attempt: allow failures to be reported and retried again,
+        // and give the recovery ladder a clean slate so a previous give-up doesn't stop
+        // the watchdog from protecting this attempt.
+        ResetPlaybackFailureTracking();
+        _watchdog.ResetForStation();
+
+        // Don't attempt to open a stream when the machine is offline - it would just
+        // spin through prepare/fallback and fail. Tell the user instead.
+        if (!NetworkStatusService.IsInternetAvailable())
+        {
+            LogService.Warn("RadioPlayerService", "No internet connection; aborting play attempt");
+            Debug.WriteLine("[RadioPlayerService] No network available, aborting play attempt");
+            ReportPlaybackFailure();
+            Debug.WriteLine($"=== Play END (no network) ===");
+            return;
+        }
+
         // Cancel any in-flight play attempt (e.g. still buffering) before starting a new one
         CancelPendingPlayAttempt();
         _playAttemptCts = new CancellationTokenSource();
@@ -575,6 +748,19 @@ public sealed partial class RadioPlayerService : IDisposable
 
         Debug.WriteLine($"=== Play END ===");
     }
+
+    /// <summary>
+    /// Whether the user currently wants audio: either a backend is already playing, or a play
+    /// attempt started by <see cref="Play"/> is still in flight. Pause and Stop cancel that
+    /// attempt, so this turns false as soon as the user backs out.
+    /// <para>
+    /// Recovery paths need this rather than <c>ActiveBackend.IsPlaying</c>: they run because a
+    /// backend just failed, and a backend that failed on the first play never reached Playing
+    /// at all.
+    /// </para>
+    /// </summary>
+    private bool IsPlaybackWanted =>
+        ActiveBackend.IsPlaying || _playAttemptCts is { IsCancellationRequested: false };
 
     /// <summary>
     /// Cancels an in-flight play attempt started by Play(), if one is pending.
@@ -601,58 +787,72 @@ public sealed partial class RadioPlayerService : IDisposable
     {
         try
         {
-            // Only recreate MediaSource if:
-            // 1. First play and no source exists, OR
-            // 2. Following an external pause (to ensure live stream position)
-            bool needsRecreation = (!_hasPlayedOnce && _player.Source == null) || _wasExternalPause;
+            // Recreate the playback source whenever there isn't a live one to resume,
+            // or when an external pause means we must seek back to the live position.
+            // Note _hasPlayedOnce must NOT gate this: a watchdog recovery clears the
+            // source without changing the URL, so _hasPlayedOnce stays true while the
+            // source is gone. Gating on it there left us calling Play() on a null source.
+            bool hasSource = _nativeBackend.CurrentPlaybackItem is not null ||
+                             (_libVlcBackend?.VlcMediaPlayer.Media is not null);
+            bool needsRecreation = !hasSource || _wasExternalPause;
 
             if (needsRecreation)
             {
-                if (_wasExternalPause)
+                string reason = _wasExternalPause
+                    ? "Recreating playback source after external pause"
+                    : _hasPlayedOnce
+                        ? "Recreating playback source - no live source to resume"
+                        : "First play - preparing playback source";
+
+                Debug.WriteLine($"[RadioPlayerService] {reason}");
+
+                ClearActiveBackendSource();
+
+                LogService.Info("RadioPlayerService", reason);
+
+                PlaybackPrepareResult prepareResult = await PrepareStreamAsync(cancellationToken);
+                if (!prepareResult.Success)
                 {
-                    Debug.WriteLine("[RadioPlayerService] Recreating MediaSource after external pause to seek to live position");
-                }
-                else
-                {
-                    Debug.WriteLine("[RadioPlayerService] First play - creating MediaSource");
+                    LogService.Error("RadioPlayerService", $"Prepare failed: {prepareResult.ErrorMessage}");
+                    Debug.WriteLine($"[RadioPlayerService] Prepare failed: {prepareResult.ErrorMessage}");
+                    SetManualBuffering(false);
+                    ReportPlaybackFailure(prepareResult.ErrorMessage);
+                    return;
                 }
 
-                // Dispose old source if exists
-                if (_player.Source is MediaSource oldMedia)
+                if (prepareResult.UsedFallback)
                 {
-                    Debug.WriteLine("[RadioPlayerService] Disposing existing MediaSource");
-                    oldMedia.Reset();
-                    oldMedia.Dispose();
+                    LogService.Info("RadioPlayerService", $"Playing via fallback backend {prepareResult.Backend}");
+                    Debug.WriteLine("[RadioPlayerService] Using LibVLC fallback for playback");
                 }
-
-                // Create fresh MediaSource
-                Uri uri = new(_streamUrl!);
-                _player.Source = MediaSource.CreateFromUri(uri);
-                Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
 
                 _hasPlayedOnce = true;
+                StartMetadataForActiveBackend();
+                Debug.WriteLine("[RadioPlayerService] Started metadata after prepare");
             }
             else
             {
-                Debug.WriteLine("[RadioPlayerService] Reusing existing MediaSource - resuming playback");
+                Debug.WriteLine("[RadioPlayerService] Reusing existing playback source - resuming playback");
             }
 
-            // Check if we need to buffer before playing
-            bool needsBuffering = RequiredBufferDuration > TimeSpan.Zero;
+            bool useNativeBuffering = ActivePlaybackBackend == PlaybackBackendKind.Native;
+            bool needsBuffering = useNativeBuffering && RequiredBufferDuration > TimeSpan.Zero;
 
             if (needsBuffering)
             {
+                SetActiveBackendVolume(0);
+
                 // Start playback briefly to initiate buffering
                 Debug.WriteLine("[RadioPlayerService] Starting playback to initiate buffering...");
                 SetInternalStateChange(true);
-                _player.Play();
+                ActiveBackend.Play();
 
                 // Small delay to ensure play command is processed before pausing
                 await Task.Delay(100, cancellationToken);
 
                 // Pause to prevent audio from playing while we buffer
                 Debug.WriteLine("[RadioPlayerService] Pausing for buffering...");
-                _player.Pause();
+                ActiveBackend.Pause();
 
                 // Set manual buffering state so UI shows buffering during user-configured delay
                 SetManualBuffering(true);
@@ -679,7 +879,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 // Now resume playback
                 Debug.WriteLine("[RadioPlayerService] Buffer complete. Calling _player.Play()...");
-                _player.Play();
+                await PlayActiveBackendWithFadeInAsync(cancellationToken);
 
                 // Clear manual buffering state as playback is resuming
                 SetManualBuffering(false);
@@ -690,8 +890,7 @@ public sealed partial class RadioPlayerService : IDisposable
             {
                 // No buffering needed - start playback immediately
                 Debug.WriteLine("[RadioPlayerService] No buffering required (default level). Starting playback...");
-                SetInternalStateChange(true);
-                _player.Play();
+                await PlayActiveBackendWithFadeInAsync(cancellationToken);
                 Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully");
             }
 
@@ -702,12 +901,22 @@ public sealed partial class RadioPlayerService : IDisposable
             _watchdog.NotifyUserIntentionToPlay();
             Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
 
-            // Start metadata polling
-            _metadataService.StartPolling(_streamUrl!);
-            Debug.WriteLine("[RadioPlayerService] Started metadata polling");
+            // Ensure metadata providers are running for the active backend
+            StartMetadataForActiveBackend();
+            Debug.WriteLine("[RadioPlayerService] Ensured metadata for active backend");
 
             // Log final buffer state
             LogBufferedRanges();
+
+            // Play() is fire-and-forget on both engines, so reaching here proves nothing.
+            // Verify the engine actually produced playback and switch to the other one if
+            // it did not, rather than leaving the user with a silent player and no error.
+            if (!await ConfirmPlaybackOrSwitchEngineAsync(cancellationToken))
+            {
+                SetManualBuffering(false);
+                string? diagnosis = await DiagnoseStreamFailureAsync(cancellationToken);
+                ReportPlaybackFailure(diagnosis, tooManyAttempts: true);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -715,7 +924,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
             // Make sure playback doesn't sneak in after the user asked to stop
             SetInternalStateChange(true);
-            _player.Pause();
+            ActiveBackend.Pause();
             SetManualBuffering(false);
         }
         catch (Exception ex)
@@ -727,59 +936,57 @@ public sealed partial class RadioPlayerService : IDisposable
             SetManualBuffering(false);
             Debug.WriteLine("[RadioPlayerService] Cleared manual buffering state due to exception");
 
-            Debug.WriteLine("[RadioPlayerService] Re-creating media source and trying again...");
+            Debug.WriteLine("[RadioPlayerService] Re-preparing playback source and trying again...");
 
-            // Re-create the media source and try again with same buffering approach
             try
             {
-                Uri uri = new(_streamUrl!);
-                _player.Source = MediaSource.CreateFromUri(uri);
-                Debug.WriteLine($"[RadioPlayerService] Created new MediaSource from URL: {_streamUrl}");
+                ClearActiveBackendSource();
+                PlaybackPrepareResult prepareResult = await PrepareStreamAsync(cancellationToken);
+                if (!prepareResult.Success)
+                {
+                    Debug.WriteLine($"[RadioPlayerService] Retry prepare failed: {prepareResult.ErrorMessage}");
+                    ReportPlaybackFailure(prepareResult.ErrorMessage, tooManyAttempts: true);
+                    return;
+                }
 
-                // Apply same buffering logic on retry
-                bool needsBuffering = RequiredBufferDuration > TimeSpan.Zero;
+                StartMetadataForActiveBackend();
+                Debug.WriteLine("[RadioPlayerService] Started metadata after retry prepare");
+
+                bool useNativeBuffering = ActivePlaybackBackend == PlaybackBackendKind.Native;
+                bool needsBuffering = useNativeBuffering && RequiredBufferDuration > TimeSpan.Zero;
 
                 if (needsBuffering)
                 {
+                    SetActiveBackendVolume(0);
                     SetInternalStateChange(true);
-                    _player.Play();
-                    _player.Pause();
+                    ActiveBackend.Play();
+                    ActiveBackend.Pause();
 
-                    // Set manual buffering state for retry
                     SetManualBuffering(true);
                     Debug.WriteLine("[RadioPlayerService] Started and paused for buffering (retry), manual buffering set");
 
                     await Task.Delay(RequiredBufferDuration, cancellationToken);
 
-                    _player.Play();
-
-                    // Clear manual buffering state after retry
+                    await PlayActiveBackendWithFadeInAsync(cancellationToken);
                     SetManualBuffering(false);
                     Debug.WriteLine("[RadioPlayerService] Playback resumed after buffering (retry), manual buffering cleared");
                 }
                 else
                 {
-                    SetInternalStateChange(true);
-                    _player.Play();
-                    Debug.WriteLine("[RadioPlayerService] _player.Play() called successfully (retry)");
+                    await PlayActiveBackendWithFadeInAsync(cancellationToken);
+                    Debug.WriteLine("[RadioPlayerService] ActiveBackend.Play() called successfully (retry)");
                 }
 
                 _wasExternalPause = false;
                 _hasPlayedOnce = true;
-                Debug.WriteLine("[RadioPlayerService] Cleared external pause flag (retry)");
-
                 _watchdog.NotifyUserIntentionToPlay();
-                Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to play");
-
-                // Start metadata polling
-                _metadataService.StartPolling(_streamUrl!);
-                Debug.WriteLine("[RadioPlayerService] Started metadata polling (retry)");
+                StartMetadataForActiveBackend();
             }
             catch (OperationCanceledException)
             {
                 Debug.WriteLine("[RadioPlayerService] Play attempt cancelled during retry (user requested pause/toggle during buffering)");
                 SetInternalStateChange(true);
-                _player.Pause();
+                ActiveBackend.Pause();
                 SetManualBuffering(false);
             }
             catch (Exception retryEx)
@@ -791,8 +998,9 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine("[RadioPlayerService] Cleared manual buffering state due to retry exception");
 
                 Debug.WriteLine($"[RadioPlayerService] EXCEPTION on retry: {retryEx.Message}");
-                // Log the error but don't throw - this is a fire-and-forget async method
-                // The user will see the playback failed in the UI
+                // Log the error but don't throw - this is a fire-and-forget async method.
+                // Surface the failure to the user after exhausting the retry.
+                ReportPlaybackFailure(retryEx.Message, tooManyAttempts: true);
             }
         }
     }
@@ -869,46 +1077,49 @@ public sealed partial class RadioPlayerService : IDisposable
             throw new InvalidOperationException("No stream URL set. Call SetStreamUrl first.");
         }
 
-        // Check if we need to buffer before playing
-        bool needsBuffering = RequiredBufferDuration > TimeSpan.Zero;
+        bool needsBuffering;
 
         try
         {
-            // Start playback (this also initiates buffer monitoring)
-            // We need to do the core playback logic here to support cancellation
-            bool needsRecreation = (!_hasPlayedOnce && _player.Source == null) || _wasExternalPause;
+            // See PlayWithBufferInternalAsync: _hasPlayedOnce must not gate this. The
+            // watchdog recovery path clears the source while leaving _hasPlayedOnce true.
+            bool hasSource = _nativeBackend.CurrentPlaybackItem is not null ||
+                             (_libVlcBackend?.VlcMediaPlayer.Media is not null);
+            bool needsRecreation = !hasSource || _wasExternalPause;
 
             if (needsRecreation)
             {
-                if (_player.Source is MediaSource oldMedia)
+                ClearActiveBackendSource();
+                PlaybackPrepareResult prepareResult = await PrepareStreamAsync(cancellationToken);
+                if (!prepareResult.Success)
                 {
-                    oldMedia.Reset();
-                    oldMedia.Dispose();
+                    Debug.WriteLine($"[RadioPlayerService] Prepare failed in PlayWithBufferAsync: {prepareResult.ErrorMessage}");
+                    return false;
                 }
 
-                Uri uri = new(_streamUrl!);
-                _player.Source = MediaSource.CreateFromUri(uri);
                 _hasPlayedOnce = true;
+                StartMetadataForActiveBackend();
+                Debug.WriteLine("[RadioPlayerService] Started metadata after prepare (PlayWithBufferAsync)");
             }
+
+            needsBuffering = ActivePlaybackBackend == PlaybackBackendKind.Native &&
+                             RequiredBufferDuration > TimeSpan.Zero;
 
             if (needsBuffering)
             {
-                // mute initially so there isn't a blip during the initiate step
-                double lastVol = _player.Volume;
-                _player.Volume = 0;
+                SetActiveBackendVolume(0);
 
                 // Start playback briefly to initiate buffering
                 Debug.WriteLine("[RadioPlayerService] Starting playback to initiate buffering...");
                 SetInternalStateChange(true);
-                _player.Play();
+                ActiveBackend.Play();
 
                 // Small delay to ensure play command is processed before pausing
                 await Task.Delay(100, cancellationToken);
 
                 // Pause to prevent audio from playing while we buffer
                 Debug.WriteLine("[RadioPlayerService] Pausing for buffering...");
-                _player.Pause();
-                _player.Volume = lastVol;
+                ActiveBackend.Pause();
 
                 // Set manual buffering state so UI shows buffering during user-configured delay
                 SetManualBuffering(true);
@@ -968,7 +1179,7 @@ public sealed partial class RadioPlayerService : IDisposable
 
                 // Now resume playback
                 Debug.WriteLine("[RadioPlayerService] Buffer complete. Calling _player.Play()...");
-                _player.Play();
+                await PlayActiveBackendWithFadeInAsync(cancellationToken);
 
                 // Clear manual buffering state as playback is resuming
                 SetManualBuffering(false);
@@ -979,16 +1190,43 @@ public sealed partial class RadioPlayerService : IDisposable
             {
                 // No buffering needed - start playback immediately
                 Debug.WriteLine("[RadioPlayerService] No buffering required (default level). Starting playback...");
-                SetInternalStateChange(true);
-                _player.Play();
+                await PlayActiveBackendWithFadeInAsync(cancellationToken);
             }
 
             _wasExternalPause = false;
             _watchdog.NotifyUserIntentionToPlay();
-            _metadataService.StartPolling(_streamUrl!);
+            StartMetadataForActiveBackend();
+            Debug.WriteLine("[RadioPlayerService] Ensured metadata for active backend (PlayWithBufferAsync)");
 
             LogBufferedRanges();
-            return true;
+
+            // Play() is fire-and-forget on both backends, so returning true here without
+            // checking would report success for a no-op. The watchdog relies on this
+            // result to decide whether to escalate, so it has to be honest.
+            bool confirmed = await WaitForPlaybackConfirmedAsync(
+                PlaybackConfirmationTimeout,
+                cancellationToken);
+
+            if (!confirmed)
+            {
+                LogService.Warn("RadioPlayerService",
+                    $"Playback did not start within {PlaybackConfirmationTimeout.TotalSeconds:F0}s of Play() " +
+                    $"({DescribeActiveBackendState()})");
+
+                // Escalation is the watchdog ladder's job here, but the engine memory should
+                // still learn from this attempt so the next play starts on the better engine.
+                if (!string.IsNullOrWhiteSpace(_streamUrl))
+                {
+                    _playbackEngineSelector.RecordBackendFailure(_streamUrl, ActivePlaybackBackend);
+                }
+
+                if (ActivePlaybackBackend == PlaybackBackendKind.LibVlc)
+                {
+                    _libVlcBackend?.DumpDiagnostics("Watchdog play attempt did not reach playback");
+                }
+            }
+
+            return confirmed;
         }
         catch (OperationCanceledException)
         {
@@ -1009,13 +1247,72 @@ public sealed partial class RadioPlayerService : IDisposable
     }
 
     /// <summary>
+    /// How long to wait for a backend to actually report playing after Play() is called,
+    /// before treating the attempt as failed. Scales with the configured buffer so a large
+    /// buffer setting doesn't get reported as a failure while it is still filling.
+    /// </summary>
+    private TimeSpan PlaybackConfirmationTimeout
+    {
+        get
+        {
+            TimeSpan scaled = RequiredBufferDuration + RequiredBufferDuration;
+            return scaled > MinPlaybackConfirmationTimeout ? scaled : MinPlaybackConfirmationTimeout;
+        }
+    }
+
+    /// <summary>
+    /// Polls the active backend until it reports playing, or the timeout elapses.
+    /// Mirrors the polling shape of <see cref="PlaybackEngineSelector.WaitForNativeOpenAsync"/>.
+    /// </summary>
+    /// <returns>True if the backend reported playing before the timeout.</returns>
+    private async Task<bool> WaitForPlaybackConfirmedAsync(TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        const int pollIntervalMs = 250;
+        DateTime deadline = DateTime.UtcNow + timeout;
+
+        while (DateTime.UtcNow < deadline)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return false;
+            }
+
+            try
+            {
+                if (ActiveBackend.IsPlaying)
+                {
+                    Debug.WriteLine("[RadioPlayerService] Playback confirmed - backend reports playing");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                // A disposed or half-torn-down backend counts as not playing.
+                Debug.WriteLine($"[RadioPlayerService] Error probing playback state: {ex.Message}");
+                return false;
+            }
+
+            try
+            {
+                await Task.Delay(pollIntervalMs, cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Logs the current buffered ranges for debugging purposes.
     /// </summary>
     private void LogBufferedRanges()
     {
         try
         {
-            IReadOnlyList<MediaTimeRange> bufferedRanges = _player.PlaybackSession.GetBufferedRanges();
+            IReadOnlyList<MediaTimeRange> bufferedRanges = ActiveBackend.GetBufferedRanges();
             if (bufferedRanges.Count == 0)
             {
                 Debug.WriteLine("[RadioPlayerService] No buffered ranges available");
@@ -1036,6 +1333,199 @@ public sealed partial class RadioPlayerService : IDisposable
         {
             Debug.WriteLine($"[RadioPlayerService] Error logging buffered ranges: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Raises the <see cref="PlaybackFailed"/> event on the UI thread.
+    /// </summary>
+    private void RaisePlaybackFailed(string message)
+    {
+        Debug.WriteLine($"[RadioPlayerService] Raising PlaybackFailed: {message}");
+
+        // A failed stream produces no more audio, so a track still waiting out its delay
+        // would be announced over silence.
+        ResetTrackInfoHold();
+
+        TryEnqueueOnUi(() => PlaybackFailed?.Invoke(this, message));
+    }
+
+    /// <summary>
+    /// Surfaces a user-facing playback failure, at most once per play attempt.
+    /// The message is tailored to the cause: offline, a specific stream error,
+    /// or repeated failures. Call <see cref="ResetPlaybackFailureTracking"/> when
+    /// a fresh attempt begins so the next failure can be reported again.
+    /// </summary>
+    private void ReportPlaybackFailure(string? detail = null, bool tooManyAttempts = false)
+    {
+        if (_hasReportedPlaybackFailure)
+        {
+            Debug.WriteLine("[RadioPlayerService] Playback failure already reported for this attempt, skipping");
+            return;
+        }
+
+        _hasReportedPlaybackFailure = true;
+        string message = BuildPlaybackFailureMessage(detail, tooManyAttempts);
+        LogService.Error("RadioPlayerService",
+            $"Reporting playback failure to user (tooManyAttempts={tooManyAttempts}): {message}");
+        RaisePlaybackFailed(message);
+    }
+
+    /// <summary>
+    /// Reports a playback failure after probing the stream, so the user is told what is
+    /// actually wrong ("the server refused the connection", "this address is a playlist
+    /// file") instead of the engine's own error text, which is rarely meaningful to them.
+    /// <para>
+    /// Claims the report slot before awaiting, so failures arriving from the other engine
+    /// while the probe is running don't produce a second dialog.
+    /// </para>
+    /// </summary>
+    private async Task ReportPlaybackFailureWithDiagnosisAsync(string? engineDetail, bool tooManyAttempts)
+    {
+        if (_hasReportedPlaybackFailure)
+        {
+            Debug.WriteLine("[RadioPlayerService] Playback failure already reported for this attempt, skipping");
+            return;
+        }
+
+        _hasReportedPlaybackFailure = true;
+
+        string? diagnosis = null;
+        try
+        {
+            diagnosis = await DiagnoseStreamFailureAsync();
+        }
+        catch (Exception ex)
+        {
+            LogService.Error("RadioPlayerService", "Stream diagnosis failed", ex);
+        }
+
+        LogService.Error("RadioPlayerService",
+            $"Playback failed (tooManyAttempts={tooManyAttempts}); engine reported: {engineDetail ?? "(nothing)"}");
+
+        string message = BuildPlaybackFailureMessage(diagnosis ?? engineDetail, tooManyAttempts);
+        RaisePlaybackFailed(message);
+    }
+
+    /// <summary>
+    /// Clears the per-attempt failure tracking so a new play attempt can report
+    /// failures and retry with fallback again.
+    /// </summary>
+    private void ResetPlaybackFailureTracking()
+    {
+        _consecutivePlaybackFailures = 0;
+        _hasReportedPlaybackFailure = false;
+    }
+
+    /// <summary>
+    /// Builds a friendly, actionable message describing why playback failed.
+    /// Prefers a no-network explanation, then any specific stream error detail.
+    /// </summary>
+    private static string BuildPlaybackFailureMessage(string? detail, bool tooManyAttempts)
+    {
+        if (!NetworkStatusService.IsInternetAvailable())
+        {
+            return NoNetworkMessage;
+        }
+
+        string sanitizedDetail = SanitizeFailureDetail(detail);
+        bool hasDetail = !string.IsNullOrWhiteSpace(sanitizedDetail);
+
+        if (!hasDetail)
+        {
+            return tooManyAttempts
+                ? LocalizationService.GetString(
+                    "PlaybackFailure_TooManyAttemptsNoDetail",
+                    "Couldn't play this station after several attempts. The stream may be offline or the URL may be wrong.")
+                : LocalizationService.GetString(
+                    "PlaybackFailure_NoDetail",
+                    "Couldn't play this station. The stream may be unavailable or the URL may be wrong.");
+        }
+
+        // A diagnosis from StreamDiagnostics is already a complete sentence explaining the
+        // cause, so it reads better standing on its own than parenthesised inside a generic
+        // apology. Raw engine error text is a fragment and still needs the wrapper.
+        if (ReadsAsSentence(sanitizedDetail))
+        {
+            return string.Format(
+                LocalizationService.GetString("PlaybackFailure_WithSentenceDetail", "Couldn't play this station. {0}"),
+                sanitizedDetail);
+        }
+
+        return tooManyAttempts
+            ? string.Format(
+                LocalizationService.GetString(
+                    "PlaybackFailure_TooManyAttemptsWithDetail",
+                    "Couldn't play this station after several attempts ({0}). The stream may be offline or the URL may be wrong."),
+                sanitizedDetail)
+            : string.Format(
+                LocalizationService.GetString("PlaybackFailure_WithDetail", "Couldn't play this station: {0}"),
+                sanitizedDetail);
+    }
+
+    /// <summary>
+    /// Whether a failure detail is already a self-contained sentence, as the stream
+    /// diagnosis produces, rather than a raw error fragment from a playback engine.
+    /// </summary>
+    private static bool ReadsAsSentence(string detail)
+    {
+        return detail.Length > 0 &&
+               char.IsUpper(detail[0]) &&
+               (detail.EndsWith('.') || detail.EndsWith('!'));
+    }
+
+    /// <summary>
+    /// Trims and length-limits a raw backend/stream error message so it reads well in a dialog.
+    /// </summary>
+    private static string SanitizeFailureDetail(string? detail)
+    {
+        if (string.IsNullOrWhiteSpace(detail))
+        {
+            return string.Empty;
+        }
+
+        string trimmed = detail.Trim();
+        const int maxLength = 200;
+        return trimmed.Length > maxLength ? trimmed[..maxLength] + "…" : trimmed;
+    }
+
+    /// <summary>
+    /// Handles a failure reported by a playback backend. Retries with the other
+    /// backend up to a small limit, then reports the error to the user and stops
+    /// retrying so a persistently broken stream can't loop indefinitely.
+    /// </summary>
+    private void HandleBackendFailure(PlaybackFailureEventArgs e)
+    {
+        if (_hasReportedPlaybackFailure)
+        {
+            Debug.WriteLine("[RadioPlayerService] Ignoring backend failure - already reported for this attempt");
+            return;
+        }
+
+        _consecutivePlaybackFailures++;
+        Debug.WriteLine($"[RadioPlayerService] Backend failure #{_consecutivePlaybackFailures} ({e.Backend}): {e.Message}");
+
+        bool canFallback = e.CanRetryWithFallback && _libVlcBackend is not null;
+        bool tooManyAttempts = _consecutivePlaybackFailures >= MaxConsecutivePlaybackFailures;
+
+        LogService.Warn("RadioPlayerService",
+            $"Backend failure #{_consecutivePlaybackFailures} ({e.Backend}): {e.Message} " +
+            $"[canFallback={canFallback}, tooManyAttempts={tooManyAttempts}, {DescribeActiveBackendState()}]");
+
+        // Teach the engine memory which engine this stream fails on, so the next play
+        // starts with the other one instead of rediscovering the failure.
+        if (!string.IsNullOrWhiteSpace(_streamUrl))
+        {
+            _playbackEngineSelector.RecordBackendFailure(_streamUrl, e.Backend);
+        }
+
+        if (tooManyAttempts || !canFallback)
+        {
+            SetManualBuffering(false);
+            _ = ReportPlaybackFailureWithDiagnosisAsync(e.Message, tooManyAttempts);
+            return;
+        }
+
+        _ = TryFallbackPlaybackAsync();
     }
 
     /// <summary>
@@ -1077,10 +1567,10 @@ public sealed partial class RadioPlayerService : IDisposable
 
         try
         {
-            Debug.WriteLine("[RadioPlayerService] Calling _player.Pause()...");
+            Debug.WriteLine("[RadioPlayerService] Calling ActiveBackend.Pause()...");
             SetInternalStateChange(true);
-            _player.Pause();
-            Debug.WriteLine("[RadioPlayerService] _player.Pause() called successfully");
+            ActiveBackend.Pause();
+            Debug.WriteLine("[RadioPlayerService] ActiveBackend.Pause() called successfully");
 
             // Clear manual buffering state when pausing
             SetManualBuffering(false);
@@ -1094,12 +1584,14 @@ public sealed partial class RadioPlayerService : IDisposable
             Debug.WriteLine("[RadioPlayerService] Notified watchdog of user intention to pause");
 
             // Stop metadata polling
-            _metadataService.StopPolling();
-            Debug.WriteLine("[RadioPlayerService] Stopped metadata polling");
+            StopMetadata();
+            Debug.WriteLine("[RadioPlayerService] Stopped metadata");
 
-            // Keep the media source intact so media controls remain available
-            // The Play() method will dispose and recreate it to ensure fresh stream
-            Debug.WriteLine("[RadioPlayerService] Media source kept intact for media controls");
+            // Tear down the source on pause rather than just muting playback, so a paused
+            // stream stops using data. Play() already recreates the source whenever
+            // _wasExternalPause is set (see above), so resuming re-opens a fresh connection.
+            ClearActiveBackendSource();
+            Debug.WriteLine("[RadioPlayerService] Cleared active backend source");
         }
         catch (Exception ex)
         {
@@ -1421,11 +1913,25 @@ public sealed partial class RadioPlayerService : IDisposable
     {
         try
         {
-            Debug.WriteLine($"[RadioPlayerService] Downloading album art from: {imageUrl}");
+            byte[] imageData;
+            if (imageUrl.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+            {
+                int commaIndex = imageUrl.IndexOf(',');
+                if (commaIndex < 0)
+                {
+                    return false;
+                }
 
-            // Download the image
-            byte[] imageData = await _httpClient.GetByteArrayAsync(imageUrl);
-            Debug.WriteLine($"[RadioPlayerService] Downloaded {imageData.Length} bytes of album art");
+                string base64 = imageUrl[(commaIndex + 1)..];
+                imageData = Convert.FromBase64String(base64);
+                Debug.WriteLine($"[RadioPlayerService] Decoded embedded album art ({imageData.Length} bytes)");
+            }
+            else
+            {
+                Debug.WriteLine($"[RadioPlayerService] Downloading album art from: {imageUrl}");
+                imageData = await _httpClient.GetByteArrayAsync(imageUrl);
+                Debug.WriteLine($"[RadioPlayerService] Downloaded {imageData.Length} bytes of album art");
+            }
 
             // Create a random access stream from the image data
             InMemoryRandomAccessStream stream = new();
@@ -1483,9 +1989,17 @@ public sealed partial class RadioPlayerService : IDisposable
 
         CancelPendingPlayAttempt();
 
-        if (_systemMediaControls != null)
+        _systemMediaControls?.ButtonPressed -= OnSystemMediaButtonPressed;
+
+        PowerManagementService.SetPlaybackActive(false);
+
+        try
         {
-            _systemMediaControls.ButtonPressed -= OnSystemMediaButtonPressed;
+            Microsoft.Win32.SystemEvents.PowerModeChanged -= OnPowerModeChanged;
+        }
+        catch
+        {
+            // Ignore errors during cleanup
         }
 
         // Dispose the debounce timer
@@ -1497,14 +2011,10 @@ public sealed partial class RadioPlayerService : IDisposable
         _internalStateChangeTimer = null;
 
         _watchdog.Dispose();
-        _metadataService.Dispose();
+        DisposePlaybackEngine();
         _httpClient.Dispose();
 
-        if (_player.Source is MediaSource media)
-        {
-            media.Reset();
-            media.Dispose();
-        }
+        ClearActiveBackendSource();
 
         _player.Dispose();
         Debug.WriteLine("[RadioPlayerService] Disposed");

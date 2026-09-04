@@ -10,7 +10,7 @@ We release patches for security vulnerabilities for the following versions:
 
 ## Reporting a Vulnerability
 
-We take the security of Trdo seriously. If you believe you have found a security vulnerability, please report it to us as described below.
+We take the security of Traydio seriously. If you believe you have found a security vulnerability, please report it to us as described below.
 
 ### Please DO NOT:
 
@@ -42,4 +42,4 @@ When we learn of a security issue, we will:
 3. Prepare fixes for all supported versions
 4. Release new versions as soon as possible
 
-Thank you for helping keep Trdo and its users safe!
+Thank you for helping keep Traydio and its users safe!

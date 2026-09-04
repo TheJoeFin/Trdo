@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+    x:Class="Trdo.Controls.SongChangePopupWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <!--
+        The window *is* the pill: DesktopAcrylicBackdrop paints the surface,
+        and DWM supplies the rounded corners and drop shadow (see
+        EnsureConfigured). So there is no Border here and no background brush —
+        RootGrid must stay transparent for the backdrop to show through, and
+        its padding is what gives the pill its inset. The window is sized to
+        RootGrid's measured height, so nothing here may set a fixed height.
+    -->
+    <Grid
+        x:Name="RootGrid"
+        x:Uid="SongChangePopup_Surface"
+        Padding="18,14"
+        AutomationProperties.AutomationId="SongChangePopupSurface"
+        AutomationProperties.LiveSetting="Polite"
+        Background="Transparent"
+        ColumnDefinitions="Auto,*"
+        ColumnSpacing="14"
+        RightTapped="RootGrid_RightTapped"
+        Tapped="RootGrid_Tapped">
+        <FontIcon
+            Grid.Column="0"
+            VerticalAlignment="Center"
+            AutomationProperties.AccessibilityView="Raw"
+            FontSize="22"
+            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+            Glyph="&#xE8D6;" />
+        <StackPanel
+            Grid.Column="1"
+            VerticalAlignment="Center"
+            Spacing="2">
+            <TextBlock
+                x:Uid="SongChangePopup_Title"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}" />
+            <TextBlock
+                x:Name="SongText"
+                MaxLines="2"
+                Style="{StaticResource BodyStrongTextBlockStyle}"
+                TextTrimming="CharacterEllipsis"
+                TextWrapping="Wrap" />
+        </StackPanel>
+    </Grid>
+</Window>

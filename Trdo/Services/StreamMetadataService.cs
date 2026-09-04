@@ -13,7 +13,7 @@ namespace Trdo.Services;
 /// <summary>
 /// Service for extracting metadata from internet radio streams using the ICY (Icecast/Shoutcast) protocol.
 /// </summary>
-public sealed class StreamMetadataService : IDisposable
+public sealed partial class StreamMetadataService : IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly object _pollingLock = new();
@@ -27,7 +27,7 @@ public sealed class StreamMetadataService : IDisposable
     /// Polling interval for metadata updates.
     /// Using a longer interval (30s) to reduce network load and minimize potential interference with the main stream.
     /// </summary>
-    private readonly TimeSpan _pollingInterval = TimeSpan.FromSeconds(30);
+    private readonly TimeSpan _pollingInterval = TimeSpan.FromSeconds(10);
 
     /// <summary>
     /// Event raised when stream metadata changes.
@@ -77,8 +77,8 @@ public sealed class StreamMetadataService : IDisposable
 
         lock (_pollingLock)
         {
-            // Stop any existing polling
-            StopPollingCore();
+            // Stop any existing polling without clearing metadata we may still be displaying.
+            StopPollingCore(clearMetadata: false);
 
             _currentStreamUrl = streamUrl;
             _pollingCts = new CancellationTokenSource();
@@ -128,18 +128,18 @@ public sealed class StreamMetadataService : IDisposable
     /// <summary>
     /// Stops polling for metadata.
     /// </summary>
-    public void StopPolling()
+    public void StopPolling(bool clearMetadata = true)
     {
         lock (_pollingLock)
         {
-            StopPollingCore();
+            StopPollingCore(clearMetadata);
         }
     }
 
     /// <summary>
     /// Core stop logic - must be called under lock.
     /// </summary>
-    private void StopPollingCore()
+    private void StopPollingCore(bool clearMetadata = true)
     {
         Debug.WriteLine("[StreamMetadataService] Stopping metadata polling");
         _pollingCts?.Cancel();
@@ -148,8 +148,23 @@ public sealed class StreamMetadataService : IDisposable
         _pollingTask = null;
         _currentStreamUrl = null;
 
-        // Clear metadata when stopping
-        UpdateMetadata(StreamMetadata.Empty);
+        if (clearMetadata)
+        {
+            UpdateMetadata(StreamMetadata.Empty);
+        }
+    }
+
+    /// <summary>
+    /// Fetches metadata immediately for the given stream URL (on-demand refresh).
+    /// </summary>
+    public async Task RefreshAsync(string streamUrl, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(streamUrl))
+        {
+            return;
+        }
+
+        await FetchMetadataAsync(streamUrl, cancellationToken);
     }
 
     /// <summary>
@@ -162,9 +177,14 @@ public sealed class StreamMetadataService : IDisposable
             return;
         }
 
+        await FetchMetadataAsync(_currentStreamUrl, cancellationToken);
+    }
+
+    private async Task FetchMetadataAsync(string streamUrl, CancellationToken cancellationToken)
+    {
         try
         {
-            using HttpRequestMessage request = new(HttpMethod.Get, _currentStreamUrl);
+            using HttpRequestMessage request = new(HttpMethod.Get, streamUrl);
 
             // Request only partial content to minimize bandwidth
             using HttpResponseMessage response = await _httpClient.SendAsync(
@@ -448,7 +468,7 @@ public sealed class StreamMetadataService : IDisposable
         }
 
         // Extract album artwork URL (try multiple possible attribute names)
-        string? artworkUrl = ExtractAttribute(metadataStr, "amgArtworkURL") 
+        string? artworkUrl = ExtractAttribute(metadataStr, "amgArtworkURL")
                           ?? ExtractAttribute(metadataStr, "artworkURL")
                           ?? ExtractAttribute(metadataStr, "url");
 
@@ -502,7 +522,7 @@ public sealed class StreamMetadataService : IDisposable
     /// <summary>
     /// Attempts to parse Artist and Title from the StreamTitle using common formats.
     /// </summary>
-    private static void ParseArtistAndTitle(StreamMetadata metadata)
+    public static void ParseArtistAndTitle(StreamMetadata metadata)
     {
         if (string.IsNullOrWhiteSpace(metadata.StreamTitle))
         {

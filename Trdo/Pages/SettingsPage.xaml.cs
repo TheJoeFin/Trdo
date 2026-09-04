@@ -1,17 +1,17 @@
-using System;
-using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System;
 using Trdo.Services;
+using Trdo.Services.Playback;
 using Trdo.ViewModels;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Win32;
+
 
 namespace Trdo.Pages;
 
 public sealed partial class SettingsPage : Page
 {
-    [DllImport("user32.dll")]
-    private static extern nint GetActiveWindow();
-
     private float _displayLevel;
     private bool _isUpdatingAutoPlayToggle;
 
@@ -34,6 +34,17 @@ public sealed partial class SettingsPage : Page
     private void OnUnloaded(object sender, RoutedEventArgs e)
     {
         RadioPlayerService.Instance.Watchdog.AudioLevelUpdated -= OnAudioLevelUpdated;
+    }
+
+    /// <summary>
+    /// Pops the song change popup up on demand. The popup never takes
+    /// activation (WS_EX_NOACTIVATE), so this does not light-dismiss the
+    /// Traydio window the Settings page is hosted in.
+    /// </summary>
+    private void SongChangePopupDemoButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (Application.Current is App app)
+            app.ShowSongChangePopupDemo();
     }
 
     private void OnAudioLevelUpdated(float rms)
@@ -83,7 +94,7 @@ public sealed partial class SettingsPage : Page
     {
         try
         {
-            nint hwnd = GetActiveWindow();
+            nint hwnd = PInvoke.GetActiveWindow();
             int count = await ViewModel.ImportStationsAsync(hwnd);
 
             if (count > 0)
@@ -102,7 +113,8 @@ public sealed partial class SettingsPage : Page
         catch (Exception ex)
         {
             ImportExportInfoBar.Severity = InfoBarSeverity.Error;
-            ImportExportInfoBar.Message = $"Import failed: {ex.Message}";
+            ImportExportInfoBar.Message = string.Format(
+                LocalizationService.GetString("SettingsPage_ImportFailed", "Import failed: {0}"), ex.Message);
             ImportExportInfoBar.IsOpen = true;
         }
     }
@@ -111,7 +123,7 @@ public sealed partial class SettingsPage : Page
     {
         try
         {
-            nint hwnd = GetActiveWindow();
+            nint hwnd = PInvoke.GetActiveWindow();
             bool exported = await ViewModel.ExportStationsAsync(hwnd);
 
             if (exported)
@@ -130,8 +142,103 @@ public sealed partial class SettingsPage : Page
         catch (Exception ex)
         {
             ImportExportInfoBar.Severity = InfoBarSeverity.Error;
-            ImportExportInfoBar.Message = $"Export failed: {ex.Message}";
+            ImportExportInfoBar.Message = string.Format(
+                LocalizationService.GetString("SettingsPage_ExportFailed", "Export failed: {0}"), ex.Message);
             ImportExportInfoBar.IsOpen = true;
+        }
+    }
+
+    private async void OpenLogsFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string folder = LogService.LogFolderPath;
+            if (string.IsNullOrEmpty(folder) || !System.IO.Directory.Exists(folder))
+            {
+                DiagnosticsInfoBar.Severity = InfoBarSeverity.Informational;
+                DiagnosticsInfoBar.Message = "No logs have been written yet.";
+                DiagnosticsInfoBar.IsOpen = true;
+                return;
+            }
+
+            bool launched = await Windows.System.Launcher.LaunchFolderPathAsync(folder);
+            if (launched)
+            {
+                DiagnosticsInfoBar.Severity = InfoBarSeverity.Success;
+                DiagnosticsInfoBar.Message = "Opened the logs folder.";
+            }
+            else
+            {
+                DiagnosticsInfoBar.Severity = InfoBarSeverity.Error;
+                DiagnosticsInfoBar.Message = string.Format(
+                    LocalizationService.GetString(
+                        "SettingsPage_OpenLogsFolderFailedLocation",
+                        "Couldn't open the logs folder. It's located at: {0}"),
+                    folder);
+            }
+
+            DiagnosticsInfoBar.IsOpen = true;
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsInfoBar.Severity = InfoBarSeverity.Error;
+            DiagnosticsInfoBar.Message = string.Format(
+                LocalizationService.GetString("SettingsPage_OpenLogsFolderFailed", "Couldn't open the logs folder: {0}"),
+                ex.Message);
+            DiagnosticsInfoBar.IsOpen = true;
+        }
+    }
+
+    /// <summary>
+    /// Forgets which engine each station was proven to play on. The records live in local
+    /// settings rather than on the player, so this needs no reference to the running service.
+    /// </summary>
+    private void ResetEngineMemoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            EngineHealthStore store = new(new LocalSettingsEngineHealthStorage());
+            int removed = store.Clear();
+
+            LogService.Info("SettingsPage", $"User reset engine memory ({removed} record(s) removed)");
+
+            EngineMemoryInfoBar.Severity = InfoBarSeverity.Success;
+            EngineMemoryInfoBar.Message = removed == 0
+                ? "There were no remembered engines to reset."
+                : $"Forgot the remembered engine for {removed} station{(removed == 1 ? string.Empty : "s")}.";
+        }
+        catch (Exception ex)
+        {
+            EngineMemoryInfoBar.Severity = InfoBarSeverity.Error;
+            EngineMemoryInfoBar.Message = string.Format(
+                LocalizationService.GetString("SettingsPage_ResetEngineMemoryFailed", "Couldn't reset remembered engines: {0}"),
+                ex.Message);
+        }
+
+        EngineMemoryInfoBar.IsOpen = true;
+    }
+
+    private void CopyDiagnosticsButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            string diagnostics = LogService.ReadRecentText();
+
+            DataPackage package = new();
+            package.SetText(diagnostics);
+            Clipboard.SetContent(package);
+
+            DiagnosticsInfoBar.Severity = InfoBarSeverity.Success;
+            DiagnosticsInfoBar.Message = "Copied recent diagnostics to the clipboard.";
+            DiagnosticsInfoBar.IsOpen = true;
+        }
+        catch (Exception ex)
+        {
+            DiagnosticsInfoBar.Severity = InfoBarSeverity.Error;
+            DiagnosticsInfoBar.Message = string.Format(
+                LocalizationService.GetString("SettingsPage_CopyDiagnosticsFailed", "Couldn't copy diagnostics: {0}"),
+                ex.Message);
+            DiagnosticsInfoBar.IsOpen = true;
         }
     }
 

@@ -1,9 +1,9 @@
 using Microsoft.UI.Dispatching;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Trdo.Services.Playback;
 using Windows.Storage;
 
 namespace Trdo.Services;
@@ -26,12 +26,16 @@ public sealed partial class StreamWatchdogService : IDisposable
     private TimeSpan _lastPosition;
     private DateTime _lastPositionChangeTime;
     private double _lastBufferingProgress;
-    private volatile bool _isRecovering;
 
-    // Stutter detection tracking
-    private readonly Queue<DateTime> _recoveryAttempts = new();
+    // Recovery gate. Both the 5s health poll and the silence monitor can trigger recovery;
+    // this makes sure only one of them is ever recovering at a time. 0 = idle, 1 = recovering.
+    private int _recoveryGate;
+
+    // Escalation ladder. Owns the failure window, the rung, and the transient buffer bump.
+    private readonly RecoveryPolicy _policy;
     private bool _autoBufferIncreaseEnabled;
     private double _currentBufferLevel;
+    private double? _stationBufferLevelOverride;
     private const string AutoBufferIncreaseKey = "AutoBufferIncreaseEnabled";
     private const string BufferLevelKey = "BufferLevel";
     private const string SilenceTimeoutKey = "SilenceTimeoutSeconds";
@@ -40,12 +44,10 @@ public sealed partial class StreamWatchdogService : IDisposable
     // Configuration
     private readonly TimeSpan _checkInterval = TimeSpan.FromSeconds(5);
     private readonly TimeSpan _recoveryDelay = TimeSpan.FromSeconds(3);
-    private readonly int _maxConsecutiveFailures = 3;
     private readonly TimeSpan _backoffDelay = TimeSpan.FromSeconds(30);
 
     // Stutter detection configuration
-    private const int StutterThreshold = 3;  // Number of recovery attempts to trigger stutter detection
-    private readonly TimeSpan _stutterWindow = TimeSpan.FromMinutes(2);  // Time window to count recovery attempts
+    private readonly TimeSpan _stutterWindow = RecoveryPolicy.DefaultFailureWindow;  // Time window to count recovery attempts
     private const double MaxBufferLevel = 3.0;  // Maximum buffer level (0=default, 1=medium, 2=large, 3=extra large)
     private const bool DefaultAutoBufferIncreaseEnabled = true;  // Auto-buffer increase is enabled by default for better user experience
     private const double DefaultBufferLevel = 0.0;  // Start with default (no extra delay) buffer level
@@ -60,6 +62,13 @@ public sealed partial class StreamWatchdogService : IDisposable
     /// Fires on a background thread — marshal to the UI thread before touching XAML.
     /// </summary>
     public event Action<float>? AudioLevelUpdated;
+
+    /// <summary>
+    /// Whether the WASAPI loopback monitor is currently capturing. When it is not,
+    /// <see cref="AudioLevelUpdated"/> says nothing about whether audio is reaching the
+    /// speakers, and consumers must not read silence into its absence.
+    /// </summary>
+    public bool IsAudioMonitorRunning => _silenceMonitor.IsMonitoring;
 
     /// <summary>
     /// Gets or sets the silence detection timeout in seconds.
@@ -104,14 +113,20 @@ public sealed partial class StreamWatchdogService : IDisposable
         {
             if (_autoBufferIncreaseEnabled == value) return;
             _autoBufferIncreaseEnabled = value;
+            _policy.AutoBufferIncreaseEnabled = value;
             SaveAutoBufferSettings();
             Debug.WriteLine($"[Watchdog] Auto-buffer increase set to: {value}");
         }
     }
 
     /// <summary>
-    /// Gets or sets the current buffer level (0-3).
-    /// 0 = Default, 1 = Medium, 2 = Large, 3 = Extra Large
+    /// Gets or sets the user's configured buffer level (0-3), persisted to local settings.
+    /// 0 = Default, 1 = Medium, 2 = Large, 3 = Extra Large.
+    /// <para>
+    /// This is the user's setting and acts as a floor. Automatic escalation no longer writes
+    /// here - it applies a transient, per-station bump on top via <see cref="EffectiveBufferLevel"/>,
+    /// so a single bad station can't permanently degrade every other station.
+    /// </para>
     /// </summary>
     public double BufferLevel
     {
@@ -129,7 +144,46 @@ public sealed partial class StreamWatchdogService : IDisposable
     }
 
     /// <summary>
-    /// Gets the buffer delay in milliseconds based on current buffer level.
+    /// Gets or sets the current station's buffer level override, or <c>null</c> when
+    /// the station follows the app-wide <see cref="BufferLevel"/>. Set by
+    /// PlayerViewModel as stations are selected; never persisted here (it lives on
+    /// the station itself).
+    /// </summary>
+    public double? StationBufferLevelOverride
+    {
+        get => _stationBufferLevelOverride;
+        set
+        {
+            double? clamped = value is null ? null : Math.Clamp(value.Value, 0, MaxBufferLevel);
+            if (clamped == _stationBufferLevelOverride) return;
+
+            double previousEffectiveLevel = EffectiveBufferLevel;
+            _stationBufferLevelOverride = clamped;
+            Debug.WriteLine($"[Watchdog] Station buffer override set to: {(clamped?.ToString() ?? "none")}");
+
+            if (Math.Abs(previousEffectiveLevel - EffectiveBufferLevel) > 0.0001)
+            {
+                RaiseBufferLevelChanged(_currentBufferLevel);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the buffer level the current station starts from: its own override when
+    /// it has one, otherwise the user's app-wide setting.
+    /// </summary>
+    public double BaseBufferLevel => _stationBufferLevelOverride ?? _currentBufferLevel;
+
+    /// <summary>
+    /// Gets the buffer level actually in force: the base level for the current
+    /// station plus any transient escalation the recovery ladder has asked for,
+    /// clamped to the maximum.
+    /// </summary>
+    public double EffectiveBufferLevel =>
+        Math.Clamp(BaseBufferLevel + _policy.AutoBufferBump, 0, MaxBufferLevel);
+
+    /// <summary>
+    /// Gets the buffer delay in milliseconds based on the effective buffer level.
     /// </summary>
     public int BufferDelayMs
     {
@@ -137,34 +191,35 @@ public sealed partial class StreamWatchdogService : IDisposable
         {
             // Linear interpolation between buffer levels
             // Level 0 = 0ms, Level 1 = 2000ms, Level 2 = 4000ms, Level 3 = 8000ms
-            if (_currentBufferLevel <= 0) return 0;
-            if (_currentBufferLevel >= 3) return 8000;
-            if (_currentBufferLevel <= 1) return (int)(_currentBufferLevel * 2000);
-            if (_currentBufferLevel <= 2) return (int)(2000 + (_currentBufferLevel - 1) * 2000);
-            return (int)(4000 + (_currentBufferLevel - 2) * 4000);
+            double level = EffectiveBufferLevel;
+            if (level <= 0) return 0;
+            if (level >= 3) return 8000;
+            if (level <= 1) return (int)(level * 2000);
+            if (level <= 2) return (int)(2000 + (level - 1) * 2000);
+            return (int)(4000 + (level - 2) * 4000);
         }
     }
 
     /// <summary>
-    /// Gets a human-readable description of the current buffer level.
+    /// Gets a human-readable description of the user's configured buffer level.
     /// </summary>
-    public string BufferLevelDescription
+    public string BufferLevelDescription => DescribeBufferLevel(_currentBufferLevel);
+
+    /// <summary>
+    /// Maps a buffer level (0-3) onto its human-readable name. Shared so per-station
+    /// overrides are labelled identically to the app-wide setting.
+    /// </summary>
+    public static string DescribeBufferLevel(double level) => level switch
     {
-        get
-        {
-            return _currentBufferLevel switch
-            {
-                0 => "Default",
-                1 => "Medium",
-                2 => "Large",
-                3 => "Extra Large",
-                _ when _currentBufferLevel < 0.5 => "Default",
-                _ when _currentBufferLevel < 1.5 => "Medium",
-                _ when _currentBufferLevel < 2.5 => "Large",
-                _ => "Extra Large"
-            };
-        }
-    }
+        0 => "Default",
+        1 => "Medium",
+        2 => "Large",
+        3 => "Extra Large",
+        _ when level < 0.5 => "Default",
+        _ when level < 1.5 => "Medium",
+        _ when level < 2.5 => "Large",
+        _ => "Extra Large"
+    };
 
     public StreamWatchdogService(RadioPlayerService playerService)
     {
@@ -175,6 +230,7 @@ public sealed partial class StreamWatchdogService : IDisposable
         _lastPosition = TimeSpan.Zero;
         _lastPositionChangeTime = DateTime.UtcNow;
         _lastBufferingProgress = 0;
+        _policy = new RecoveryPolicy(failureWindow: _stutterWindow);
 
         // Initialize NAudio silence monitor
         _silenceMonitor = new AudioSilenceMonitorService();
@@ -184,6 +240,8 @@ public sealed partial class StreamWatchdogService : IDisposable
         // Load settings
         LoadAutoBufferSettings();
         LoadSilenceTimeoutSetting();
+
+        _policy.AutoBufferIncreaseEnabled = _autoBufferIncreaseEnabled;
     }
 
     private void LoadAutoBufferSettings()
@@ -408,25 +466,8 @@ public sealed partial class StreamWatchdogService : IDisposable
                 if (timeSinceLastCheck > _checkInterval)
                 {
                     _consecutiveFailures++;
-                    Debug.WriteLine($"[Watchdog] Stream stopped unexpectedly. Attempt {_consecutiveFailures}/{_maxConsecutiveFailures}");
-
-                    RaiseStatusChanged($"Stream stopped. Recovery attempt {_consecutiveFailures}/{_maxConsecutiveFailures}",
-                        StreamWatchdogStatus.Recovering);
-
-                    if (_consecutiveFailures <= _maxConsecutiveFailures)
-                    {
-                        await AttemptRecoveryAsync(cancellationToken);
-                    }
-                    else
-                    {
-                        Debug.WriteLine("[Watchdog] Max recovery attempts reached. Backing off.");
-                        RaiseStatusChanged("Max recovery attempts reached. Will retry later.",
-                            StreamWatchdogStatus.BackingOff);
-
-                        // Wait longer before next attempt
-                        await Task.Delay(_backoffDelay, cancellationToken);
-                        _consecutiveFailures = 0; // Reset after backoff
-                    }
+                    Debug.WriteLine($"[Watchdog] Stream stopped unexpectedly. Attempt {_consecutiveFailures}");
+                    await AttemptRecoveryAsync(cancellationToken);
                 }
 
                 _lastStateCheck = DateTime.UtcNow;
@@ -441,6 +482,11 @@ public sealed partial class StreamWatchdogService : IDisposable
                 Debug.WriteLine("[Watchdog] Stream is playing - silence monitoring active");
             }
             _consecutiveFailures = 0;
+
+            // Feed the ladder healthy observations. It de-escalates only after playback has
+            // held for a sustained interval, not on a single healthy poll - a flapping stream
+            // used to reset the counter here every few seconds and so never escalated at all.
+            _policy.RecordPlaybackConfirmed();
 
             // Log position/buffering for debugging (silence detection is handled by NAudio)
             bool positionChanged = currentPosition != _lastPosition;
@@ -467,66 +513,83 @@ public sealed partial class StreamWatchdogService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Runs one rung of the recovery ladder. Guarded so the 5s health poll and the silence
+    /// monitor - both of which can trigger recovery - never recover concurrently.
+    /// </summary>
     private async Task AttemptRecoveryAsync(CancellationToken cancellationToken)
     {
+        // 0 -> 1 means we took the gate; anything else means a recovery is already running.
+        if (Interlocked.CompareExchange(ref _recoveryGate, 1, 0) != 0)
+        {
+            Debug.WriteLine("[Watchdog] Recovery already in progress, skipping");
+            return;
+        }
+
         try
         {
-            Debug.WriteLine("[Watchdog] Attempting to resume stream...");
+            if (_policy.HasGivenUp)
+            {
+                Debug.WriteLine("[Watchdog] Policy has given up; not attempting further recovery");
+                return;
+            }
 
-            // Track this recovery attempt for stutter detection
-            TrackRecoveryAttempt();
+            double previousEffectiveLevel = EffectiveBufferLevel;
+            RecoveryAction action = _policy.RecordFailure();
+            ReportStutterIfDetected(previousEffectiveLevel);
+
+            RaiseStatusChanged(
+                $"Stream stopped. Recovery attempt {_policy.FailuresInWindow} (action={action})",
+                StreamWatchdogStatus.Recovering);
+
+            if (action == RecoveryAction.GiveUp)
+            {
+                LogService.Error("Watchdog",
+                    "Recovery ladder exhausted; giving up until the user or a station change restarts playback");
+                RaiseStatusChanged(
+                    "Unable to recover this stream. Try another station or play again.",
+                    StreamWatchdogStatus.Error);
+                _userIntendedPlayback = false;
+                StopSilenceMonitor();
+                return;
+            }
+
+            if (action == RecoveryAction.BackOff)
+            {
+                RaiseStatusChanged("Repeated failures. Waiting before retrying.", StreamWatchdogStatus.BackingOff);
+                await Task.Delay(_backoffDelay, cancellationToken);
+                return;
+            }
 
             // Wait a bit before attempting recovery
-            Debug.WriteLine($"[Watchdog] Waiting {_recoveryDelay.TotalMilliseconds}ms before recovery");
+            Debug.WriteLine($"[Watchdog] Waiting {_recoveryDelay.TotalMilliseconds}ms before recovery ({action})");
             await Task.Delay(_recoveryDelay, cancellationToken);
 
             if (cancellationToken.IsCancellationRequested)
                 return;
 
-            // Attempt to restart playback on UI thread
-            // Use PlayWithBufferAsync to ensure sufficient buffer is accumulated using GetBufferedRanges
-            bool playbackStarted = false;
-            Exception? playbackException = null;
-
-            await RunOnUiThreadAsync(() =>
+            bool playbackStarted = action switch
             {
-                try
-                {
-                    string? streamUrl = _playerService.StreamUrl;
-                    if (!string.IsNullOrEmpty(streamUrl))
-                    {
-                        // Reinitialize the stream
-                        _playerService.SetStreamUrl(streamUrl);
-                        Debug.WriteLine("[Watchdog] Stream URL set, starting buffered playback");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    playbackException = ex;
-                    Debug.WriteLine($"[Watchdog] Failed to set stream URL: {ex.Message}");
-                }
-            });
-
-            if (playbackException != null)
-            {
-                RaiseStatusChanged($"Recovery failed: {playbackException.Message}", StreamWatchdogStatus.Error);
-                return;
-            }
-
-            // Use PlayWithBufferAsync to wait for sufficient buffer based on GetBufferedRanges
-            // This ensures smooth playback by checking buffered content before audio starts
-            Debug.WriteLine($"[Watchdog] Starting playback with buffer monitoring (required: {_playerService.RequiredBufferDuration.TotalMilliseconds}ms)");
-            playbackStarted = await _playerService.PlayWithBufferAsync(cancellationToken);
+                RecoveryAction.SoftRetry => await SoftRecoverAsync(cancellationToken),
+                RecoveryAction.RebuildPipeline =>
+                    await _playerService.RebuildPlaybackPipelineAsync(recycleBackend: true, cancellationToken),
+                RecoveryAction.SwitchBackend =>
+                    await _playerService.SwitchBackendAndRebuildAsync(cancellationToken),
+                _ => false
+            };
 
             if (playbackStarted)
             {
-                Debug.WriteLine($"[Watchdog] Stream recovery successful with buffer: {_playerService.TotalBufferedDuration.TotalMilliseconds}ms");
+                Debug.WriteLine($"[Watchdog] Stream recovery successful via {action}");
                 RaiseStatusChanged("Stream resumed with buffer", StreamWatchdogStatus.Recovering);
             }
-            else
+            else if (!cancellationToken.IsCancellationRequested)
             {
-                Debug.WriteLine("[Watchdog] Playback start was cancelled");
-                RaiseStatusChanged("Recovery cancelled", StreamWatchdogStatus.Error);
+                // The attempt genuinely failed to reach playback. Feed that back into the
+                // ladder so the next rung is reached, rather than silently dropping it.
+                LogService.Warn("Watchdog", $"Recovery action {action} did not reach playback");
+                _policy.RecordFailure();
+                RaiseStatusChanged($"Recovery via {action} did not restore playback", StreamWatchdogStatus.Error);
             }
         }
         catch (OperationCanceledException)
@@ -538,64 +601,92 @@ public sealed partial class StreamWatchdogService : IDisposable
             Debug.WriteLine($"[Watchdog] Error during recovery: {ex.Message}");
             RaiseStatusChanged($"Recovery error: {ex.Message}", StreamWatchdogStatus.Error);
         }
+        finally
+        {
+            Interlocked.Exchange(ref _recoveryGate, 0);
+        }
     }
 
     /// <summary>
-    /// Tracks a recovery attempt and checks for stutter pattern.
-    /// If stuttering is detected and auto-buffer increase is enabled, increases the buffer level.
+    /// The gentlest rung: re-point the player at the same URL and play again. The player
+    /// re-prepares the source because <c>SetStreamUrl</c> clears it.
     /// </summary>
-    private void TrackRecoveryAttempt()
+    private async Task<bool> SoftRecoverAsync(CancellationToken cancellationToken)
     {
-        DateTime now = DateTime.UtcNow;
-        _recoveryAttempts.Enqueue(now);
+        Exception? playbackException = null;
 
-        // Remove old attempts outside the stutter window
-        while (_recoveryAttempts.Count > 0 &&
-               now - _recoveryAttempts.Peek() > _stutterWindow)
+        await RunOnUiThreadAsync(() =>
         {
-            _recoveryAttempts.Dequeue();
-        }
-
-        Debug.WriteLine($"[Watchdog] Recovery attempts in last {_stutterWindow.TotalMinutes}min: {_recoveryAttempts.Count}");
-
-        // Check if we've hit the stutter threshold
-        if (_recoveryAttempts.Count >= StutterThreshold)
-        {
-            int recoveryCount = _recoveryAttempts.Count;
-            Debug.WriteLine($"[Watchdog] STUTTER DETECTED - {recoveryCount} recoveries in {_stutterWindow.TotalMinutes}min window");
-
-            double previousLevel = _currentBufferLevel;
-
-            // Auto-increase buffer if enabled and not at max
-            if (_autoBufferIncreaseEnabled && _currentBufferLevel < MaxBufferLevel)
+            try
             {
-                BufferLevel = _currentBufferLevel + 1;
-                Debug.WriteLine($"[Watchdog] Auto-increased buffer level from {previousLevel} to {_currentBufferLevel} ({BufferLevelDescription})");
-
-                // Clear recovery attempts after buffer increase to give the new level a chance
-                _recoveryAttempts.Clear();
+                string? streamUrl = _playerService.StreamUrl;
+                if (!string.IsNullOrEmpty(streamUrl))
+                {
+                    _playerService.SetStreamUrl(streamUrl);
+                    Debug.WriteLine("[Watchdog] Stream URL set, starting buffered playback");
+                }
             }
-
-            // Raise the stutter detected event
-            RaiseStutterDetected(new StutterDetectedEventArgs
+            catch (Exception ex)
             {
-                RecoveryAttemptCount = recoveryCount,
-                TimeWindow = _stutterWindow,
-                PreviousBufferLevel = previousLevel,
-                NewBufferLevel = _currentBufferLevel,
-                BufferWasIncreased = Math.Abs(previousLevel - _currentBufferLevel) > 0.0001
-            });
+                playbackException = ex;
+                Debug.WriteLine($"[Watchdog] Failed to set stream URL: {ex.Message}");
+            }
+        });
+
+        if (playbackException != null)
+        {
+            RaiseStatusChanged($"Recovery failed: {playbackException.Message}", StreamWatchdogStatus.Error);
+            return false;
         }
+
+        Debug.WriteLine($"[Watchdog] Starting playback with buffer monitoring (required: {_playerService.RequiredBufferDuration.TotalMilliseconds}ms)");
+        return await _playerService.PlayWithBufferAsync(cancellationToken);
     }
 
     /// <summary>
-    /// Resets the buffer level to default. Call this when the user manually changes stations or wants to reset.
+    /// Raises <see cref="StutterDetected"/> when the ladder's buffer bump changed the
+    /// effective buffer level, preserving the pre-existing event contract for listeners.
     /// </summary>
-    public void ResetBufferLevel()
+    private void ReportStutterIfDetected(double previousEffectiveLevel)
     {
-        _recoveryAttempts.Clear();
-        BufferLevel = 0;
-        Debug.WriteLine("[Watchdog] Buffer level reset to default");
+        double newEffectiveLevel = EffectiveBufferLevel;
+        bool increased = newEffectiveLevel - previousEffectiveLevel > 0.0001;
+
+        if (!increased && _policy.FailuresInWindow < 3)
+        {
+            return;
+        }
+
+        Debug.WriteLine($"[Watchdog] STUTTER - {_policy.FailuresInWindow} recoveries in {_stutterWindow.TotalMinutes}min window");
+
+        RaiseStutterDetected(new StutterDetectedEventArgs
+        {
+            RecoveryAttemptCount = _policy.FailuresInWindow,
+            TimeWindow = _stutterWindow,
+            PreviousBufferLevel = previousEffectiveLevel,
+            NewBufferLevel = newEffectiveLevel,
+            BufferWasIncreased = increased
+        });
+    }
+
+    /// <summary>
+    /// Returns the recovery ladder to a clean slate. Called when the user changes station or
+    /// clears the playback target, so a new stream doesn't inherit the previous one's
+    /// escalation level or buffer bump. The user's configured <see cref="BufferLevel"/> is
+    /// left untouched.
+    /// </summary>
+    public void ResetForStation()
+    {
+        double previousEffectiveLevel = EffectiveBufferLevel;
+        _policy.ResetForStation();
+        _consecutiveFailures = 0;
+
+        if (Math.Abs(previousEffectiveLevel - EffectiveBufferLevel) > 0.0001)
+        {
+            RaiseBufferLevelChanged(_currentBufferLevel);
+        }
+
+        Debug.WriteLine("[Watchdog] Recovery state reset for new station");
     }
 
     /// <summary>
@@ -625,17 +716,18 @@ public sealed partial class StreamWatchdogService : IDisposable
     /// </summary>
     private async void OnSilenceDetected(object? sender, EventArgs e)
     {
-        if (!_isEnabled || !_userIntendedPlayback || _isRecovering)
+        if (!_isEnabled || !_userIntendedPlayback)
             return;
 
         try
         {
-            _isRecovering = true;
             StopSilenceMonitor();
 
             Debug.WriteLine("[Watchdog] NAudio silence detected - attempting stream recovery");
             RaiseStatusChanged("Stream is silent - refreshing", StreamWatchdogStatus.Recovering);
 
+            // AttemptRecoveryAsync owns the recovery gate, so a health-poll recovery
+            // already in flight makes this a no-op rather than a competing attempt.
             CancellationToken token = _cts?.Token ?? CancellationToken.None;
             await AttemptRecoveryAsync(token);
         }
@@ -650,7 +742,6 @@ public sealed partial class StreamWatchdogService : IDisposable
         }
         finally
         {
-            _isRecovering = false;
             StartSilenceMonitor();
         }
     }
@@ -694,6 +785,21 @@ public sealed partial class StreamWatchdogService : IDisposable
     {
         Debug.WriteLine($"[Watchdog] {status}: {message}");
 
+        // Info for normal states; Error status maps to Error, recovery/backoff to Warn.
+        switch (status)
+        {
+            case StreamWatchdogStatus.Error:
+                LogService.Error("Watchdog", $"{status}: {message}");
+                break;
+            case StreamWatchdogStatus.Recovering:
+            case StreamWatchdogStatus.BackingOff:
+                LogService.Warn("Watchdog", $"{status}: {message}");
+                break;
+            default:
+                LogService.Info("Watchdog", $"{status}: {message}");
+                break;
+        }
+
         if (_uiQueue is null || _uiQueue.HasThreadAccess)
         {
             StreamStatusChanged?.Invoke(this, new StreamWatchdogEventArgs(message, status));
@@ -709,6 +815,7 @@ public sealed partial class StreamWatchdogService : IDisposable
 
     private void RaiseStutterDetected(StutterDetectedEventArgs args)
     {
+        LogService.Warn("Watchdog", $"Stutter detected (bufferIncreased={args.BufferWasIncreased}, newLevel={args.NewBufferLevel})");
         Debug.WriteLine($"[Watchdog] Raising StutterDetected event - BufferIncreased: {args.BufferWasIncreased}, NewLevel: {args.NewBufferLevel}");
 
         if (_uiQueue is null || _uiQueue.HasThreadAccess)

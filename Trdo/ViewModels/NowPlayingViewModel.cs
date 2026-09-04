@@ -3,14 +3,16 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
+using Trdo.Helpers;
 using Trdo.Models;
 using Trdo.Services;
 using Windows.System;
 
 namespace Trdo.ViewModels;
 
-public class NowPlayingViewModel : INotifyPropertyChanged
+public partial class NowPlayingViewModel : INotifyPropertyChanged
 {
     private readonly RadioPlayerService _player = RadioPlayerService.Instance;
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;
@@ -38,6 +40,8 @@ public class NowPlayingViewModel : INotifyPropertyChanged
 
     public NowPlayingViewModel()
     {
+        PlayerViewModel.Shared.PropertyChanged += OnPlayerViewModelPropertyChanged;
+
         // Subscribe to metadata changes for UI updates
         _player.StreamMetadataChanged += OnStreamMetadataChanged;
         SettingsService.MusicSearchServicesChanged += OnMusicSearchServicesChanged;
@@ -54,12 +58,25 @@ public class NowPlayingViewModel : INotifyPropertyChanged
         Debug.WriteLine($"[NowPlayingViewModel] Initialized with {PlaylistHistory.Count} history items from service");
     }
 
+    private void OnPlayerViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(PlayerViewModel.IsPlaybackActive)
+            or nameof(PlayerViewModel.IsRefreshingMetadata)
+            or nameof(PlayerViewModel.CanRefreshMetadata))
+        {
+            OnPropertyChanged(nameof(IsPlaybackActive));
+            OnPropertyChanged(nameof(IsRefreshingMetadata));
+            OnPropertyChanged(nameof(CanRefreshMetadata));
+        }
+    }
+
     private void OnMusicSearchServicesChanged(object? sender, EventArgs e)
     {
         OnPropertyChanged(nameof(IsSpotifyEnabled));
         OnPropertyChanged(nameof(IsDiscogsEnabled));
         OnPropertyChanged(nameof(IsAppleMusicEnabled));
         OnPropertyChanged(nameof(IsYouTubeMusicEnabled));
+        OnPropertyChanged(nameof(IsBandcampEnabled));
         OnPropertyChanged(nameof(HasEnabledMusicServices));
     }
 
@@ -69,6 +86,8 @@ public class NowPlayingViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(StreamTitle));
         OnPropertyChanged(nameof(Artist));
         OnPropertyChanged(nameof(Title));
+        OnPropertyChanged(nameof(ArtistDisplay));
+        OnPropertyChanged(nameof(TitleDisplay));
         OnPropertyChanged(nameof(DisplayText));
         OnPropertyChanged(nameof(HasMetadata));
         OnPropertyChanged(nameof(HasArtist));
@@ -81,6 +100,7 @@ public class NowPlayingViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(IsDiscogsEnabled));
         OnPropertyChanged(nameof(IsAppleMusicEnabled));
         OnPropertyChanged(nameof(IsYouTubeMusicEnabled));
+        OnPropertyChanged(nameof(IsBandcampEnabled));
         OnPropertyChanged(nameof(HasEnabledMusicServices));
 
         // History is now managed by PlaylistHistoryService singleton
@@ -136,6 +156,19 @@ public class NowPlayingViewModel : INotifyPropertyChanged
     /// Gets the song/track title if available.
     /// </summary>
     public string Title => CurrentMetadata?.Title ?? string.Empty;
+
+    public string ArtistDisplay => StreamMetadataFormatting.FormatArtist(CurrentMetadata);
+
+    public string TitleDisplay => StreamMetadataFormatting.FormatTitle(CurrentMetadata);
+
+    public bool IsPlaybackActive => PlayerViewModel.Shared.IsPlaybackActive;
+
+    public bool IsRefreshingMetadata => PlayerViewModel.Shared.IsRefreshingMetadata;
+
+    public bool CanRefreshMetadata => PlayerViewModel.Shared.CanRefreshMetadata;
+
+    public Task RefreshMetadataAsync(CancellationToken cancellationToken = default) =>
+        PlayerViewModel.Shared.RefreshMetadataAsync(cancellationToken);
 
     /// <summary>
     /// Gets the display-friendly now playing text.
@@ -275,6 +308,19 @@ public class NowPlayingViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
+    /// Opens Bandcamp search with the current track information.
+    /// </summary>
+    public async Task SearchOnBandcamp()
+    {
+        if (!HasMetadata)
+            return;
+
+        string query = Uri.EscapeDataString(DisplayText.Length > 0 ? DisplayText : StreamTitle);
+        string url = $"https://bandcamp.com/search?q={query}";
+        await Launcher.LaunchUriAsync(new Uri(url));
+    }
+
+    /// <summary>
     /// Gets whether Spotify search links should be shown.
     /// </summary>
     public bool IsSpotifyEnabled => SettingsService.IsSpotifyEnabled;
@@ -295,13 +341,19 @@ public class NowPlayingViewModel : INotifyPropertyChanged
     public bool IsYouTubeMusicEnabled => SettingsService.IsYouTubeMusicEnabled;
 
     /// <summary>
+    /// Gets whether Bandcamp search links should be shown.
+    /// </summary>
+    public bool IsBandcampEnabled => SettingsService.IsBandcampEnabled;
+
+    /// <summary>
     /// Gets whether at least one music service search link should be shown.
     /// </summary>
     public bool HasEnabledMusicServices =>
         IsSpotifyEnabled ||
         IsDiscogsEnabled ||
         IsAppleMusicEnabled ||
-        IsYouTubeMusicEnabled;
+        IsYouTubeMusicEnabled ||
+        IsBandcampEnabled;
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {

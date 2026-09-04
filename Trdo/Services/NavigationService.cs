@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Diagnostics;
 
@@ -26,13 +27,11 @@ public partial class NavigationService : ObservableObject
             if (_frame == value)
                 return;
 
-            if (_frame is not null)
-                _frame.Navigated -= OnNavigated;
+            _frame?.Navigated -= OnNavigated;
 
             _frame = value;
 
-            if (_frame is not null)
-                _frame.Navigated += OnNavigated;
+            _frame?.Navigated += OnNavigated;
 
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanGoBack));
@@ -60,10 +59,48 @@ public partial class NavigationService : ObservableObject
         return _frame.Navigate(pageType, parameter);
     }
 
+    /// <summary>
+    /// Navigates with an explicit transition, so a page whose elements carry a
+    /// <c>Connected.Key</c> can suppress the default slide-in - it would otherwise
+    /// play at the same time as the connected animation and fight it.
+    /// </summary>
+    public bool Navigate(Type pageType, object? parameter, NavigationTransitionInfo transitionInfo)
+    {
+        if (_frame is null)
+            return false;
+
+        if (_frame.Content?.GetType() == pageType && parameter == null)
+            return false;
+
+        return _frame.Navigate(pageType, parameter, transitionInfo);
+    }
+
     public void GoBack()
     {
         if (_frame?.CanGoBack is true)
             _frame.GoBack();
+    }
+
+    /// <summary>
+    /// Goes back with an explicit transition - see the <see cref="Navigate(Type,object?,NavigationTransitionInfo)"/>
+    /// overload above for why a page with a connected animation needs this.
+    /// </summary>
+    public void GoBack(NavigationTransitionInfo transitionInfo)
+    {
+        if (_frame?.CanGoBack is true)
+            _frame.GoBack(transitionInfo);
+    }
+
+    /// <summary>
+    /// Navigates to <paramref name="pageType"/> as a fresh root, leaving no
+    /// history behind it. The clear has to happen *after* the navigation:
+    /// navigating pushes the page being left onto the back stack, so clearing
+    /// first would immediately re-arm the back button.
+    /// </summary>
+    public void ResetTo(Type pageType, object? parameter = null)
+    {
+        Navigate(pageType, parameter);
+        ClearBackStack();
     }
 
     public void ClearBackStack()
@@ -72,6 +109,7 @@ public partial class NavigationService : ObservableObject
             return;
 
         _frame.BackStack.Clear();
+        _frame.ForwardStack.Clear();
         OnPropertyChanged(nameof(CanGoBack));
         Debug.WriteLine($"CanGoBack: {CanGoBack}");
     }

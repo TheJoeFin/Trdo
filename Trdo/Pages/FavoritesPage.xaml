@@ -3,6 +3,7 @@
     x:Class="Trdo.Pages.FavoritesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations"
     xmlns:converters="using:Trdo.Converters"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -15,16 +16,60 @@
         <converters:CountToHasItemsVisibilityConverter x:Key="CountToHasItemsVisibilityConverter" />
     </Page.Resources>
 
-    <Grid RowDefinitions="Auto,*" RowSpacing="8">
-        <!--  Page Title  -->
-        <TextBlock
-            Grid.Row="0"
-            FontSize="16"
-            FontWeight="SemiBold"
-            Text="Favorite Songs" />
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+        <!--  Page Title and Export Commands  -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+            <TextBlock
+                x:Uid="FavoritesPage_Title"
+                FontSize="16"
+                FontWeight="SemiBold"
+                VerticalAlignment="Center" />
+
+            <StackPanel
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="4"
+                Visibility="{x:Bind ViewModel.Favorites.Count,
+                                    Mode=OneWay,
+                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitCrossFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitCrossFadeShowAnimations}">
+                <Button
+                    x:Uid="FavoritesPage_Export"
+                    Click="ExportButton_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon FontSize="14" Glyph="&#xEDE1;" />
+                        <TextBlock x:Uid="FavoritesPage_ExportLabel" />
+                    </StackPanel>
+                </Button>
+                <Button
+                    x:Uid="FavoritesPage_Options"
+                    AutomationProperties.Name="More favorites options"
+                    Padding="8">
+                    <FontIcon FontSize="14" Glyph="&#xE712;" />
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem
+                                Click="ClearExportHistory_Click"
+                                IsEnabled="{x:Bind ViewModel.HasArchivedFavorites, Mode=OneWay}"
+                                Text="Clear export history">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE7A7;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <InfoBar
+            x:Name="ExportInfoBar"
+            Grid.Row="1"
+            IsOpen="False" />
 
         <!--  Content  -->
-        <Grid Grid.Row="1" Padding="0,0,0,0">
+        <Grid Grid.Row="2" Padding="0,0,0,0">
 
             <!--  Empty State  -->
             <StackPanel
@@ -33,23 +78,25 @@
                 Spacing="12"
                 Visibility="{x:Bind ViewModel.Favorites.Count,
                                     Mode=OneWay,
-                                    Converter={StaticResource CountToEmptyStateVisibilityConverter}}">
+                                    Converter={StaticResource CountToEmptyStateVisibilityConverter}}"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}">
                 <FontIcon
                     HorizontalAlignment="Center"
                     FontSize="48"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     Glyph="&#xE735;" />
                 <TextBlock
+                    x:Uid="FavoritesPage_EmptyTitle"
                     HorizontalAlignment="Center"
                     FontSize="16"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Text="No favorite songs yet"
                     TextAlignment="Center" />
                 <TextBlock
+                    x:Uid="FavoritesPage_EmptySubtitle"
                     HorizontalAlignment="Center"
                     FontSize="12"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                    Text="Tap the star icon on songs you love to save them here"
                     TextAlignment="Center"
                     TextWrapping="Wrap" />
             </StackPanel>
@@ -64,12 +111,22 @@
                 SelectionMode="Single"
                 Visibility="{x:Bind ViewModel.Favorites.Count,
                                     Mode=OneWay,
-                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}">
+                                    Converter={StaticResource CountToHasItemsVisibilityConverter}}"
+                animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
+                animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="ListViewItem">
                         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                         <Setter Property="Padding" Value="0,4" />
                         <Setter Property="Margin" Value="0,0,0,4" />
+                        <!--
+                            The ItemsStackPanel arranges these containers, not the DataTemplate's
+                            root Grid one level further in - so this is the element that has to
+                            carry the reflow animation for a row's own expand/collapse to grow
+                            smoothly and for every row below it to glide into its new position
+                            instead of snapping the instant a sibling's height changes.
+                        -->
+                        <Setter Property="animations:Implicit.Animations" Value="{StaticResource ImplicitReflowAnimations}" />
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
@@ -78,6 +135,19 @@
                             Padding="12"
                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             CornerRadius="8">
+                            <Grid.ContextFlyout>
+                                <MenuFlyout>
+                                    <MenuFlyoutItem
+                                        x:Uid="FavoritesPage_IncludeInNextExport"
+                                        Click="ClearArchivedForTrack_Click"
+                                        IsEnabled="{x:Bind IsArchived}"
+                                        Tag="{x:Bind}">
+                                        <MenuFlyoutItem.Icon>
+                                            <FontIcon Glyph="&#xE7A7;" />
+                                        </MenuFlyoutItem.Icon>
+                                    </MenuFlyoutItem>
+                                </MenuFlyout>
+                            </Grid.ContextFlyout>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
@@ -111,19 +181,31 @@
                                             Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                             Text="{x:Bind StationName}"
                                             TextTrimming="CharacterEllipsis" />
+                                        <StackPanel
+                                            Orientation="Horizontal"
+                                            Spacing="4"
+                                            ToolTipService.ToolTip="{x:Bind ExportedOnDisplay}"
+                                            Visibility="{x:Bind IsArchived,
+                                                                Converter={StaticResource BooleanToVisibilityConverter}}">
+                                            <FontIcon
+                                                VerticalAlignment="Center"
+                                                FontSize="12"
+                                                Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                Glyph="&#xEDE1;" />
+                                        </StackPanel>
                                     </StackPanel>
                                 </StackPanel>
 
                                 <!--  Remove Button  -->
                                 <Button
+                                    x:Uid="FavoritesPage_Remove"
                                     Grid.Column="1"
                                     Padding="8"
                                     VerticalAlignment="Top"
                                     Background="Transparent"
                                     BorderThickness="0"
                                     Click="RemoveFavorite_Click"
-                                    Tag="{x:Bind}"
-                                    ToolTipService.ToolTip="Remove from favorites">
+                                    Tag="{x:Bind}">
                                     <FontIcon
                                         FontSize="16"
                                         Foreground="{ThemeResource AccentFillColorDefaultBrush}"
@@ -138,7 +220,9 @@
                                 Margin="0,8,0,0"
                                 ColumnDefinitions="*,Auto"
                                 ColumnSpacing="8"
-                                Visibility="Collapsed">
+                                Visibility="Collapsed"
+                                animations:Implicit.HideAnimations="{StaticResource ImplicitFadeHideAnimations}"
+                                animations:Implicit.ShowAnimations="{StaticResource ImplicitFadeShowAnimations}">
                                 <Border
                                     Grid.Column="0"
                                     Padding="4,0"
@@ -213,6 +297,22 @@
                                                         </Image.Source>
                                                     </Image>
                                                     <TextBlock FontSize="11" Text="YouTube Music" />
+                                                </StackPanel>
+                                            </HyperlinkButton>
+
+                                            <!--  Search on Bandcamp  -->
+                                            <HyperlinkButton
+                                                x:Name="BandcampButton"
+                                                Padding="6,4"
+                                                Click="BandcampLink_Click"
+                                                Tag="{x:Bind}">
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <Image Width="16" Height="16">
+                                                        <Image.Source>
+                                                            <SvgImageSource UriSource="ms-appx:///Assets/bandcamp.svg" />
+                                                        </Image.Source>
+                                                    </Image>
+                                                    <TextBlock FontSize="11" Text="Bandcamp" />
                                                 </StackPanel>
                                             </HyperlinkButton>
                                         </StackPanel>

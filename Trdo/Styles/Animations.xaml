@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Shared implicit-animation sets (CommunityToolkit.WinUI.Animations) used across pages so
+    that elements toggling Visibility fade/slide instead of snapping, and elements that shift
+    position when a sibling appears or disappears glide to their new spot instead of jumping.
+-->
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:animations="using:CommunityToolkit.WinUI.Animations">
+
+    <animations:ImplicitAnimationSet x:Key="ImplicitFadeShowAnimations">
+        <animations:OpacityAnimation
+            EasingMode="EaseOut"
+            EasingType="Cubic"
+            From="0"
+            To="1"
+            Duration="0:0:0.25" />
+        <animations:TranslationAnimation
+            EasingMode="EaseOut"
+            EasingType="Cubic"
+            From="0,-8,0"
+            To="0,0,0"
+            Duration="0:0:0.25" />
+    </animations:ImplicitAnimationSet>
+
+    <animations:ImplicitAnimationSet x:Key="ImplicitFadeHideAnimations">
+        <animations:OpacityAnimation
+            EasingMode="EaseIn"
+            EasingType="Cubic"
+            From="1"
+            To="0"
+            Duration="0:0:0.15" />
+        <animations:TranslationAnimation
+            EasingMode="EaseIn"
+            EasingType="Cubic"
+            From="0,0,0"
+            To="0,-8,0"
+            Duration="0:0:0.15" />
+    </animations:ImplicitAnimationSet>
+
+    <!--  Plain opacity cross-fade, for elements that swap in place (e.g. static text vs. a marquee).  -->
+    <animations:ImplicitAnimationSet x:Key="ImplicitCrossFadeShowAnimations">
+        <animations:OpacityAnimation
+            EasingMode="EaseOut"
+            EasingType="Cubic"
+            From="0"
+            To="1"
+            Duration="0:0:0.2" />
+    </animations:ImplicitAnimationSet>
+
+    <animations:ImplicitAnimationSet x:Key="ImplicitCrossFadeHideAnimations">
+        <animations:OpacityAnimation
+            EasingMode="EaseIn"
+            EasingType="Cubic"
+            From="1"
+            To="0"
+            Duration="0:0:0.15" />
+    </animations:ImplicitAnimationSet>
+
+    <!--  Glides an element to its new Offset/Size instead of snapping when a sibling's visibility change reflows the layout.  -->
+    <animations:ImplicitAnimationSet x:Key="ImplicitReflowAnimations">
+        <animations:OffsetAnimation
+            EasingMode="EaseOut"
+            EasingType="Cubic"
+            Duration="0:0:0.3" />
+        <animations:SizeAnimation
+            EasingMode="EaseOut"
+            EasingType="Cubic"
+            Duration="0:0:0.3" />
+    </animations:ImplicitAnimationSet>
+
+</ResourceDictionary>

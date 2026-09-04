@@ -45,6 +45,84 @@ public class FavoritesService
     }
 
     /// <summary>
+    /// Gets the favorite tracks that have not yet been exported and archived.
+    /// </summary>
+    public List<FavoriteTrack> GetUnarchivedFavorites()
+    {
+        return [.. _cachedFavorites.Where(f => !f.IsArchived)];
+    }
+
+    /// <summary>
+    /// Marks the given favorites as exported/archived. Returns the number of tracks changed.
+    /// </summary>
+    public int MarkArchived(IEnumerable<string> ids, DateTime? exportedAt = null)
+    {
+        if (ids is null)
+            return 0;
+
+        HashSet<string> idSet = [.. ids];
+        if (idSet.Count == 0)
+            return 0;
+
+        DateTime stamp = exportedAt ?? DateTime.Now;
+        int changed = 0;
+
+        foreach (FavoriteTrack track in _cachedFavorites)
+        {
+            if (idSet.Contains(track.Id) && !track.IsArchived)
+            {
+                track.ExportedAt = stamp;
+                changed++;
+            }
+        }
+
+        if (changed == 0)
+            return 0;
+
+        SaveFavorites();
+        FavoritesChanged?.Invoke(this, EventArgs.Empty);
+        return changed;
+    }
+
+    /// <summary>
+    /// Clears the archived (exported) flag for a single favorite so it is exported again.
+    /// </summary>
+    public bool ClearArchived(string id)
+    {
+        FavoriteTrack? track = _cachedFavorites.FirstOrDefault(f => f.Id == id);
+        if (track is null || !track.IsArchived)
+            return false;
+
+        track.ExportedAt = null;
+        SaveFavorites();
+        FavoritesChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
+    /// <summary>
+    /// Clears the archived (exported) flag for every favorite. Returns the number of tracks changed.
+    /// </summary>
+    public int ClearAllArchived()
+    {
+        int changed = 0;
+        foreach (FavoriteTrack track in _cachedFavorites)
+        {
+            if (track.IsArchived)
+            {
+                track.ExportedAt = null;
+                changed++;
+            }
+        }
+
+        if (changed == 0)
+            return 0;
+
+        SaveFavorites();
+        FavoritesChanged?.Invoke(this, EventArgs.Empty);
+        return changed;
+    }
+
+    /// <summary>
     /// Adds a track to favorites.
     /// </summary>
     public bool AddFavorite(FavoriteTrack track)

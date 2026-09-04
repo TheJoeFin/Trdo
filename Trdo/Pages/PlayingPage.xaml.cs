@@ -5,12 +5,19 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using Trdo.Controls;
 using Trdo.Models;
 using Trdo.Services;
 using Trdo.ViewModels;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
+// Aliased rather than imported: Windows.System also defines DispatcherQueueTimer, which
+// collides with the Microsoft.UI.Dispatching one this page already uses.
+using VirtualKey = Windows.System.VirtualKey;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -27,7 +34,21 @@ public sealed partial class PlayingPage : Page
     private const string OutlineStar = "\uE734";
 
     private readonly FavoritesService _favoritesService = FavoritesService.Instance;
+    private readonly PlaybackErrorService _errorService = PlaybackErrorService.Instance;
+    private readonly StationMetadataBackfillService _backfillService = StationMetadataBackfillService.Instance;
     private readonly DispatcherQueueTimer _nowPlayingMarqueeDelayTimer;
+
+    /// <summary>
+    /// The playback error dialog currently on screen, kept so it can be taken back
+    /// down if the failure it describes stops being true while the user is reading it.
+    /// </summary>
+    private ContentDialog? _playbackErrorDialog;
+
+    /// <summary>
+    /// Set while the page is pushing the view model's selection into the list, so the
+    /// resulting <c>SelectionChanged</c> is not mistaken for the user picking a station.
+    /// </summary>
+    private bool _isSyncingSelection;
 
     public PlayerViewModel ViewModel { get; }
     private ShellViewModel? _shellViewModel;
@@ -46,8 +67,11 @@ public sealed partial class PlayingPage : Page
         // Subscribe to property changes to update UI
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
 
-        // Subscribe to playback errors
-        ViewModel.PlaybackError += ViewModel_PlaybackError;
+        // Act as the presenter for playback errors. PlaybackErrorService only shows an
+        // error while something is subscribed here, so this pairs strictly with the
+        // unsubscribe in Unloaded.
+        _errorService.ErrorPresented += ErrorService_ErrorPresented;
+        _errorService.ErrorWithdrawn += ErrorService_ErrorWithdrawn;
 
         // Subscribe to favorites changes
         _favoritesService.FavoritesChanged += FavoritesService_FavoritesChanged;
@@ -71,8 +95,9 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] Current SelectedStation: {ViewModel.SelectedStation?.Name ?? "null"}");
         Debug.WriteLine($"[PlayingPage] Current StreamUrl: {ViewModel.StreamUrl}");
 
-        UpdateStationSelection();
+        SyncSelectedItem();
         UpdateFavoriteButtonState();
+        UpdateDragAvailability();
 
         // Restore volume slider visibility from persisted setting
         VolumeControlGrid.Visibility = SettingsService.IsVolumeSliderVisible
@@ -90,16 +115,16 @@ public sealed partial class PlayingPage : Page
         // scroll to selected station
         if (ViewModel.SelectedStation is not null)
         {
-            int index = ViewModel.Stations.IndexOf(ViewModel.SelectedStation);
+            // Measured against the rows on screen, not the stored list: a station sitting
+            // below a couple of folders may be far further down than its stored position.
+            int index = ViewModel.DisplayRows.IndexOf(ViewModel.SelectedStation);
             if (index is >= 0 and > MinIndexForScrolling)
             {
                 StationsListView.ScrollIntoView(ViewModel.SelectedStation);
-                Debug.WriteLine($"[PlayingPage] Scrolled to selected station at index {index}");
+                Debug.WriteLine($"[PlayingPage] Scrolled to selected station at row {index}");
             }
-            else if (index < 0)
-            {
-                Debug.WriteLine("[PlayingPage] WARNING: SelectedStation not found in Stations list");
-            }
+            // A negative index just means the station is inside a collapsed folder, which is
+            // not something to scroll to.
         }
         else
         {
@@ -113,7 +138,8 @@ public sealed partial class PlayingPage : Page
         _nowPlayingMarqueeDelayTimer.Tick -= NowPlayingMarqueeDelayTimer_Tick;
         NowPlayingMarqueeText.MarqueeCompleted -= NowPlayingMarqueeText_MarqueeCompleted;
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
-        ViewModel.PlaybackError -= ViewModel_PlaybackError;
+        _errorService.ErrorPresented -= ErrorService_ErrorPresented;
+        _errorService.ErrorWithdrawn -= ErrorService_ErrorWithdrawn;
         _favoritesService.FavoritesChanged -= FavoritesService_FavoritesChanged;
         SetNowPlayingScrolling(false);
     }
@@ -136,7 +162,16 @@ public sealed partial class PlayingPage : Page
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         Debug.WriteLine($"[PlayingPage] ViewModel PropertyChanged: {e.PropertyName}");
-        UpdateStationSelection();
+
+        if (e.PropertyName is nameof(PlayerViewModel.SelectedStation))
+        {
+            SyncSelectedItem();
+        }
+
+        if (e.PropertyName is nameof(PlayerViewModel.SortMode) or nameof(PlayerViewModel.GroupByMode))
+        {
+            UpdateDragAvailability();
+        }
 
         if (e.PropertyName is (nameof(PlayerViewModel.CurrentMetadata)) or
                  (nameof(PlayerViewModel.HasNowPlaying)))
@@ -161,21 +196,27 @@ public sealed partial class PlayingPage : Page
         Debug.WriteLine($"[PlayingPage] Favorite button updated. IsFavorited: {isFavorited}");
     }
 
-    private async void ViewModel_PlaybackError(object? sender, string errorMessage)
+    /// <summary>
+    /// Puts a playback error on screen. Only ever reached once
+    /// <see cref="PlaybackErrorService"/> has established that the failure still
+    /// describes reality and that this window is visible, so no further checking
+    /// belongs here.
+    /// </summary>
+    private async void ErrorService_ErrorPresented(object? sender, string errorMessage)
     {
-        Debug.WriteLine($"[PlayingPage] PlaybackError event received: {errorMessage}");
+        Debug.WriteLine($"[PlayingPage] Presenting playback error: {errorMessage}");
 
-        // Display error to user using an InfoBar or ContentDialog
+        ContentDialog dialog = new()
+        {
+            Title = LocalizationService.GetString("PlayingPage_PlaybackErrorTitle", "Playback Error"),
+            Content = errorMessage,
+            CloseButtonText = LocalizationService.GetString("PlayingPage_PlaybackErrorClose", "OK"),
+            XamlRoot = this.XamlRoot
+        };
+
         try
         {
-            ContentDialog dialog = new()
-            {
-                Title = "Playback Error",
-                Content = errorMessage,
-                CloseButtonText = "OK",
-                XamlRoot = this.XamlRoot
-            };
-
+            _playbackErrorDialog = dialog;
             await dialog.ShowAsync();
         }
         catch (Exception ex)
@@ -183,65 +224,56 @@ public sealed partial class PlayingPage : Page
             Debug.WriteLine($"[PlayingPage] EXCEPTION showing error dialog: {ex.Message}");
             // If dialog fails, silently ignore
         }
+        finally
+        {
+            // ShowAsync also returns when the service withdraws the dialog, which clears
+            // the field first. Only a genuine dismissal by the user leaves our dialog in
+            // place — reporting the other case would clear an error we never showed.
+            if (ReferenceEquals(_playbackErrorDialog, dialog))
+            {
+                _playbackErrorDialog = null;
+                _errorService.NotifyErrorDismissed();
+            }
+        }
     }
 
-    private void UpdateStationSelection()
+    /// <summary>
+    /// Takes the error dialog down when the service decides it no longer makes sense —
+    /// the station recovered, or the user moved to another one.
+    /// </summary>
+    private void ErrorService_ErrorWithdrawn(object? sender, EventArgs e)
     {
-        Debug.WriteLine("[PlayingPage] UpdateStationSelection called");
-        Debug.WriteLine($"[PlayingPage] Selected station: {ViewModel.SelectedStation?.Name ?? "null"}");
+        Debug.WriteLine("[PlayingPage] Withdrawing playback error dialog");
+        _playbackErrorDialog?.Hide();
+        _playbackErrorDialog = null;
+    }
 
-        // Find all station items and update their selection state
-        if (StationsListView == null)
-        {
-            Debug.WriteLine("[PlayingPage] WARNING: StationsListView is null");
+    /// <summary>
+    /// Pushes the view model's selection into the list control.
+    /// <para>
+    /// The row highlight itself is not done here - it is bound to
+    /// <see cref="RadioStation.IsSelectedStation"/> on the model. Resolving containers to
+    /// paint the highlight by hand only worked while the list was flat and fully realised;
+    /// collapsing, sorting and virtualisation all produce rows with no container to find.
+    /// </para>
+    /// </summary>
+    private void SyncSelectedItem()
+    {
+        if (StationsListView is null)
             return;
-        }
 
-        // Ensure ListView SelectedItem is synchronized with ViewModel
-        if (StationsListView.SelectedItem != ViewModel.SelectedStation)
+        if (ReferenceEquals(StationsListView.SelectedItem, ViewModel.SelectedStation))
+            return;
+
+        _isSyncingSelection = true;
+        try
         {
             StationsListView.SelectedItem = ViewModel.SelectedStation;
-            Debug.WriteLine($"[PlayingPage] Synchronized ListView.SelectedItem to {ViewModel.SelectedStation?.Name ?? "null"}");
         }
-
-        for (int i = 0; i < ViewModel.Stations.Count; i++)
+        finally
         {
-            if (StationsListView.ContainerFromIndex(i) is not ListViewItem container)
-                continue;
-
-            RadioStation station = ViewModel.Stations[i];
-            Border? indicator = FindDescendant<Border>(container, "SelectionIndicator");
-            if (indicator != null)
-            {
-                bool isSelected = station == ViewModel.SelectedStation;
-                indicator.Visibility = isSelected ? Visibility.Visible : Visibility.Collapsed;
-                Debug.WriteLine($"[PlayingPage] Station '{station.Name}' selection indicator: {(isSelected ? "Visible" : "Collapsed")}");
-            }
+            _isSyncingSelection = false;
         }
-    }
-
-    private T? FindDescendant<T>(DependencyObject parent, string name = "") where T : DependencyObject
-    {
-        int childCount = VisualTreeHelper.GetChildrenCount(parent);
-        for (int i = 0; i < childCount; i++)
-        {
-            DependencyObject child = VisualTreeHelper.GetChild(parent, i);
-
-            if (child is T typedChild)
-            {
-                if (string.IsNullOrEmpty(name) || (child is FrameworkElement fe && fe.Name == name))
-                {
-                    return typedChild;
-                }
-            }
-
-            T? result = FindDescendant<T>(child, name);
-            if (result != null)
-            {
-                return result;
-            }
-        }
-        return null;
     }
 
     private void VolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -276,6 +308,8 @@ public sealed partial class PlayingPage : Page
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine("[PlayingPage] Close button clicked");
+        // Persist any pending per-station volume change before quitting.
+        ViewModel.FlushStationsSave();
         Application.Current.Exit();
     }
 
@@ -360,7 +394,7 @@ public sealed partial class PlayingPage : Page
         {
             Debug.WriteLine($"[PlayingPage] Visit Station Site clicked: {station.Name}");
             // Navigate to AddStation page in edit mode with the station data
-            ViewModel.VisitWebsite(station);
+            _ = ViewModel.VisitWebsite(station);
         }
     }
 
@@ -389,62 +423,635 @@ public sealed partial class PlayingPage : Page
 
     private void StationsListView_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs args)
     {
-        Debug.WriteLine("[PlayingPage] DragItemsCompleted - Station order changed");
-        // Save the new order to persistent storage
-        ViewModel.SaveStations();
+        // This fires for every drag, including ones that never landed - dropped outside the
+        // list, cancelled with Esc, or dragged away to another app. In those cases the
+        // collection is unchanged and there is nothing to persist.
+        if (args.DropResult != DataPackageOperation.Move)
+        {
+            Debug.WriteLine($"[PlayingPage] DragItemsCompleted - drop not accepted ({args.DropResult}), ignoring");
+            return;
+        }
 
-        // Update the selected station index since the order might have changed
-        ViewModel.UpdateSelectedStationIndex();
+        Debug.WriteLine("[PlayingPage] DragItemsCompleted - Station order changed");
+
+        // The list control has already rewritten the rows; turn that back into the
+        // arrangement, then save. Deliberately not SaveStations(): a reorder changes where a
+        // station sits, not what it points at, and must not restart the stream.
+        ViewModel.ApplyDisplayReorder();
+        ViewModel.PersistStationList();
+
+        // Re-save the selection so its stored position keeps up with the new order
+        ViewModel.UpdateSelectedStationId();
     }
 
     private void StationsListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        Debug.WriteLine("=== StationsListView_SelectionChanged START ===");
+        if (_isSyncingSelection)
+            return;
 
-        if (sender is ListView stations && stations.SelectedItem is RadioStation station)
+        switch (StationsListView.SelectedItem)
         {
-            Debug.WriteLine($"[PlayingPage] Station clicked: {station.Name}");
-            Debug.WriteLine($"[PlayingPage] Station URL: {station.StreamUrl}");
-            Debug.WriteLine($"[PlayingPage] Current selected station before change: {ViewModel.SelectedStation?.Name ?? "null"}");
+            case RadioStation station:
+                ViewModel.SelectedStation = station;
+                break;
 
-            ViewModel.SelectedStation = station;
+            case null:
+                // A rebuild can momentarily clear the selection. Losing what is playing
+                // because a folder was expanded is not acceptable, so put it back.
+                SyncSelectedItem();
+                break;
 
-            Debug.WriteLine($"[PlayingPage] Current selected station after change: {ViewModel.SelectedStation?.Name ?? "null"}");
+            default:
+                // A folder or divider row. Not something that can be played, and the tap
+                // handlers on those rows have already done whatever the click meant.
+                SyncSelectedItem();
+                break;
         }
-        else
+    }
+
+    private void GroupRow_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: StationGroup group })
         {
-            Debug.WriteLine($"[PlayingPage] WARNING: StationsListView_SelectionChanged - Invalid item type: {sender?.GetType().Name}");
+            group.IsExpanded = !group.IsExpanded;
+            ViewModel.RebuildDisplayRows();
+
+            // A synthetic "Group by" folder is never written to the layout file, so there is
+            // nothing to persist - only a real folder's expanded state is worth remembering.
+            if (!group.IsVirtual)
+                ViewModel.PersistStationList();
         }
 
-        Debug.WriteLine("=== StationsListView_SelectionChanged END ===");
+        // Stops the row being selected: a folder header is a control, not a destination.
+        e.Handled = true;
+    }
+
+    private void DividerRow_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        // A divider is decoration. Swallowing the tap stops it stealing the selection from
+        // the station that is playing.
+        e.Handled = true;
+    }
+
+    private void StationsListView_DragItemsStarting(object sender, DragItemsStartingEventArgs e)
+    {
+        // An expanded folder occupies one row but owns several. The built-in reorder moves
+        // only the row being dragged, which would leave the contents behind. Collapsing it
+        // first makes the folder a single row that moves as a unit.
+        //
+        // Cancelling rather than collapsing mid-drag is deliberate: removing rows while the
+        // reorder is still working out its indices is how drops land in the wrong place.
+        // The cost is one extra gesture on a rare operation.
+        if (e.Items.Count == 1 && e.Items[0] is StationGroup { IsExpanded: true } group)
+        {
+            group.IsExpanded = false;
+            ViewModel.RebuildDisplayRows();
+            ViewModel.PersistStationList();
+            e.Cancel = true;
+        }
     }
 
     private void VolumeControl_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
     {
         int delta = e.GetCurrentPoint((UIElement)sender).Properties.MouseWheelDelta;
         double change = (delta / 120.0) * 0.02;
-        ViewModel.Volume = Math.Clamp(ViewModel.Volume + change, 0, 1);
+        ViewModel.Volume = Math.Clamp(ViewModel.Volume + change, 0, 2);
         e.Handled = true;
     }
 
-    private void HideVolumeSlider_Click(object sender, RoutedEventArgs e)
+    private void ToggleVolumeSlider_Click(object sender, RoutedEventArgs e)
     {
-        VolumeControlGrid.Visibility = Visibility.Collapsed;
-        SettingsService.IsVolumeSliderVisible = false;
+        SetVolumeSliderVisible(VolumeControlGrid.Visibility != Visibility.Visible);
     }
 
-    private void ShowVolumeSlider_Click(object sender, RoutedEventArgs e)
+    private void SetVolumeSliderVisible(bool visible)
     {
-        VolumeControlGrid.Visibility = Visibility.Visible;
-        SettingsService.IsVolumeSliderVisible = true;
+        VolumeControlGrid.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        SettingsService.IsVolumeSliderVisible = visible;
     }
 
     private void PageContextMenu_Opening(object sender, object e)
     {
-        if (VolumeControlGrid.Visibility == Visibility.Visible)
+        // This used to hide the whole menu when the volume slider was already showing, which
+        // worked while the menu held exactly one item. Now that it carries the list commands,
+        // the volume entry just flips its own wording instead.
+        ShowVolumeMenuItem.Text = VolumeControlGrid.Visibility == Visibility.Visible
+            ? LocalizationService.GetString("PlayingPage_HideVolumeSlider", "Hide Volume Slider")
+            : LocalizationService.GetString("PlayingPage_ShowVolume.Text", "Show Volume Slider");
+
+        // A sorted or grouped list has no meaningful place to put a new folder or divider: the
+        // user is not the one deciding positions while either is on.
+        bool manual = !ViewModel.IsViewSorted && !ViewModel.IsGroupedView;
+        NewGroupMenuItem.IsEnabled = manual;
+        NewDividerMenuItem.IsEnabled = manual;
+
+        RefreshAllInfoMenuItem.IsEnabled = ViewModel.Stations.Count > 0;
+
+        BuildSortMenu();
+        BuildGroupByMenu();
+    }
+
+    private async void RefreshStationInfo_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuFlyoutItem { Tag: RadioStation station })
+            return;
+
+        try
         {
-            ((MenuFlyout)sender).Hide();
+            // A single lookup, so it runs straight away - there is nothing to confirm about one
+            // request the user just asked for.
+            StationMetadataMatchPolicy.MetadataMatch? match =
+                await _backfillService.RefreshOneAsync(station, overwriteExisting: true);
+
+            if (match is null)
+            {
+                await ShowInfoDialogAsync(
+                    "No match found",
+                    $"radio-browser.info has no entry for this station's stream address, so there are no details to add.");
+                return;
+            }
+
+            ViewModel.PersistStationList();
+
+            await ShowInfoDialogAsync(
+                $"Updated {station.Name}",
+                StationMetadataBackfillService.DescribeStation(station));
         }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[PlayingPage] Station info refresh failed: {ex.Message}");
+            await ShowInfoDialogAsync("Couldn't reach radio-browser.info", "Check your connection and try again.");
+        }
+    }
+
+    private async void RefreshAllStationInfo_Click(object sender, RoutedEventArgs e)
+    {
+        List<RadioStation> withoutDetails =
+            StationMetadataBackfillService.SelectCandidates(ViewModel.Stations, overwriteExisting: false);
+
+        CheckBox overwriteCheck = new()
+        {
+            Content = "Also refresh stations that already have details",
+            IsChecked = false
+        };
+
+        string body = withoutDetails.Count == 0
+            ? "All your stations already have details. You can look them up again to pick up any changes."
+            : withoutDetails.Count == 1
+                ? "One station has no genre or country saved."
+                : $"{withoutDetails.Count} stations have no genre or country saved.";
+
+        ContentDialog preflight = new()
+        {
+            Title = "Look up station details",
+            Content = new StackPanel
+            {
+                Spacing = 12,
+                Children =
+                {
+                    new TextBlock
+                    {
+                        // Says plainly what leaves the machine. This is the app's only outbound
+                        // request about the user's own saved stations.
+                        Text = $"{body} Traydio will ask radio-browser.info about them. Only each station's stream address is sent.",
+                        TextWrapping = TextWrapping.Wrap
+                    },
+                    overwriteCheck
+                }
+            },
+            PrimaryButtonText = "Look up",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = this.XamlRoot
+        };
+
+        if (await preflight.ShowAsync() != ContentDialogResult.Primary)
+            return;
+
+        bool overwrite = overwriteCheck.IsChecked == true;
+        List<RadioStation> candidates =
+            StationMetadataBackfillService.SelectCandidates(ViewModel.Stations, overwrite);
+
+        if (candidates.Count == 0)
+        {
+            await ShowInfoDialogAsync(
+                "Nothing to look up",
+                "Every station has been checked recently. Try again in a few days.");
+            return;
+        }
+
+        await RunBackfillAsync(candidates, overwrite);
+    }
+
+    private async Task RunBackfillAsync(List<RadioStation> candidates, bool overwrite)
+    {
+        using CancellationTokenSource cts = new();
+
+        ProgressBar progress = new() { Minimum = 0, Maximum = candidates.Count, Value = 0 };
+        TextBlock status = new() { Text = "Starting…", TextWrapping = TextWrapping.Wrap };
+
+        ContentDialog progressDialog = new()
+        {
+            Title = "Looking up station details",
+            Content = new StackPanel
+            {
+                Spacing = 12,
+                MinWidth = 280,
+                Children = { progress, status }
+            },
+            CloseButtonText = "Cancel",
+            XamlRoot = this.XamlRoot
+        };
+
+        bool finished = false;
+        progressDialog.Closing += (_, args) =>
+        {
+            // Closing the dialog is the cancel gesture; the worker hides it itself when done.
+            if (!finished)
+                cts.Cancel();
+        };
+
+        _ = progressDialog.ShowAsync();
+
+        StationMetadataBackfillService.BackfillResult result;
+        try
+        {
+            result = await _backfillService.RefreshManyAsync(
+                candidates,
+                overwrite,
+                onProgress: (done, total, name) =>
+                {
+                    progress.Value = done;
+                    status.Text = string.IsNullOrEmpty(name) ? "Finishing…" : $"{done} of {total} · {name}";
+                },
+                onPartialSave: () => ViewModel.PersistStationList(),
+                cancellationToken: cts.Token);
+        }
+        finally
+        {
+            finished = true;
+            progressDialog.Hide();
+        }
+
+        await ShowInfoDialogAsync("Station details", SummarizeBackfill(result));
+    }
+
+    private static string SummarizeBackfill(StationMetadataBackfillService.BackfillResult result)
+    {
+        List<string> lines = [$"Updated {result.Updated} of {result.Attempted} stations."];
+
+        if (result.NotFound > 0)
+            lines.Add($"{result.NotFound} had no entry on radio-browser.info.");
+        if (result.Ambiguous > 0)
+            lines.Add($"{result.Ambiguous} matched more than one entry; the closest was used.");
+        if (result.Skipped > 0)
+            lines.Add($"{result.Skipped} were left for next time to keep the request count reasonable.");
+        if (result.AbortedUnreachable)
+            lines.Add("Stopped early because radio-browser.info stopped responding.");
+        if (result.Cancelled)
+            lines.Add("Stopped at your request. What was found so far has been saved.");
+
+        return string.Join("\n", lines);
+    }
+
+    private async Task ShowInfoDialogAsync(string title, string message)
+    {
+        ContentDialog dialog = new()
+        {
+            Title = title,
+            Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+            CloseButtonText = "OK",
+            XamlRoot = this.XamlRoot
+        };
+
+        await dialog.ShowAsync();
+    }
+
+    private void BuildSortMenu()
+    {
+        SortBySubItem.Items.Clear();
+
+        foreach (StationSortMode mode in Enum.GetValues<StationSortMode>())
+        {
+            RadioMenuFlyoutItem item = new()
+            {
+                Text = StationSortPolicy.DisplayName(mode),
+                GroupName = "StationSort",
+                IsChecked = mode == ViewModel.SortMode,
+                Tag = mode
+            };
+            item.Click += SortMode_Click;
+            SortBySubItem.Items.Add(item);
+        }
+    }
+
+    private void SortMode_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem { Tag: StationSortMode mode })
+        {
+            ViewModel.SortMode = mode;
+        }
+    }
+
+    private void BuildGroupByMenu()
+    {
+        GroupBySubItem.Items.Clear();
+
+        foreach (StationGroupByMode mode in Enum.GetValues<StationGroupByMode>())
+        {
+            RadioMenuFlyoutItem item = new()
+            {
+                Text = StationGroupingPolicy.DisplayName(mode),
+                GroupName = "StationGroupBy",
+                IsChecked = mode == ViewModel.GroupByMode,
+                Tag = mode
+            };
+            item.Click += GroupByMode_Click;
+            GroupBySubItem.Items.Add(item);
+        }
+    }
+
+    private void GroupByMode_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem { Tag: StationGroupByMode mode })
+        {
+            ViewModel.GroupByMode = mode;
+        }
+    }
+
+    private void ResetSort_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.SortMode = StationSortMode.Manual;
+        ViewModel.GroupByMode = StationGroupByMode.None;
+    }
+
+    /// <summary>
+    /// Switches dragging off entirely while a view sort or a view grouping is active.
+    /// <para>
+    /// Turning it off is better than trying to interpret the drop. Under either, the rows are
+    /// not in the stored order, so there is no honest answer to where a dropped row should
+    /// land - and silently rewriting the user's arrangement to match a temporary view would
+    /// break the one promise this feature makes.
+    /// </para>
+    /// </summary>
+    private void UpdateDragAvailability()
+    {
+        bool manual = !ViewModel.IsViewSorted && !ViewModel.IsGroupedView;
+        StationsListView.CanDragItems = manual;
+        StationsListView.CanReorderItems = manual;
+        // Also suppresses the drop indicator, so nothing suggests a drag would work.
+        StationsListView.AllowDrop = manual;
+    }
+
+    /// <summary>
+    /// Swallows the right-click on a synthetic "Group by" folder header entirely: there is
+    /// nothing to rename or delete on a folder that exists only for the current view.
+    /// </summary>
+    private void GroupRow_ContextRequested(UIElement sender, ContextRequestedEventArgs args)
+    {
+        if (sender is FrameworkElement { DataContext: StationGroup { IsVirtual: true } })
+        {
+            args.Handled = true;
+        }
+    }
+
+    private void NewGroup_Click(object sender, RoutedEventArgs e)
+    {
+        StationGroup group = ViewModel.CreateGroup("New group");
+        // Straight into rename: a folder called "New group" is not what anyone wanted.
+        BeginRename(group, group.Name, "Group name", name =>
+        {
+            group.Name = name;
+            ViewModel.CommitLayoutEdit();
+        });
+    }
+
+    private void NewDivider_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.CreateDivider();
+    }
+
+    private void InsertDividerAbove_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem { Tag: RadioStation station })
+        {
+            ViewModel.CreateDivider(insertBefore: station);
+        }
+    }
+
+    /// <summary>
+    /// Fills in the "move to group" submenu, which can only be built once the folders are
+    /// known and has to be rebuilt each time in case they have changed.
+    /// </summary>
+    private void StationContextMenu_Opening(object sender, object e)
+    {
+        if (sender is not MenuFlyout flyout)
+            return;
+
+        RadioStation? station = null;
+        foreach (MenuFlyoutItemBase item in flyout.Items)
+        {
+            if (item is MenuFlyoutItem { Tag: RadioStation tagged })
+            {
+                station = tagged;
+                break;
+            }
+        }
+
+        MenuFlyoutSubItem? subItem = null;
+        foreach (MenuFlyoutItemBase item in flyout.Items)
+        {
+            if (item is MenuFlyoutSubItem candidate)
+            {
+                subItem = candidate;
+                break;
+            }
+        }
+
+        if (station is null || subItem is null)
+            return;
+
+        subItem.Items.Clear();
+        StationGroup? currentGroup = ViewModel.FindParentGroup(station);
+
+        RadioMenuFlyoutItem none = new()
+        {
+            Text = "(None)",
+            GroupName = "MoveToGroup",
+            IsChecked = currentGroup is null,
+            Tag = station
+        };
+        none.Click += MoveToGroup_Click;
+        subItem.Items.Add(none);
+
+        foreach (StationGroup group in ViewModel.Groups)
+        {
+            RadioMenuFlyoutItem entry = new()
+            {
+                Text = group.Name,
+                GroupName = "MoveToGroup",
+                IsChecked = ReferenceEquals(group, currentGroup),
+                // Both halves of the operation, since the menu item is the only thing the
+                // click handler receives.
+                Tag = new StationGroupMove(station, group)
+            };
+            entry.Click += MoveToGroup_Click;
+            subItem.Items.Add(entry);
+        }
+
+        // Folders are not on screen under a view sort or a view grouping, so moving between
+        // them would be an invisible change.
+        subItem.IsEnabled = subItem.Items.Count > 1 && !ViewModel.IsViewSorted && !ViewModel.IsGroupedView;
+    }
+
+    private void MoveToGroup_Click(object sender, RoutedEventArgs e)
+    {
+        switch ((sender as MenuFlyoutItem)?.Tag)
+        {
+            case StationGroupMove move:
+                ViewModel.MoveStationToGroup(move.Station, move.Group);
+                break;
+            case RadioStation station:
+                ViewModel.MoveStationToGroup(station, null);
+                break;
+        }
+    }
+
+    /// <summary>Pairs a station with the folder it is being moved into, for a menu item's Tag.</summary>
+    private sealed record StationGroupMove(RadioStation Station, StationGroup Group);
+
+    private void RenameGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem { Tag: StationGroup group })
+        {
+            BeginRename(group, group.Name, "Group name", name =>
+            {
+                group.Name = name;
+                ViewModel.CommitLayoutEdit();
+            });
+        }
+    }
+
+    private void EditDividerLabel_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem { Tag: StationDivider divider })
+        {
+            BeginRename(divider, divider.Label ?? string.Empty, "Label (optional)", label =>
+            {
+                divider.Label = label;
+                ViewModel.CommitLayoutEdit();
+            });
+        }
+    }
+
+    private void DeleteGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem { Tag: StationGroup group })
+        {
+            ViewModel.DeleteGroup(group);
+        }
+    }
+
+    private async void DeleteGroupAndStations_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not MenuFlyoutItem { Tag: StationGroup group })
+            return;
+
+        int count = group.StationCount;
+        if (count == 0)
+        {
+            ViewModel.DeleteGroup(group);
+            return;
+        }
+
+        // Removing one station is immediate because it is one station. Removing several at
+        // once is not something to discover after the fact.
+        ContentDialog confirm = new()
+        {
+            Title = $"Delete \"{group.Name}\"?",
+            Content = count == 1
+                ? "The station in this group will be removed as well. This cannot be undone."
+                : $"All {count} stations in this group will be removed as well. This cannot be undone.",
+            PrimaryButtonText = "Delete",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Close,
+            XamlRoot = this.XamlRoot
+        };
+
+        if (await confirm.ShowAsync() == ContentDialogResult.Primary)
+        {
+            ViewModel.DeleteGroupAndStations(group);
+        }
+    }
+
+    private void RemoveDivider_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem { Tag: StationDivider divider })
+        {
+            ViewModel.DeleteDivider(divider);
+        }
+    }
+
+    /// <summary>
+    /// Edits a single line of text in a flyout anchored to the row.
+    /// <para>
+    /// Editing a station opens a separate window because a multi-field form loses its contents
+    /// when the flyout it lives in closes. That does not apply here: the menu closes first, and
+    /// this flyout is opened afterwards as the editor in its own right.
+    /// </para>
+    /// </summary>
+    private void BeginRename(object row, string initialValue, string placeholder, Action<string> commit)
+    {
+        TextBox input = new()
+        {
+            Text = initialValue,
+            PlaceholderText = placeholder,
+            Width = 200,
+            SelectionStart = 0,
+            SelectionLength = initialValue.Length
+        };
+
+        Flyout flyout = new()
+        {
+            Content = new StackPanel
+            {
+                Spacing = 8,
+                Children = { input }
+            }
+        };
+
+        bool committed = false;
+        void Commit()
+        {
+            if (committed)
+                return;
+            committed = true;
+            commit(input.Text.Trim());
+        }
+
+        input.KeyDown += (_, args) =>
+        {
+            if (args.Key == VirtualKey.Enter)
+            {
+                Commit();
+                flyout.Hide();
+                args.Handled = true;
+            }
+            else if (args.Key == VirtualKey.Escape)
+            {
+                committed = true; // abandon whatever was typed
+                flyout.Hide();
+                args.Handled = true;
+            }
+        };
+
+        // Clicking away accepts what was typed rather than discarding it: the field starts out
+        // holding the current value, so dismissing it as a cancel would be the surprising read.
+        flyout.Closing += (_, _) => Commit();
+
+        FrameworkElement anchor = StationsListView.ContainerFromItem(row) as FrameworkElement ?? StationsListView;
+        flyout.ShowAt(anchor);
+        input.Focus(FocusState.Programmatic);
     }
 
     private void NowPlayingTextHost_SizeChanged(object sender, SizeChangedEventArgs e)

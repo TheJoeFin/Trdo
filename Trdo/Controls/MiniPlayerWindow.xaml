@@ -7,7 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:ex="using:WinUIEx"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Title="Trdo Mini Player"
+    Title="Traydio Mini Player"
     Width="320"
     Height="220"
     IsMaximizable="False"
@@ -25,7 +25,7 @@
         Tapped="WindowLayout_Tapped">
         <TitleBar
             x:Name="ModernTitlebar"
-            Title="Trdo"
+            Title="Traydio"
             Subtitle="Mini Player">
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="/Assets/Radio.ico" />
@@ -82,38 +82,33 @@
                             <StackPanel Grid.Column="1" Spacing="4">
                                 <TextBlock
                                     Style="{StaticResource BodyStrongTextBlockStyle}"
-                                    Text="{x:Bind ViewModel.CurrentTrackDisplay,
-                                                  Mode=OneWay}"
+                                    Text="{x:Bind ViewModel.MetadataTitleDisplay, Mode=OneWay}"
                                     TextWrapping="WrapWholeWords" />
                                 <TextBlock
                                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                     Style="{StaticResource CaptionTextBlockStyle}"
-                                    Text="{x:Bind ViewModel.CurrentTrackSupportingText,
-                                                  Mode=OneWay}"
+                                    Text="{x:Bind ViewModel.MetadataArtistDisplay, Mode=OneWay}"
                                     TextWrapping="WrapWholeWords" />
                             </StackPanel>
 
-                            <Button
-                                Grid.Column="2"
-                                Width="32"
-                                Height="32"
-                                Padding="0"
-                                VerticalAlignment="Top"
-                                AutomationProperties.Name="{x:Bind ViewModel.MiniPlayerFavoriteButtonText,
-                                                                   Mode=OneWay}"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Click="FavoriteTrackButton_Click"
-                                ToolTipService.ToolTip="{x:Bind ViewModel.MiniPlayerFavoriteButtonText,
-                                                                Mode=OneWay}"
-                                Visibility="{x:Bind ViewModel.MiniPlayerFavoriteButtonVisibility,
-                                                    Mode=OneWay}">
-                                <FontIcon
-                                    FontSize="18"
-                                    Foreground="{ThemeResource AccentFillColorDefaultBrush}"
-                                    Glyph="{x:Bind ViewModel.MiniPlayerFavoriteButtonGlyph,
-                                                   Mode=OneWay}" />
-                            </Button>
+                            <StackPanel Grid.Column="2" Spacing="4">
+                                <Button
+                                    Width="32"
+                                    Height="32"
+                                    Padding="0"
+                                    VerticalAlignment="Top"
+                                    AutomationProperties.Name="{x:Bind ViewModel.MiniPlayerFavoriteButtonText, Mode=OneWay}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Click="FavoriteTrackButton_Click"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.MiniPlayerFavoriteButtonText, Mode=OneWay}"
+                                    Visibility="{x:Bind ViewModel.MiniPlayerFavoriteButtonVisibility, Mode=OneWay}">
+                                    <FontIcon
+                                        FontSize="18"
+                                        Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                        Glyph="{x:Bind ViewModel.MiniPlayerFavoriteButtonGlyph, Mode=OneWay}" />
+                                </Button>
+                            </StackPanel>
                         </Grid>
 
                         <Border
@@ -137,8 +132,7 @@
                                     FontSize="18"
                                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                                     Glyph="&#xE95A;"
-                                    Visibility="{x:Bind ViewModel.SelectedStationFallbackIconVisibility,
-                                                        Mode=OneWay}" />
+                                    Visibility="{x:Bind ViewModel.SelectedStationFallbackIconVisibility, Mode=OneWay}" />
                                 <Border CornerRadius="4">
                                     <Image Source="{x:Bind ViewModel.SelectedStationFaviconImageSource, Mode=OneWay}" Stretch="UniformToFill" />
                                 </Border>
@@ -147,13 +141,15 @@
                                 Grid.Column="1"
                                 VerticalAlignment="Center"
                                 Style="{StaticResource BodyStrongTextBlockStyle}"
-                                Text="{x:Bind ViewModel.SelectedStationDisplayName,
-                                              Mode=OneWay}"
+                                Text="{x:Bind ViewModel.SelectedStationDisplayName, Mode=OneWay}"
                                 TextTrimming="CharacterEllipsis"
                                 TextWrapping="NoWrap" />
                         </Grid>
 
-                        <controls:SpectrumVisualizerControl x:Name="SpectrumVisualizer" Grid.Row="3" VerticalAlignment="Bottom" />
+                        <controls:SpectrumVisualizerControl
+                            x:Name="SpectrumVisualizer"
+                            Grid.Row="3"
+                            VerticalAlignment="Bottom" />
                     </Grid>
 
                     <Grid x:Name="IdleContentGrid" Opacity="0">
@@ -168,8 +164,7 @@
                                 Margin="10"
                                 Source="ms-appx:///Assets/Radio.png"
                                 Stretch="Uniform"
-                                Visibility="{x:Bind ViewModel.SelectedStationFallbackIconVisibility,
-                                                    Mode=OneWay}" />
+                                Visibility="{x:Bind ViewModel.SelectedStationFallbackIconVisibility, Mode=OneWay}" />
                             <Border CornerRadius="{StaticResource OverlayCornerRadius}">
                                 <Image Source="{x:Bind ViewModel.SelectedStationFaviconImageSource, Mode=OneWay}" Stretch="UniformToFill" />
                             </Border>
@@ -191,10 +186,10 @@
                     Width="64"
                     Height="64"
                     HorizontalAlignment="Center"
-                    AutomationProperties.Name="{x:Bind ViewModel.PlaybackButtonText,
-                                                       Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind ViewModel.PlaybackButtonText, Mode=OneWay}"
                     Click="PlayPauseButton_Click"
                     CornerRadius="42"
+                    IsEnabled="{x:Bind ViewModel.CanPlay, Mode=OneWay}"
                     Style="{StaticResource AccentButtonStyle}">
                     <FontIcon FontSize="34" Glyph="{x:Bind ViewModel.PlaybackButtonGlyph, Mode=OneWay}" />
                 </Button>
@@ -203,11 +198,9 @@
                     x:Name="PauseAndCloseButton"
                     HorizontalAlignment="Center"
                     Click="PauseAndCloseButton_Click"
-                    Content="{x:Bind ViewModel.MiniPlayerCloseButtonText,
-                                     Mode=OneWay}"
+                    Content="{x:Bind ViewModel.MiniPlayerCloseButtonText, Mode=OneWay}"
                     Style="{ThemeResource AccentButtonStyle}"
-                    Visibility="{x:Bind ViewModel.MiniPlayerCloseButtonVisibility,
-                                        Mode=OneWay}" />
+                    Visibility="{x:Bind ViewModel.MiniPlayerCloseButtonVisibility, Mode=OneWay}" />
             </StackPanel>
         </Grid>
     </Grid>

@@ -7,7 +7,7 @@ namespace Trdo.Converters;
 /// <summary>
 /// Converts null or empty string to Visibility. Returns Visible when value is not null/empty, Collapsed when null/empty.
 /// </summary>
-public class NullToVisibilityConverter : IValueConverter
+public partial class NullToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

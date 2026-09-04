@@ -1,6 +1,6 @@
-# Contributing to Trdo
+# Contributing to Traydio
 
-Thank you for your interest in contributing to Trdo! This document provides guidelines for contributing to the project.
+Thank you for your interest in Contributing to Traydio! This document provides guidelines for contributing to the project.
 
 ## How to Contribute
 
@@ -46,6 +46,13 @@ See the [README.md](README.md) for build instructions.
 - Visual Studio 2022, Visual Studio 2026, or VS Code
 - .NET 10.0 SDK
 - Windows App SDK
+
+### Add a new translation
+- Copy the latest Strings\en-US folder and rename appropriately 
+- Translate the new Resources.resw
+- Add the new SettingsPage_Language_name.Content property in all the other Resources.resw files
+- Update the Services\LocalizationService.SupportedLanguages static list
+- Update the ComboBox list in Pages\SettingsPage.xaml
 
 ## Code of Conduct
 

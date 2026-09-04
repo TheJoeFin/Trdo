@@ -7,7 +7,7 @@ namespace Trdo.Converters;
 /// <summary>
 /// Converts a string URL to a BitmapImage, returning null for invalid or empty URLs.
 /// </summary>
-public class StringToImageSourceConverter : IValueConverter
+public partial class StringToImageSourceConverter : IValueConverter
 {
     public object? Convert(object value, Type targetType, object parameter, string language)
     {

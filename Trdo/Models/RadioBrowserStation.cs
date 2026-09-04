@@ -1,3 +1,4 @@
+using System;
 using System.Text.Json.Serialization;
 
 namespace Trdo.Models;
@@ -61,16 +62,36 @@ public class RadioBrowserStation
     }
 
     /// <summary>
-    /// Converts this RadioBrowserStation to a RadioStation for local storage
+    /// Converts this RadioBrowserStation to a RadioStation for local storage.
+    /// <para>
+    /// This is the single projection from a directory result to a saved station - every add
+    /// path goes through it. Callers layer the user's own choices (name, volume, buffer
+    /// overrides) on top of the result; those always win over what the directory says.
+    /// </para>
     /// </summary>
     public RadioStation ToRadioStation()
     {
         return new RadioStation
         {
+            Id = Services.StationIdentityPolicy.NewId(),
             Name = Name,
             StreamUrl = GetStreamUrl(),
-            Homepage = !string.IsNullOrWhiteSpace(Homepage) ? Homepage : null,
-            FaviconUrl = !string.IsNullOrWhiteSpace(Favicon) ? Favicon : null
+            Homepage = NullIfBlank(Homepage),
+            FaviconUrl = NullIfBlank(Favicon),
+            StationUuid = NullIfBlank(StationUuid),
+            Tags = NullIfBlank(Tags),
+            Country = NullIfBlank(Country),
+            CountryCode = NullIfBlank(CountryCode),
+            Language = NullIfBlank(Language),
+            Codec = NullIfBlank(Codec),
+            Bitrate = Bitrate > 0 ? Bitrate : null,
+            // Stamped locally: the directory's timestamps describe their record, not when
+            // this user added the station.
+            DateAdded = DateTimeOffset.UtcNow,
+            MetadataRefreshedUtc = DateTimeOffset.UtcNow
         };
     }
+
+    private static string? NullIfBlank(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value;
 }

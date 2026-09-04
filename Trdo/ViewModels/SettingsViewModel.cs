@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Trdo.Models;
 using Trdo.Services;
+using Trdo.Services.Playback;
 using Windows.ApplicationModel;
 using Windows.Storage;
 using Windows.Storage.Pickers;
@@ -17,16 +18,19 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     private readonly PlayerViewModel _playerViewModel;
     private bool _isStartupEnabled;
     private bool _isStartupToggleEnabled = true;
-    private string _startupToggleText = "Off";
-    private string _watchdogToggleText = "Off";
-    private string _autoBufferToggleText = "Off";
-    private string _autoPlayOnStartupToggleText = "Off";
-    private string _spotifyToggleText = "On";
-    private string _discogsToggleText = "On";
-    private string _appleMusicToggleText = "On";
-    private string _youtubeMusicToggleText = "On";
+    private string _startupToggleText = LocalizationService.GetString("Toggle_Off", "Off");
+    private string _watchdogToggleText = LocalizationService.GetString("Toggle_Off", "Off");
+    private string _autoBufferToggleText = LocalizationService.GetString("Toggle_Off", "Off");
+    private string _autoPlayOnStartupToggleText = LocalizationService.GetString("Toggle_Off", "Off");
+    private string _spotifyToggleText = LocalizationService.GetString("Toggle_On", "On");
+    private string _discogsToggleText = LocalizationService.GetString("Toggle_On", "On");
+    private string _appleMusicToggleText = LocalizationService.GetString("Toggle_On", "On");
+    private string _youtubeMusicToggleText = LocalizationService.GetString("Toggle_On", "On");
+    private string _bandcampToggleText = LocalizationService.GetString("Toggle_Off", "Off");
+    private string _songChangePopupToggleText = LocalizationService.GetString("Toggle_Off", "Off");
     private StartupTask? _startupTask;
     private bool _initDone;
+    private bool _isLanguageRestartPending;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -67,12 +71,55 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         DiscogsToggleText = GetToggleText(SettingsService.IsDiscogsEnabled);
         AppleMusicToggleText = GetToggleText(SettingsService.IsAppleMusicEnabled);
         YouTubeMusicToggleText = GetToggleText(SettingsService.IsYouTubeMusicEnabled);
+        BandcampToggleText = GetToggleText(SettingsService.IsBandcampEnabled);
+        SongChangePopupToggleText = GetToggleText(SettingsService.IsSongChangePopupEnabled);
 
         // Initialize startup task
         _ = InitializeStartupTaskAsync();
     }
 
-    private static string GetToggleText(bool enabled) => enabled ? "On" : "Off";
+    private static string GetToggleText(bool enabled) => enabled
+        ? LocalizationService.GetString("Toggle_On", "On")
+        : LocalizationService.GetString("Toggle_Off", "Off");
+
+    public int LanguageSelectionIndex
+    {
+        get
+        {
+            int index = Array.IndexOf(LocalizationService.LanguagePickerOptions, SettingsService.AppLanguage);
+            return index < 0 ? 0 : index;
+        }
+        set
+        {
+            string[] languages = LocalizationService.LanguagePickerOptions;
+            string languageTag = value >= 0 && value < languages.Length
+                ? languages[value]
+                : LocalizationService.SystemLanguage;
+
+            if (languageTag == SettingsService.AppLanguage) return;
+
+            SettingsService.AppLanguage = languageTag;
+            OnPropertyChanged();
+
+            // x:Uid resources are resolved while each XAML tree loads, so already-created UI keeps
+            // the old language until the app starts again.
+            IsLanguageRestartPending = true;
+        }
+    }
+
+    /// <summary>
+    /// True once the language has been changed in this session, so the UI can ask for a restart.
+    /// </summary>
+    public bool IsLanguageRestartPending
+    {
+        get => _isLanguageRestartPending;
+        private set
+        {
+            if (value == _isLanguageRestartPending) return;
+            _isLanguageRestartPending = value;
+            OnPropertyChanged();
+        }
+    }
 
     public bool IsStartupEnabled
     {
@@ -242,6 +289,32 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
+    /// Gets or sets whether Bandcamp search links are shown in Now Playing and Favorites.
+    /// </summary>
+    public bool IsBandcampEnabled
+    {
+        get => SettingsService.IsBandcampEnabled;
+        set
+        {
+            if (value == SettingsService.IsBandcampEnabled) return;
+            SettingsService.IsBandcampEnabled = value;
+            OnPropertyChanged();
+            BandcampToggleText = GetToggleText(value);
+        }
+    }
+
+    public string BandcampToggleText
+    {
+        get => _bandcampToggleText;
+        set
+        {
+            if (value == _bandcampToggleText) return;
+            _bandcampToggleText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
     /// Gets or sets the tray icon click behavior.
     /// 0 = left click plays/pauses, right click opens flyout (default).
     /// 1 = left click opens flyout, right click plays/pauses.
@@ -256,6 +329,140 @@ public partial class SettingsViewModel : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
+
+    /// <summary>
+    /// Gets or sets whether a brief on-screen popup appears near the taskbar
+    /// whenever the playing song changes.
+    /// </summary>
+    public bool IsSongChangePopupEnabled
+    {
+        get => SettingsService.IsSongChangePopupEnabled;
+        set
+        {
+            if (value == SettingsService.IsSongChangePopupEnabled) return;
+            SettingsService.IsSongChangePopupEnabled = value;
+            OnPropertyChanged();
+            SongChangePopupToggleText = GetToggleText(value);
+        }
+    }
+
+    /// <summary>
+    /// App-wide delay between a song change and the app showing it, in seconds. Applies to
+    /// every surface, not just the popup. Stations that run further ahead can override this
+    /// individually.
+    /// </summary>
+    public double TrackInfoDelaySeconds
+    {
+        get => SettingsService.TrackInfoDelaySeconds;
+        set
+        {
+            double clamped = SongChangeAnnouncementPolicy.ClampDelay(value);
+            if (Math.Abs(clamped - SettingsService.TrackInfoDelaySeconds) < 0.0001) return;
+            SettingsService.TrackInfoDelaySeconds = clamped;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(TrackInfoDelayDescription));
+        }
+    }
+
+    public string TrackInfoDelayDescription =>
+        SongChangeAnnouncementPolicy.DescribeDelay(SettingsService.TrackInfoDelaySeconds);
+
+    /// <summary>Upper bound offered by the delay slider.</summary>
+    public double MaxTrackInfoDelaySeconds => SongChangeAnnouncementPolicy.MaxDelaySeconds;
+
+    /// <summary>
+    /// How long the popup stays on screen once it appears, in seconds. App-wide: this is
+    /// about reading speed rather than anything a station does, so there is no override.
+    /// </summary>
+    public double SongChangePopupDwellSeconds
+    {
+        get => SettingsService.SongChangePopupDwellSeconds;
+        set
+        {
+            double clamped = SongChangeAnnouncementPolicy.ClampDwell(value);
+            if (Math.Abs(clamped - SettingsService.SongChangePopupDwellSeconds) < 0.0001) return;
+            SettingsService.SongChangePopupDwellSeconds = clamped;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SongChangePopupDwellDescription));
+        }
+    }
+
+    public string SongChangePopupDwellDescription =>
+        SongChangeAnnouncementPolicy.DescribeDwell(SettingsService.SongChangePopupDwellSeconds);
+
+    /// <summary>Bounds offered by the dwell slider.</summary>
+    public double MinSongChangePopupDwellSeconds => SongChangeAnnouncementPolicy.MinDwellSeconds;
+
+    public double MaxSongChangePopupDwellSeconds => SongChangeAnnouncementPolicy.MaxDwellSeconds;
+
+    public string SongChangePopupToggleText
+    {
+        get => _songChangePopupToggleText;
+        set
+        {
+            if (value == _songChangePopupToggleText) return;
+            _songChangePopupToggleText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// ComboBox index for the playback engine mode. UI order (Auto, Native only,
+    /// Native preferred) no longer matches the stored enum values, so the index
+    /// is mapped rather than cast.
+    /// </summary>
+    public int PlaybackEngineModeIndex
+    {
+        get => SettingsService.PlaybackEngineMode switch
+        {
+            PlaybackEngineMode.NativeOnly => 1,
+            PlaybackEngineMode.NativePreferred => 2,
+            _ => 0
+        };
+        set
+        {
+            PlaybackEngineMode mode = value switch
+            {
+                1 => PlaybackEngineMode.NativeOnly,
+                2 => PlaybackEngineMode.NativePreferred,
+                _ => PlaybackEngineMode.Auto
+            };
+
+            if (mode == SettingsService.PlaybackEngineMode)
+            {
+                return;
+            }
+
+            SettingsService.PlaybackEngineMode = mode;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PlaybackEngineModeDescription));
+        }
+    }
+
+    public string PlaybackEngineModeDescription =>
+        SettingsService.PlaybackEngineMode switch
+        {
+            PlaybackEngineMode.NativeOnly => "Windows Media Foundation only",
+            PlaybackEngineMode.NativePreferred => "Windows first, LibVLC fallback",
+            _ => "LibVLC first, Windows fallback"
+        };
+
+    public bool AllowSleepWhilePlaying
+    {
+        get => SettingsService.AllowSleepWhilePlaying;
+        set
+        {
+            if (value == SettingsService.AllowSleepWhilePlaying) return;
+            SettingsService.AllowSleepWhilePlaying = value;
+            PowerManagementService.Refresh();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(AllowSleepToggleText));
+        }
+    }
+
+    public string AllowSleepToggleText => AllowSleepWhilePlaying
+        ? "PC can sleep while playing"
+        : "PC stays awake while playing";
 
     public bool IsWatchdogEnabled
     {
@@ -465,6 +672,13 @@ public partial class SettingsViewModel : INotifyPropertyChanged
 
             if (!alreadyExists)
             {
+                // This adds to the collection directly rather than going through
+                // PlayerViewModel.AddStation, so stamp what that path would have stamped.
+                // Imported stations carry no directory details, which makes them exactly the
+                // candidates the "refresh station info" command exists for.
+                station.Id = StationIdentityPolicy.NewId();
+                station.DateAdded ??= DateTimeOffset.UtcNow;
+
                 player.Stations.Add(station);
                 addedCount++;
             }
@@ -488,7 +702,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         FileSavePicker picker = new();
         WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
         picker.SuggestedStartLocation = PickerLocationId.MusicLibrary;
-        picker.SuggestedFileName = "Trdo Stations";
+        picker.SuggestedFileName = "Traydio Stations";
         picker.FileTypeChoices.Add("M3U Playlist", [".m3u"]);
         picker.FileTypeChoices.Add("PLS Playlist", [".pls"]);
 

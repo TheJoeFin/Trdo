@@ -11,12 +11,12 @@
   <Identity
     Name="40087JoeFinApps.Trdo"
     Publisher="CN=153F3B0F-BA3D-4964-8098-71AC78A1DF6A"
-    Version="1.10.6.0" />
+    Version="2.0.8.0" />
 
   <mp:PhoneIdentity PhoneProductId="fa86867b-3ba1-44b4-b776-ea2ad8aea4c7" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>Trdo</DisplayName>
+    <DisplayName>Traydio</DisplayName>
     <PublisherDisplayName>JoeFinApps</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -35,7 +35,7 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="Trdo"
+        DisplayName="Traydio"
         Description="A mini Tray Radio app"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
@@ -47,7 +47,8 @@
       <!-- Allow app to be configured as a Startup Task -->
       <Extensions>
         <uap5:Extension Category="windows.startupTask">
-          <uap5:StartupTask TaskId="TrdoStartup" Enabled="false" DisplayName="Trdo" />
+          <!-- TaskId must stay "TrdoStartup": changing it would break the saved startup state of existing installs -->
+          <uap5:StartupTask TaskId="TrdoStartup" Enabled="false" DisplayName="Traydio" />
         </uap5:Extension>
       </Extensions>
     </Application>

@@ -7,6 +7,7 @@ using Trdo.Models;
 using Trdo.Services;
 using Trdo.ViewModels;
 using Windows.System;
+using Windows.Win32;
 
 namespace Trdo.Pages;
 
@@ -21,7 +22,8 @@ public sealed partial class FavoritesPage : Page
         SettingsService.IsSpotifyEnabled ||
         SettingsService.IsDiscogsEnabled ||
         SettingsService.IsAppleMusicEnabled ||
-        SettingsService.IsYouTubeMusicEnabled;
+        SettingsService.IsYouTubeMusicEnabled ||
+        SettingsService.IsBandcampEnabled;
 
     public FavoritesViewModel ViewModel { get; }
 
@@ -59,6 +61,115 @@ public sealed partial class FavoritesPage : Page
         }
     }
 
+    private async void ExportButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Favorites.Count == 0)
+        {
+            ShowInfo(InfoBarSeverity.Informational, "Nothing to export", "Favorite some songs first.");
+            return;
+        }
+
+        int unarchived = ViewModel.UnarchivedCount;
+        int total = ViewModel.Favorites.Count;
+
+        ToggleSwitch exportAllToggle = new()
+        {
+            Header = "Export all favorites",
+            OffContent = $"New only ({unarchived} of {total})",
+            OnContent = $"All favorites ({total})",
+            // Nothing new to send means the only useful export is a full one.
+            IsOn = unarchived == 0,
+        };
+
+        CheckBox archiveCheckBox = new()
+        {
+            Content = "Archive exported tracks",
+            IsChecked = true,
+        };
+
+        StackPanel content = new() { Spacing = 12 };
+        content.Children.Add(new TextBlock
+        {
+            Text = "CSV works with playlist transfer services like Soundiiz or TuneMyMusic. "
+                 + "XSPF is a playlist file for players such as VLC. Pick the format when you save.",
+            TextWrapping = TextWrapping.Wrap,
+        });
+        content.Children.Add(exportAllToggle);
+        content.Children.Add(archiveCheckBox);
+        content.Children.Add(new TextBlock
+        {
+            Text = "Archived tracks stay in your favorites but are skipped by later exports.",
+            FontSize = 12,
+            TextWrapping = TextWrapping.Wrap,
+            Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
+        });
+
+        ContentDialog dialog = new()
+        {
+            XamlRoot = XamlRoot,
+            Title = "Export favorites",
+            Content = content,
+            PrimaryButtonText = "Export",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+        };
+
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary)
+            return;
+
+        bool exportAll = exportAllToggle.IsOn;
+        bool archive = archiveCheckBox.IsChecked == true;
+
+        if (!exportAll && unarchived == 0)
+        {
+            ShowInfo(InfoBarSeverity.Informational, "Nothing new to export",
+                "Every favorite has already been exported. Turn on \"Export all favorites\" or clear the export history.");
+            return;
+        }
+
+        try
+        {
+            FavoritesExportResult result = await ViewModel.ExportAsync(PInvoke.GetActiveWindow(), exportAll, archive);
+
+            if (!result.Succeeded)
+                return;
+
+            string message = $"Exported {result.ExportedCount} track{(result.ExportedCount == 1 ? "" : "s")} to {result.FileName}.";
+            if (result.ArchivedCount > 0)
+                message += $" {result.ArchivedCount} archived and will be skipped next time.";
+
+            ShowInfo(InfoBarSeverity.Success, "Export complete", message);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[FavoritesPage] Export failed: {ex.Message}");
+            ShowInfo(InfoBarSeverity.Error, LocalizationService.GetString("FavoritesPage_ExportFailed", "Export failed"), ex.Message);
+        }
+    }
+
+    private void ClearExportHistory_Click(object sender, RoutedEventArgs e)
+    {
+        int cleared = ViewModel.ClearAllArchived();
+        ShowInfo(InfoBarSeverity.Informational, "Export history cleared",
+            $"{cleared} track{(cleared == 1 ? "" : "s")} will be included in the next export.");
+    }
+
+    private void ClearArchivedForTrack_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem item && item.Tag is FavoriteTrack track)
+        {
+            ViewModel.ClearArchived(track);
+        }
+    }
+
+    private void ShowInfo(InfoBarSeverity severity, string title, string message)
+    {
+        ExportInfoBar.Severity = severity;
+        ExportInfoBar.Title = title;
+        ExportInfoBar.Message = message;
+        ExportInfoBar.IsOpen = true;
+    }
+
     private void RemoveFavorite_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button button && button.Tag is FavoriteTrack track)
@@ -74,10 +185,7 @@ public sealed partial class FavoritesPage : Page
         if (_previouslySelectedContainer != null)
         {
             Grid? previousExpandedContent = FindDescendant<Grid>(_previouslySelectedContainer, "ExpandedContent");
-            if (previousExpandedContent != null)
-            {
-                previousExpandedContent.Visibility = Visibility.Collapsed;
-            }
+            previousExpandedContent?.Visibility = Visibility.Collapsed;
         }
 
         // Expand the newly selected item
@@ -155,6 +263,17 @@ public sealed partial class FavoritesPage : Page
         }
     }
 
+    private async void BandcampLink_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is HyperlinkButton button && button.Tag is FavoriteTrack track)
+        {
+            Debug.WriteLine($"[FavoritesPage] Bandcamp search for: {track.DisplayText}");
+            string searchQuery = Uri.EscapeDataString(track.DisplayText);
+            string url = $"https://bandcamp.com/search?q={searchQuery}";
+            await Launcher.LaunchUriAsync(new Uri(url));
+        }
+    }
+
     private void SettingsButton_Click(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine("[FavoritesPage] Music service settings button clicked");
@@ -167,10 +286,7 @@ public sealed partial class FavoritesPage : Page
             ? element.FindName(buttonName) as HyperlinkButton
             : null;
 
-        if (button != null)
-        {
-            button.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-        }
+        button?.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ApplyMusicServiceVisibility(ListViewItem container)
@@ -189,6 +305,7 @@ public sealed partial class FavoritesPage : Page
         SetButtonVisibility(expandedContent, "DiscogsButton", SettingsService.IsDiscogsEnabled);
         SetButtonVisibility(expandedContent, "AppleMusicButton", SettingsService.IsAppleMusicEnabled);
         SetButtonVisibility(expandedContent, "YouTubeMusicButton", SettingsService.IsYouTubeMusicEnabled);
+        SetButtonVisibility(expandedContent, "BandcampButton", SettingsService.IsBandcampEnabled);
     }
 
     private T? FindDescendant<T>(DependencyObject parent, string name = "") where T : DependencyObject

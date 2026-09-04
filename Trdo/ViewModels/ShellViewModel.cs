@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
 using Trdo.Models;
 using Trdo.Pages;
 using Trdo.Services;
@@ -39,6 +40,15 @@ public partial class ShellViewModel : ObservableObject
         _navigationService.Navigate(typeof(PlayingPage));
     }
 
+    /// <summary>
+    /// Returns to the root page and drops any history, so a reopened window
+    /// never starts out showing a back button.
+    /// </summary>
+    public void ResetToPlayingPage()
+    {
+        _navigationService.ResetTo(typeof(PlayingPage));
+    }
+
     [RelayCommand]
     public void NavigateToSettingsPage()
     {
@@ -71,7 +81,9 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     public void NavigateToNowPlayingPage()
     {
-        _navigationService.Navigate(typeof(NowPlayingPage));
+        // Suppressed so it doesn't play alongside the connected animation that
+        // morphs the now-playing icon from the compact bar into the full card.
+        _navigationService.Navigate(typeof(NowPlayingPage), null, new SuppressNavigationTransitionInfo());
     }
 
     [RelayCommand]
@@ -83,6 +95,15 @@ public partial class ShellViewModel : ObservableObject
     [RelayCommand]
     public void GoBack()
     {
-        _navigationService.GoBack();
+        // Leaving NowPlayingPage reverses the connected animation that brought us here;
+        // the default slide-back transition would otherwise play at the same time.
+        if (ContentFrame?.Content is NowPlayingPage)
+        {
+            _navigationService.GoBack(new SuppressNavigationTransitionInfo());
+        }
+        else
+        {
+            _navigationService.GoBack();
+        }
     }
 }

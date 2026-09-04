@@ -5,8 +5,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    Width="240"
-    Height="400"
     Loaded="Page_Loaded"
     mc:Ignorable="d">
 
@@ -18,18 +16,19 @@
 
         <TitleBar
             x:Name="SimpleTitleBar"
-            Title="Trdo (soon to be Traydio)"
-            Margin="-8,-8,-8,0"
+            x:Uid="ShellPage_TitleBar"
             BackRequested="TitleBar_BackRequested"
             IsBackButtonVisible="{x:Bind ViewModel.CanGoBack,
-                                         Mode=OneWay}"
-            Subtitle="beta">
+                                         Mode=OneWay}">
             <TitleBar.IconSource>
                 <ImageIconSource ImageSource="ms-appx:///Assets/Radio.png" />
             </TitleBar.IconSource>
         </TitleBar>
 
 
-        <Frame x:Name="ContentFrame" Grid.Row="1" />
+        <Frame
+            x:Name="ContentFrame"
+            Grid.Row="1"
+            Margin="8,0,8,8" />
     </Grid>
 </Page>

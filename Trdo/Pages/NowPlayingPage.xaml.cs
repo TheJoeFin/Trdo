@@ -76,6 +76,12 @@ public sealed partial class NowPlayingPage : Page
         await ViewModel.SearchOnYouTubeMusic();
     }
 
+    private async void BandcampLink_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[NowPlayingPage] Bandcamp link clicked");
+        await ViewModel.SearchOnBandcamp();
+    }
+
     private void FavoriteCurrentTrack_Click(object sender, RoutedEventArgs e)
     {
         Debug.WriteLine("[NowPlayingPage] Favorite current track clicked");

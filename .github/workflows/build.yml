@@ -28,3 +28,6 @@ jobs:
       
     - name: Build
       run: dotnet build Trdo.slnx --configuration Release --no-restore /p:PublishReadyToRun=false
+
+    - name: Test
+      run: dotnet test Trdo.Tests/Trdo.Tests.csproj --configuration Release --no-build
