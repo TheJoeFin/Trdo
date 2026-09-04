@@ -27,7 +27,7 @@
 
 Traydio (formerly Trdo) is a modern internet radio player built for Windows with a focus on simplicity and elegance. Stream your favorite radio stations with a beautiful, intuitive interface designed for Windows 11.
 
-Built with .NET 9, WinUI 3, and the Windows App SDK, Traydio provides a native Windows experience with smooth animations and responsive controls.
+Built with .NET 10, WinUI 3, and the Windows App SDK, Traydio provides a native Windows experience with smooth animations and responsive controls.
 
 ## 📰 In the Press
 
@@ -54,7 +54,7 @@ Get the code:
 ### With Visual Studio Code (VS Code)
 
 - Install Visual Studio Code [https://code.visualstudio.com/](https://code.visualstudio.com/)
-- Install .NET 9.0 SDK [https://dotnet.microsoft.com/download/dotnet/10.0](https://dotnet.microsoft.com/download/dotnet/10.0)
+- Install .NET 10 SDK [https://dotnet.microsoft.com/download/dotnet/10.0](https://dotnet.microsoft.com/download/dotnet/10.0)
 - Open `\Trdo\` Folder in VS Code (Same folder as .sln file)
 - Key F5 to launch with debugger
 
@@ -82,7 +82,17 @@ Traydio is designed to be simple and elegant, focusing on what matters most: enj
 
 ### Packages Used
 
-Will be updated as development progresses.
+- [CommunityToolkit.Mvvm](https://www.nuget.org/packages/CommunityToolkit.Mvvm) — MVVM helpers (observable objects, commands)
+- [CommunityToolkit.WinUI.Animations](https://www.nuget.org/packages/CommunityToolkit.WinUI.Animations) — UI animation helpers
+- [CommunityToolkit.WinUI.Controls.Segmented](https://www.nuget.org/packages/CommunityToolkit.WinUI.Controls.Segmented) — Segmented control
+- [CommunityToolkit.Labs.WinUI.MarqueeText](https://www.nuget.org/packages/CommunityToolkit.Labs.WinUI.MarqueeText) — Scrolling marquee text
+- [LibVLCSharp](https://www.nuget.org/packages/LibVLCSharp) + [VideoLAN.LibVLC.Windows](https://www.nuget.org/packages/VideoLAN.LibVLC.Windows) — Stream playback engine
+- [NAudio](https://www.nuget.org/packages/NAudio) — Audio playback and processing
+- [Microsoft.WindowsAppSDK](https://www.nuget.org/packages/Microsoft.WindowsAppSDK) — Windows App SDK / WinUI 3
+- [Microsoft.Windows.CsWin32](https://www.nuget.org/packages/Microsoft.Windows.CsWin32) — Source-generated Win32 P/Invoke bindings
+- [WinUIEx](https://www.nuget.org/packages/WinUIEx) — WinUI window extensions
+
+Tests (`Trdo.Tests`) use [MSTest](https://www.nuget.org/packages/MSTest.TestFramework) via `Microsoft.NET.Test.Sdk`.
 
 ### Thanks for using Traydio
 
