@@ -184,6 +184,69 @@ public sealed partial class PlayingPage : Page
         {
             UpdateNowPlayingMarqueeState();
         }
+
+        if (e.PropertyName is nameof(PlayerViewModel.SleepTimerProgress))
+        {
+            UpdateSleepTimerRing();
+        }
+
+        if (e.PropertyName is nameof(PlayerViewModel.IsSleepTimerActive) && ViewModel.IsSleepTimerActive)
+        {
+            // Reset the hover state so a freshly-started timer shows the ring rather than
+            // whatever the pointer happened to be doing to the previous one.
+            SleepTimerRingHost.Opacity = 1;
+            SleepTimerCancelIcon.Opacity = 0;
+            UpdateSleepTimerRing();
+        }
+    }
+
+    private const double SleepTimerRingDiameter = 28;
+    private const double SleepTimerRingStrokeThickness = 2.5;
+
+    /// <summary>
+    /// Redraws the countdown ring's arc via Ellipse.StrokeDashArray. XAML expresses
+    /// dash lengths as multiples of the stroke thickness rather than device pixels, so the
+    /// circle's circumference has to be converted into that unit before it can be split into a
+    /// "time remaining" dash and a "time elapsed" gap.
+    /// </summary>
+    private void UpdateSleepTimerRing()
+    {
+        double progress = Math.Clamp(ViewModel.SleepTimerProgress, 0, 1);
+        double radius = (SleepTimerRingDiameter - SleepTimerRingStrokeThickness) / 2;
+        double circumferenceUnits = 2 * Math.PI * radius / SleepTimerRingStrokeThickness;
+
+        SleepTimerRingProgress.StrokeDashArray = new DoubleCollection
+        {
+            circumferenceUnits * progress,
+            circumferenceUnits
+        };
+    }
+
+    private void SleepTimerMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem { Tag: string minutesText } && int.TryParse(minutesText, out int minutes))
+        {
+            Debug.WriteLine($"[PlayingPage] Starting sleep timer: {minutes} minutes");
+            ViewModel.StartSleepTimer(minutes);
+        }
+    }
+
+    private void SleepTimerButton_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[PlayingPage] Sleep timer cancelled from countdown control");
+        ViewModel.CancelSleepTimer();
+    }
+
+    private void SleepTimerButton_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        SleepTimerRingHost.Opacity = 0;
+        SleepTimerCancelIcon.Opacity = 1;
+    }
+
+    private void SleepTimerButton_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        SleepTimerRingHost.Opacity = 1;
+        SleepTimerCancelIcon.Opacity = 0;
     }
 
     private void UpdateFavoriteButtonState()
