@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Trdo.Models;
 using Trdo.Services.Metadata;
 using Trdo.Services.Playback;
 
@@ -519,7 +520,7 @@ public sealed partial class RadioPlayerService
 
     public async Task RefreshMetadataAsync(CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_streamUrl))
+        if (string.IsNullOrWhiteSpace(_streamUrl) || _activeSourceKind != AudioSourceKind.Radio)
         {
             return;
         }

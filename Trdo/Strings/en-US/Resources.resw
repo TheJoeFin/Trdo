@@ -320,6 +320,9 @@
   <data name="PlaybackFailure_WithDetail" xml:space="preserve">
     <value>Couldn't play this station: {0}</value>
   </data>
+  <data name="PlaybackFailure_WhiteNoiseNoOutput" xml:space="preserve">
+    <value>Couldn't play white noise - no audio output device is available.</value>
+  </data>
   <data name="PlaybackFailure_WithSentenceDetail" xml:space="preserve">
     <value>Couldn't play this station. {0}</value>
   </data>
