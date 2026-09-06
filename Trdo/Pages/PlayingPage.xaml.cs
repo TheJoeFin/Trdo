@@ -403,6 +403,23 @@ public sealed partial class PlayingPage : Page
         if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
         {
             Debug.WriteLine($"[PlayingPage] Edit station clicked: {station.Name}");
+
+            switch (station.SourceKind)
+            {
+                case AudioSourceKind.WhiteNoise:
+                    // White noise has no stream URL, homepage or favicon to edit, so it gets
+                    // its own page rather than the generic manual-entry window.
+                    _shellViewModel?.NavigateToAddWhiteNoisePage(station);
+                    return;
+
+                // Files isn't implemented yet, so it has no editor of its own either -
+                // falls through to the manual-entry window along with Radio for now.
+                case AudioSourceKind.Radio:
+                case AudioSourceKind.Files:
+                default:
+                    break;
+            }
+
             // Open a pop-out window for editing so the flyout closing doesn't clear the fields
             ManualStationWindow editWindow = new();
             WindowHelper.Track(editWindow);

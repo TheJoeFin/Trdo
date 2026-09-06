@@ -102,7 +102,7 @@ public sealed partial class SearchStation : Page
                 station.Favicon,
                 RadioPlayerService.Instance.Volume,
                 playAfterSwitch: true,
-                transitionCts.Token);
+                cancellationToken: transitionCts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -175,7 +175,9 @@ public sealed partial class SearchStation : Page
                         selectedStation.FaviconUrl,
                         selectedStation.Volume,
                         playAfterSwitch: false,
-                        transitionCts.Token);
+                        sourceKind: selectedStation.SourceKind,
+                        whiteNoiseColor: selectedStation.WhiteNoiseColor,
+                        cancellationToken: transitionCts.Token);
                 }
                 else
                 {
@@ -269,6 +271,12 @@ public sealed partial class SearchStation : Page
         ManualStationWindow addWindow = new();
         WindowHelper.Track(addWindow);
         addWindow.Activate();
+    }
+
+    private async void AddWhiteNoiseButton_Click(object sender, RoutedEventArgs e)
+    {
+        await StopPreviewAsync();
+        _shellViewModel?.NavigateToAddWhiteNoisePage();
     }
 
     private async void CancelButton_Click(object sender, RoutedEventArgs e)

@@ -194,6 +194,39 @@
   <data name="AddStation_UrlRequired" xml:space="preserve">
     <value>Stream URL is required.</value>
   </data>
+  <data name="AddWhiteNoise_AddPageTitle" xml:space="preserve">
+    <value>Add White Noise</value>
+  </data>
+  <data name="AddWhiteNoise_ColorDescription.Text" xml:space="preserve">
+    <value>White is a flat hiss across every frequency. Pink is softer, weighted toward the low end.</value>
+  </data>
+  <data name="AddWhiteNoise_ColorLabel.Text" xml:space="preserve">
+    <value>Noise color</value>
+  </data>
+  <data name="AddWhiteNoise_DefaultName" xml:space="preserve">
+    <value>White Noise</value>
+  </data>
+  <data name="AddWhiteNoise_EditPageTitle" xml:space="preserve">
+    <value>Edit White Noise</value>
+  </data>
+  <data name="AddWhiteNoise_PageTitle.Text" xml:space="preserve">
+    <value>Add White Noise</value>
+  </data>
+  <data name="AddWhiteNoise_Pink.Content" xml:space="preserve">
+    <value>Pink</value>
+  </data>
+  <data name="AddWhiteNoise_StationNameLabel.Text" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="AddWhiteNoise_StationNamePlaceholder.PlaceholderText" xml:space="preserve">
+    <value>e.g., Rain, Fan, Ocean waves</value>
+  </data>
+  <data name="AddWhiteNoise_VolumeLabel.Text" xml:space="preserve">
+    <value>Volume</value>
+  </data>
+  <data name="AddWhiteNoise_White.Content" xml:space="preserve">
+    <value>White</value>
+  </data>
   <data name="App_ExitApplicationCommand.Description" xml:space="preserve">
     <value>Exit Traydio</value>
   </data>
