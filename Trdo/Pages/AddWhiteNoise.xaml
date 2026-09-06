@@ -33,21 +33,21 @@
                 <!--  Noise color  -->
                 <StackPanel Spacing="4">
                     <TextBlock x:Uid="AddWhiteNoise_ColorLabel" FontWeight="SemiBold" />
+                    <ComboBox
+                        HorizontalAlignment="Stretch"
+                        SelectedIndex="{x:Bind ViewModel.NoiseColorIndex, Mode=TwoWay}">
+                        <ComboBoxItem x:Uid="AddWhiteNoise_White" />
+                        <ComboBoxItem x:Uid="AddWhiteNoise_Pink" />
+                        <ComboBoxItem x:Uid="AddWhiteNoise_Brown" />
+                        <ComboBoxItem x:Uid="AddWhiteNoise_Blue" />
+                        <ComboBoxItem x:Uid="AddWhiteNoise_Violet" />
+                        <ComboBoxItem x:Uid="AddWhiteNoise_Grey" />
+                    </ComboBox>
                     <TextBlock
-                        x:Uid="AddWhiteNoise_ColorDescription"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind ViewModel.ColorDescription, Mode=OneWay}"
                         TextWrapping="Wrap" />
-                    <StackPanel Orientation="Horizontal" Spacing="16">
-                        <RadioButton
-                            x:Uid="AddWhiteNoise_White"
-                            GroupName="NoiseColor"
-                            IsChecked="{x:Bind ViewModel.IsWhiteSelected, Mode=TwoWay}" />
-                        <RadioButton
-                            x:Uid="AddWhiteNoise_Pink"
-                            GroupName="NoiseColor"
-                            IsChecked="{x:Bind ViewModel.IsPinkSelected, Mode=TwoWay}" />
-                    </StackPanel>
                 </StackPanel>
 
                 <!--  Volume  -->

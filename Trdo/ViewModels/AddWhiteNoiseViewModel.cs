@@ -63,32 +63,38 @@ public sealed class AddWhiteNoiseViewModel : INotifyPropertyChanged
             if (value == _noiseColor) return;
             _noiseColor = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(IsWhiteSelected));
-            OnPropertyChanged(nameof(IsPinkSelected));
+            OnPropertyChanged(nameof(NoiseColorIndex));
+            OnPropertyChanged(nameof(ColorDescription));
         }
     }
 
-    /// <summary>Bound to the "White" radio button, since x:Bind cannot two-way bind an enum directly.</summary>
-    public bool IsWhiteSelected
+    /// <summary>
+    /// Bound to the color picker's <c>SelectedIndex</c>, since x:Bind cannot two-way bind an
+    /// enum directly. The picker's item order matches the enum's declaration order.
+    /// </summary>
+    public int NoiseColorIndex
     {
-        get => _noiseColor == WhiteNoiseColor.White;
-        set
-        {
-            if (value)
-                NoiseColor = WhiteNoiseColor.White;
-        }
+        get => (int)_noiseColor;
+        set => NoiseColor = (WhiteNoiseColor)value;
     }
 
-    /// <summary>Bound to the "Pink" radio button, since x:Bind cannot two-way bind an enum directly.</summary>
-    public bool IsPinkSelected
+    /// <summary>A one-line description of the selected color's spectrum and best use.</summary>
+    public string ColorDescription => _noiseColor switch
     {
-        get => _noiseColor == WhiteNoiseColor.Pink;
-        set
-        {
-            if (value)
-                NoiseColor = WhiteNoiseColor.Pink;
-        }
-    }
+        WhiteNoiseColor.White => LocalizationService.GetString(
+            "AddWhiteNoise_ColorDescription_White", "Flat hiss across every frequency. Good for masking noise and testing."),
+        WhiteNoiseColor.Pink => LocalizationService.GetString(
+            "AddWhiteNoise_ColorDescription_Pink", "Softer, weighted toward the low end, like rainfall. Good for sleep."),
+        WhiteNoiseColor.Brown => LocalizationService.GetString(
+            "AddWhiteNoise_ColorDescription_Brown", "A deep, heavy rumble with almost no hiss. Good for relaxation."),
+        WhiteNoiseColor.Blue => LocalizationService.GetString(
+            "AddWhiteNoise_ColorDescription_Blue", "Bright and weighted toward the high end."),
+        WhiteNoiseColor.Violet => LocalizationService.GetString(
+            "AddWhiteNoise_ColorDescription_Violet", "Very bright, dominated by high frequencies."),
+        WhiteNoiseColor.Grey => LocalizationService.GetString(
+            "AddWhiteNoise_ColorDescription_Grey", "Shaped to sound equally loud at every frequency. Good for focus."),
+        _ => string.Empty,
+    };
 
     /// <summary>Playback volume as a percentage, matching the range of the player's own volume control.</summary>
     public double VolumePercent

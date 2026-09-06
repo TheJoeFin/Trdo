@@ -197,17 +197,41 @@
   <data name="AddWhiteNoise_AddPageTitle" xml:space="preserve">
     <value>Add White Noise</value>
   </data>
-  <data name="AddWhiteNoise_ColorDescription.Text" xml:space="preserve">
-    <value>White is a flat hiss across every frequency. Pink is softer, weighted toward the low end.</value>
+  <data name="AddWhiteNoise_Blue.Content" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="AddWhiteNoise_ColorDescription_Blue" xml:space="preserve">
+    <value>Bright and weighted toward the high end.</value>
+  </data>
+  <data name="AddWhiteNoise_ColorDescription_Brown" xml:space="preserve">
+    <value>A deep, heavy rumble with almost no hiss. Good for relaxation.</value>
+  </data>
+  <data name="AddWhiteNoise_ColorDescription_Grey" xml:space="preserve">
+    <value>Shaped to sound equally loud at every frequency. Good for focus.</value>
+  </data>
+  <data name="AddWhiteNoise_ColorDescription_Pink" xml:space="preserve">
+    <value>Softer, weighted toward the low end, like rainfall. Good for sleep.</value>
+  </data>
+  <data name="AddWhiteNoise_ColorDescription_Violet" xml:space="preserve">
+    <value>Very bright, dominated by high frequencies.</value>
+  </data>
+  <data name="AddWhiteNoise_ColorDescription_White" xml:space="preserve">
+    <value>Flat hiss across every frequency. Good for masking noise and testing.</value>
   </data>
   <data name="AddWhiteNoise_ColorLabel.Text" xml:space="preserve">
     <value>Noise color</value>
+  </data>
+  <data name="AddWhiteNoise_Brown.Content" xml:space="preserve">
+    <value>Brown</value>
   </data>
   <data name="AddWhiteNoise_DefaultName" xml:space="preserve">
     <value>White Noise</value>
   </data>
   <data name="AddWhiteNoise_EditPageTitle" xml:space="preserve">
     <value>Edit White Noise</value>
+  </data>
+  <data name="AddWhiteNoise_Grey.Content" xml:space="preserve">
+    <value>Grey</value>
   </data>
   <data name="AddWhiteNoise_PageTitle.Text" xml:space="preserve">
     <value>Add White Noise</value>
@@ -220,6 +244,9 @@
   </data>
   <data name="AddWhiteNoise_StationNamePlaceholder.PlaceholderText" xml:space="preserve">
     <value>e.g., Rain, Fan, Ocean waves</value>
+  </data>
+  <data name="AddWhiteNoise_Violet.Content" xml:space="preserve">
+    <value>Violet</value>
   </data>
   <data name="AddWhiteNoise_VolumeLabel.Text" xml:space="preserve">
     <value>Volume</value>
