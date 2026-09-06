@@ -31,7 +31,7 @@ internal sealed class WhiteNoisePlaybackEngine : IDisposable
     private WasapiPlayer? _player;
     private FadeInOutSampleProvider? _fade;
     private VolumeSampleProvider? _volume;
-    private SignalGenerator? _generator;
+    private ColoredNoiseSampleProvider? _generator;
     private int _generation;
     private bool _isDisposed;
 
@@ -115,7 +115,7 @@ internal sealed class WhiteNoisePlaybackEngine : IDisposable
     public void SetColor(WhiteNoiseColor color)
     {
         if (_generator is not null)
-            _generator.Type = color == WhiteNoiseColor.Pink ? SignalGeneratorType.Pink : SignalGeneratorType.White;
+            _generator.Color = color;
     }
 
     private bool TryBuildGraph()
@@ -133,11 +133,7 @@ internal sealed class WhiteNoisePlaybackEngine : IDisposable
             int sampleRate = mixFormat.SampleRate;
             int channels = mixFormat.Channels >= 2 ? 2 : 1;
 
-            SignalGenerator generator = new(sampleRate, channels)
-            {
-                Type = SignalGeneratorType.White,
-                Gain = 1.0,
-            };
+            ColoredNoiseSampleProvider generator = new(sampleRate, channels);
 
             // initiallySilent, so the very first buffer is already at zero and the ramp starts
             // from silence rather than snapping to full level.

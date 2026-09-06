@@ -118,6 +118,20 @@ public sealed class StationStorageFormatTests
     }
 
     [TestMethod]
+    [DataRow(WhiteNoiseColor.White, 0)]
+    [DataRow(WhiteNoiseColor.Pink, 1)]
+    [DataRow(WhiteNoiseColor.Brown, 2)]
+    [DataRow(WhiteNoiseColor.Blue, 3)]
+    [DataRow(WhiteNoiseColor.Violet, 4)]
+    [DataRow(WhiteNoiseColor.Grey, 5)]
+    public void WhiteNoiseColor_OrdinalsAreStable(WhiteNoiseColor color, int expectedOrdinal)
+    {
+        // Persisted as a raw int (see RadioStationJsonContext), so a member's ordinal must
+        // never change once shipped - existing stations.json files depend on it.
+        Assert.AreEqual(expectedOrdinal, (int)color);
+    }
+
+    [TestMethod]
     public void ParseStations_MigratesLegacyIsWhiteNoiseFlag()
     {
         // Exactly what the build before SourceKind existed wrote: no SourceKind field, and
