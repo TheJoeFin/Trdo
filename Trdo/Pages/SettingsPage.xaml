@@ -555,6 +555,35 @@
 
                 <Border Style="{StaticResource SettingCardStyle}">
                     <StackPanel Spacing="10">
+                        <TextBlock x:Uid="SettingsPage_RadioStaticTitle" Style="{StaticResource SettingTitleStyle}" />
+                        <TextBlock x:Uid="SettingsPage_RadioStaticDescription" Style="{StaticResource SettingDescriptionStyle}" />
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                            <ToggleSwitch
+                                x:Name="RadioStaticToggle"
+                                x:Uid="SettingsPage_RadioStaticToggle"
+                                AutomationProperties.AutomationId="RadioStaticToggle"
+                                Grid.Column="0"
+                                MinWidth="0"
+                                IsOn="{x:Bind ViewModel.IsRadioStaticEnabled, Mode=TwoWay}"
+                                OffContent=""
+                                OnContent="" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource SettingStatusStyle}"
+                                Text="{x:Bind ViewModel.RadioStaticToggleText, Mode=OneWay}" />
+                            <Button
+                                x:Name="RadioStaticTestButton"
+                                x:Uid="SettingsPage_RadioStaticTestButton"
+                                Grid.Column="2"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="RadioStaticTestButton"
+                                Click="RadioStaticTestButton_Click" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCardStyle}">
+                    <StackPanel Spacing="10">
                         <TextBlock x:Uid="SettingsPage_AllowSleepTitle" Style="{StaticResource SettingTitleStyle}" />
                         <TextBlock x:Uid="SettingsPage_AllowSleepDescription" Style="{StaticResource SettingDescriptionStyle}" />
                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">

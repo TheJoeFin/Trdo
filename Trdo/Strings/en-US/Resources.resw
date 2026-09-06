@@ -608,6 +608,24 @@
   <data name="SettingsPage_PopupDwellSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>How long the song popup stays on screen, in seconds</value>
   </data>
+  <data name="SettingsPage_RadioStaticDescription.Text" xml:space="preserve">
+    <value>Fill the silence while a station loads with gentle FM radio static. It swells in rather than snapping on, and fades back out as the station arrives.</value>
+  </data>
+  <data name="SettingsPage_RadioStaticTestButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Hear the radio static</value>
+  </data>
+  <data name="SettingsPage_RadioStaticTestButton.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve">
+    <value>Play the static now, so you can hear what it sounds like</value>
+  </data>
+  <data name="SettingsPage_RadioStaticTestButton.Content" xml:space="preserve">
+    <value>Test</value>
+  </data>
+  <data name="SettingsPage_RadioStaticTitle.Text" xml:space="preserve">
+    <value>Radio static while buffering</value>
+  </data>
+  <data name="SettingsPage_RadioStaticToggle.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Play radio static while buffering</value>
+  </data>
   <data name="SettingsPage_ResetEngineMemoryFailed" xml:space="preserve">
     <value>Couldn't reset remembered engines: {0}</value>
   </data>
