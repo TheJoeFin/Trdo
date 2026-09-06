@@ -238,6 +238,12 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             // before playback starts, so the first connection already uses them.
             _player.Volume = _selectedStation.Volume;
             _player.Watchdog.StationBufferLevelOverride = _selectedStation.BufferLevel;
+
+            // Startup calls Initialize()/Play() directly rather than going through
+            // TransitionToStationAsync, so there is no outgoing source whose reads this could
+            // clobber - safe to set before anything else here.
+            _player.SetActiveSourceKind(_selectedStation.SourceKind);
+            _player.SetWhiteNoiseColor(_selectedStation.WhiteNoiseColor);
             SyncTrackInfoDelay();
 
             Debug.WriteLine($"[PlayerViewModel] Initializing stream with URL: {_selectedStation.StreamUrl}");
@@ -383,8 +389,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 LogService.Info("PlayerViewModel",
                     $"Station selected: '{_selectedStation.Name}' ({LogService.Redact(_selectedStation.StreamUrl)}), volume={_selectedStation.Volume:0.00}");
 
-                // Validate the URL
-                if (!IsValidUrl(_selectedStation.StreamUrl))
+                // Validate the URL. Only a Radio station actually dials StreamUrl - anything
+                // else (white noise today, a local file later) carries a placeholder there and
+                // never needs to pass this check.
+                if (_selectedStation.SourceKind == AudioSourceKind.Radio && !IsValidUrl(_selectedStation.StreamUrl))
                 {
                     string logDetail = $"Invalid stream URL for {_selectedStation.Name}";
                     _lastError = string.Format(
@@ -881,7 +889,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 CancelStationTransition();
                 _player.ClearPlaybackTarget();
             }
-            else if (!IsValidUrl(_selectedStation.StreamUrl))
+            else if (_selectedStation.SourceKind == AudioSourceKind.Radio && !IsValidUrl(_selectedStation.StreamUrl))
             {
                 throw new InvalidOperationException($"Invalid stream URL for {_selectedStation.Name}");
             }
@@ -1545,7 +1553,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         SyncTrackInfoDelay();
 
         // If the current station was edited, reinitialize the stream
-        if (_selectedStation != null && IsValidUrl(_selectedStation.StreamUrl))
+        if (_selectedStation != null && (_selectedStation.SourceKind != AudioSourceKind.Radio || IsValidUrl(_selectedStation.StreamUrl)))
         {
             Debug.WriteLine($"[PlayerViewModel] Reinitializing stream after save: {_selectedStation.StreamUrl}");
             try
@@ -1580,7 +1588,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     private void InitializeStream(string streamUrl)
     {
         Debug.WriteLine($"[PlayerViewModel] InitializeStream called with URL: {streamUrl}");
-        if (IsValidUrl(streamUrl))
+        if ((_selectedStation is not null && _selectedStation.SourceKind != AudioSourceKind.Radio) || IsValidUrl(streamUrl))
         {
             try
             {
@@ -1699,6 +1707,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 station.FaviconUrl,
                 station.Volume,
                 playAfterSwitch,
+                station.SourceKind,
+                station.WhiteNoiseColor,
                 transitionCts.Token);
 
             if (ReferenceEquals(_selectedStation, station))
