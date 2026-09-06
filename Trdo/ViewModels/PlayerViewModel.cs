@@ -40,6 +40,12 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     private TimeSpan _sleepTimerDuration;
     private bool _isSleepTimerActive;
 
+    // Local music scrub bar: polls position while a Files-kind station plays so the bar moves
+    // smoothly, same lazy-creation reasoning as the sleep timer above.
+    private DispatcherQueueTimer? _localMusicPositionTimer;
+    private bool _isSeekDragging;
+    private double _seekProgress;
+
     /// <summary>The arrangement: top-level stations, folders and dividers, in display order.</summary>
     private readonly List<object> _topLevelNodes;
 
@@ -117,6 +123,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(MiniPlayerPrimaryText));
             OnPropertyChanged(nameof(MiniPlayerSecondaryText));
             OnPropertyChanged(nameof(HasMiniPlayerSecondaryText));
+            RefreshLocalMusicTrackState();
         };
         _player.BufferingStateChanged += (_, _) =>
         {
@@ -258,14 +265,25 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             _player.SetWhiteNoiseColor(_selectedStation.WhiteNoiseColor);
             SyncTrackInfoDelay();
 
-            Debug.WriteLine($"[PlayerViewModel] Initializing stream with URL: {_selectedStation.StreamUrl}");
-            InitializeStream(_selectedStation.StreamUrl);
-
-            // Auto-play on startup if the setting is enabled
-            if (SettingsService.AutoPlayOnStartup)
+            if (_selectedStation.SourceKind == AudioSourceKind.Files)
             {
-                Debug.WriteLine("[PlayerViewModel] AutoPlayOnStartup is enabled, starting playback...");
-                _player.Play();
+                // Files carries a placeholder StreamUrl, not a real one InitializeStream could
+                // dial - only RadioPlayerService can resolve "this station" into "its first
+                // track's real file URI", same as BeginStationTransition does for a live switch.
+                Debug.WriteLine($"[PlayerViewModel] Initializing local music station: {_selectedStation.Name}");
+                _ = _player.PlayLocalMusicStationAsync(_selectedStation, playAfterSwitch: SettingsService.AutoPlayOnStartup);
+            }
+            else
+            {
+                Debug.WriteLine($"[PlayerViewModel] Initializing stream with URL: {_selectedStation.StreamUrl}");
+                InitializeStream(_selectedStation.StreamUrl);
+
+                // Auto-play on startup if the setting is enabled
+                if (SettingsService.AutoPlayOnStartup)
+                {
+                    Debug.WriteLine("[PlayerViewModel] AutoPlayOnStartup is enabled, starting playback...");
+                    _player.Play();
+                }
             }
         }
         else
@@ -388,6 +406,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(SelectedStationFallbackIconVisibility));
             OnPropertyChanged(nameof(SelectedStationFaviconImageSource));
             OnPropertyChanged(nameof(SelectedStationDisplayName));
+            OnPropertyChanged(nameof(IsLocalMusicActive));
+            RefreshLocalMusicTrackState();
             SyncStationCyclingAvailability();
 
             if (_selectedStation != null)
@@ -901,6 +921,136 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(SleepTimerProgress));
     }
 
+    /// <summary>True when the selected station is a local music folder rather than radio/white noise.</summary>
+    public bool IsLocalMusicActive => SelectedStation?.SourceKind == AudioSourceKind.Files;
+
+    /// <summary>The current folder's tracks, in playback order.</summary>
+    public IReadOnlyList<string> LocalTrackList => _player.CurrentLocalTrackList;
+
+    /// <summary>Index into <see cref="LocalTrackList"/> of the track currently playing.</summary>
+    public int CurrentLocalTrackIndex => _player.CurrentLocalTrackIndex;
+
+    public bool CanGoToNextLocalTrack => _player.CanGoToNextLocalTrack;
+
+    public bool CanGoToPreviousLocalTrack => _player.CanGoToPreviousLocalTrack;
+
+    /// <summary>
+    /// The scrub bar's value, 0-100. A two-way property rather than a plain passthrough of
+    /// <see cref="Position"/>/<see cref="Duration"/> because the slider needs to be settable
+    /// mid-drag without immediately seeking on every tick - see <see cref="BeginSeekDrag"/>/
+    /// <see cref="EndSeekDrag"/>, which is where a drag's seek actually lands.
+    /// </summary>
+    public double SeekProgress
+    {
+        get => _seekProgress;
+        set
+        {
+            value = Math.Clamp(value, 0, 100);
+            if (Math.Abs(_seekProgress - value) < 0.01) return;
+            _seekProgress = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public TimeSpan Position => _player.Position;
+
+    public TimeSpan? Duration => _player.Duration;
+
+    public string PositionDisplay => FormatTimeSpan(Position);
+
+    public string DurationDisplay => Duration is { } duration ? FormatTimeSpan(duration) : "0:00";
+
+    private static string FormatTimeSpan(TimeSpan value) =>
+        value.Hours > 0 ? value.ToString(@"h\:mm\:ss") : value.ToString(@"m\:ss");
+
+    /// <summary>
+    /// Marks the start of a scrub-bar drag: the position-poll timer stops overwriting
+    /// <see cref="SeekProgress"/> until <see cref="EndSeekDrag"/>, so the thumb doesn't jump
+    /// back under the user's finger mid-drag.
+    /// </summary>
+    public void BeginSeekDrag() => _isSeekDragging = true;
+
+    /// <summary>Ends a scrub-bar drag and commits the seek - see <see cref="BeginSeekDrag"/>.</summary>
+    public void EndSeekDrag()
+    {
+        _isSeekDragging = false;
+
+        if (Duration is not { } duration || duration <= TimeSpan.Zero)
+            return;
+
+        TimeSpan target = duration * (_seekProgress / 100);
+        _player.Seek(target);
+        OnPropertyChanged(nameof(Position));
+        OnPropertyChanged(nameof(PositionDisplay));
+    }
+
+    public async void NextLocalTrack()
+    {
+        await _player.NextLocalTrackAsync();
+    }
+
+    public async void PreviousLocalTrack()
+    {
+        await _player.PreviousLocalTrackAsync();
+    }
+
+    /// <summary>Plays an arbitrary track from <see cref="LocalTrackList"/>, e.g. tapped from the details page.</summary>
+    public async Task PlayLocalTrackAtIndexAsync(int index)
+    {
+        await _player.PlayLocalTrackAtIndexAsync(index);
+    }
+
+    private void RefreshLocalMusicTrackState()
+    {
+        OnPropertyChanged(nameof(LocalTrackList));
+        OnPropertyChanged(nameof(CurrentLocalTrackIndex));
+        OnPropertyChanged(nameof(CanGoToNextLocalTrack));
+        OnPropertyChanged(nameof(CanGoToPreviousLocalTrack));
+        OnPropertyChanged(nameof(Duration));
+        OnPropertyChanged(nameof(DurationDisplay));
+        SyncLocalMusicPositionTimer();
+    }
+
+    private void SyncLocalMusicPositionTimer()
+    {
+        bool shouldRun = IsLocalMusicActive && IsPlaying;
+
+        if (shouldRun)
+        {
+            if (_localMusicPositionTimer is null)
+            {
+                DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread()
+                    ?? throw new InvalidOperationException("SyncLocalMusicPositionTimer must be called from the UI thread.");
+                _localMusicPositionTimer = dispatcherQueue.CreateTimer();
+                _localMusicPositionTimer.Interval = TimeSpan.FromMilliseconds(250);
+                _localMusicPositionTimer.IsRepeating = true;
+                _localMusicPositionTimer.Tick += (_, _) => TickLocalMusicPosition();
+            }
+
+            _localMusicPositionTimer.Start();
+        }
+        else
+        {
+            _localMusicPositionTimer?.Stop();
+        }
+    }
+
+    private void TickLocalMusicPosition()
+    {
+        OnPropertyChanged(nameof(Position));
+        OnPropertyChanged(nameof(PositionDisplay));
+
+        // The timer must not fight a drag in progress - overwriting SeekProgress here would
+        // snap the thumb back to the live position out from under the user's finger.
+        if (_isSeekDragging)
+            return;
+
+        if (Duration is { } duration && duration > TimeSpan.Zero)
+        {
+            SeekProgress = Position.TotalSeconds / duration.TotalSeconds * 100;
+        }
+    }
+
     public void ToggleCurrentTrackFavorite()
     {
         if (CurrentMetadata?.HasMetadata != true)
@@ -1048,6 +1198,50 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine("[PlayerViewModel] First station added, selecting automatically");
             SelectedStation = station;
         }
+    }
+
+    /// <summary>
+    /// Adds a batch of brand-new stations already grouped inside a brand-new folder, in a
+    /// single persist. Used when adding a local-music "artist" folder whose album subfolders
+    /// should appear as individual stations, already grouped together, rather than an
+    /// AddStation + MoveStationToGroup round trip per station (each of which persists on its
+    /// own).
+    /// </summary>
+    public StationGroup AddStationsToNewFolder(string folderName, IReadOnlyList<RadioStation> stations)
+    {
+        StationGroup group = new()
+        {
+            Id = StationIdentityPolicy.NewId(),
+            Name = string.IsNullOrWhiteSpace(folderName) ? "New group" : folderName.Trim(),
+        };
+
+        foreach (RadioStation station in stations)
+        {
+            if (string.IsNullOrWhiteSpace(station.Id))
+                station.Id = StationIdentityPolicy.NewId();
+            station.DateAdded ??= DateTimeOffset.UtcNow;
+            station.GroupId = group.Id;
+
+            Stations.Add(station);
+            group.Children.Add(station);
+        }
+
+        group.NotifyChildrenChanged();
+        _topLevelNodes.Add(group);
+
+        RebuildDisplayRows();
+        OnPropertyChanged(nameof(Groups));
+        PersistStationList();
+
+        // Mirrors AddStation's own "first station added, select it automatically" - if these
+        // are the only stations in the app, one of them needs to end up selected the same way.
+        if (Stations.Count == stations.Count && stations.Count > 0)
+        {
+            Debug.WriteLine("[PlayerViewModel] First stations added via folder, selecting the first automatically");
+            SelectedStation = stations[0];
+        }
+
+        return group;
     }
 
     public async Task VisitWebsite(RadioStation station)
@@ -1791,15 +1985,25 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     {
         try
         {
-            await _player.TransitionToStationAsync(
-                station.StreamUrl,
-                station.Name,
-                station.FaviconUrl,
-                station.Volume,
-                playAfterSwitch,
-                station.SourceKind,
-                station.WhiteNoiseColor,
-                transitionCts.Token);
+            // Only RadioPlayerService knows how to resolve "this station" into "what to
+            // actually play" - for Files that's scanning the folder for its first track,
+            // which TransitionToStationAsync's fixed stream-url parameter can't express.
+            if (station.SourceKind == AudioSourceKind.Files)
+            {
+                await _player.PlayLocalMusicStationAsync(station, playAfterSwitch, transitionCts.Token);
+            }
+            else
+            {
+                await _player.TransitionToStationAsync(
+                    station.StreamUrl,
+                    station.Name,
+                    station.FaviconUrl,
+                    station.Volume,
+                    playAfterSwitch,
+                    station.SourceKind,
+                    station.WhiteNoiseColor,
+                    transitionCts.Token);
+            }
 
             if (ReferenceEquals(_selectedStation, station))
             {

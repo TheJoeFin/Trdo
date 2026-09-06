@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -67,6 +68,15 @@ public partial class NowPlayingViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsPlaybackActive));
             OnPropertyChanged(nameof(IsRefreshingMetadata));
             OnPropertyChanged(nameof(CanRefreshMetadata));
+        }
+
+        if (e.PropertyName is nameof(PlayerViewModel.IsLocalMusicActive)
+            or nameof(PlayerViewModel.LocalTrackList)
+            or nameof(PlayerViewModel.CurrentLocalTrackIndex))
+        {
+            OnPropertyChanged(nameof(IsLocalMusicActive));
+            OnPropertyChanged(nameof(LocalTrackList));
+            OnPropertyChanged(nameof(HasEnabledMusicServices));
         }
     }
 
@@ -346,14 +356,53 @@ public partial class NowPlayingViewModel : INotifyPropertyChanged
     public bool IsBandcampEnabled => SettingsService.IsBandcampEnabled;
 
     /// <summary>
-    /// Gets whether at least one music service search link should be shown.
+    /// Gets whether at least one music service search link should be shown. Never shown for
+    /// local music - a locally-tagged filename has no guaranteed metadata match on any of
+    /// these services.
     /// </summary>
     public bool HasEnabledMusicServices =>
-        IsSpotifyEnabled ||
+        !IsLocalMusicActive &&
+        (IsSpotifyEnabled ||
         IsDiscogsEnabled ||
         IsAppleMusicEnabled ||
         IsYouTubeMusicEnabled ||
-        IsBandcampEnabled;
+        IsBandcampEnabled);
+
+    /// <summary>True when the selected station is a local music folder rather than radio/white noise.</summary>
+    public bool IsLocalMusicActive => PlayerViewModel.Shared.IsLocalMusicActive;
+
+    /// <summary>
+    /// The current folder's tracks, in order, each flagged with whether it's the one currently
+    /// playing so the details page can highlight it.
+    /// </summary>
+    public IReadOnlyList<LocalTrackDisplayItem> LocalTrackList
+    {
+        get
+        {
+            IReadOnlyList<string> tracks = PlayerViewModel.Shared.LocalTrackList;
+            int currentIndex = PlayerViewModel.Shared.CurrentLocalTrackIndex;
+
+            List<LocalTrackDisplayItem> items = new(tracks.Count);
+            for (int i = 0; i < tracks.Count; i++)
+            {
+                items.Add(new LocalTrackDisplayItem
+                {
+                    Index = i,
+                    Path = tracks[i],
+                    DisplayTitle = System.IO.Path.GetFileNameWithoutExtension(tracks[i]),
+                    IsCurrent = i == currentIndex,
+                });
+            }
+
+            return items;
+        }
+    }
+
+    /// <summary>Plays a track tapped from <see cref="LocalTrackList"/>.</summary>
+    public async void PlayLocalTrackAtIndex(int index)
+    {
+        await PlayerViewModel.Shared.PlayLocalTrackAtIndexAsync(index);
+    }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
