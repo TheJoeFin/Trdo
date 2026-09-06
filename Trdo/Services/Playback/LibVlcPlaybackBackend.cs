@@ -39,6 +39,7 @@ public sealed partial class LibVlcPlaybackBackend : IPlaybackBackend
         player.Paused += OnPlayerStopped;
         player.Stopped += OnPlayerStopped;
         player.EndReached += OnPlayerStopped;
+        player.EndReached += OnPlayerEndReached;
         player.Buffering += OnPlayerBuffering;
         player.EncounteredError += OnPlayerEncounteredError;
 
@@ -51,6 +52,7 @@ public sealed partial class LibVlcPlaybackBackend : IPlaybackBackend
         player.Paused -= OnPlayerStopped;
         player.Stopped -= OnPlayerStopped;
         player.EndReached -= OnPlayerStopped;
+        player.EndReached -= OnPlayerEndReached;
         player.Buffering -= OnPlayerBuffering;
         player.EncounteredError -= OnPlayerEncounteredError;
     }
@@ -61,6 +63,13 @@ public sealed partial class LibVlcPlaybackBackend : IPlaybackBackend
     private void OnPlayerPlaying(object? sender, EventArgs e) => RaiseStateChanged(isPlaying: true);
 
     private void OnPlayerStopped(object? sender, EventArgs e) => RaiseStateChanged(isPlaying: false);
+
+    // Kept separate from OnPlayerStopped: that one must keep mapping EndReached onto
+    // PlaybackStateChanged(false) for radio (a dropped stream reads as "stopped"), while this
+    // is the one genuinely new signal - "the item finished on its own" - that local music's
+    // auto-advance needs and nothing else here provides.
+    private void OnPlayerEndReached(object? sender, EventArgs e) =>
+        RaiseOffVlcThread(() => PlaybackEnded?.Invoke(this, EventArgs.Empty));
 
     private void OnPlayerBuffering(object? sender, MediaPlayerBufferingEventArgs e)
     {
@@ -244,9 +253,13 @@ public sealed partial class LibVlcPlaybackBackend : IPlaybackBackend
 
     public TimeSpan Position => TimeSpan.FromMilliseconds(_mediaPlayer.Time);
 
+    public TimeSpan? Duration =>
+        _mediaPlayer.Length > 0 ? TimeSpan.FromMilliseconds(_mediaPlayer.Length) : null;
+
     public event EventHandler<bool>? PlaybackStateChanged;
     public event EventHandler<bool>? BufferingStateChanged;
     public event EventHandler<PlaybackFailureEventArgs>? PlaybackFailed;
+    public event EventHandler? PlaybackEnded;
 
     public IReadOnlyList<MediaTimeRange> GetBufferedRanges() => [];
 
@@ -306,6 +319,8 @@ public sealed partial class LibVlcPlaybackBackend : IPlaybackBackend
     }
 
     public void Pause() => _mediaPlayer.Pause();
+
+    public void Seek(TimeSpan position) => _mediaPlayer.Time = (long)position.TotalMilliseconds;
 
     public void ClearSource()
     {

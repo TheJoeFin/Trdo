@@ -44,6 +44,8 @@ public sealed partial class RadioPlayerService : IDisposable
     private bool _isStationCyclingEnabled;
     private readonly WhiteNoisePlaybackEngine _whiteNoiseEngine = new();
     private WhiteNoiseColor _whiteNoiseColor = WhiteNoiseColor.White;
+    private IReadOnlyList<string> _localTrackList = [];
+    private int _localTrackIndex = -1;
 
     // What the currently prepared source actually is. Stays Radio - the default - until a
     // transition to a different kind actually lands, which is what keeps IsPlaying/IsBuffering
@@ -180,6 +182,38 @@ public sealed partial class RadioPlayerService : IDisposable
             {
                 return TimeSpan.Zero;
             }
+        }
+    }
+
+    /// <summary>
+    /// The current item's total duration, or <c>null</c> for a live radio stream (or nothing
+    /// prepared yet). Meaningful only for <see cref="AudioSourceKind.Files"/>.
+    /// </summary>
+    public TimeSpan? Duration
+    {
+        get
+        {
+            try
+            {
+                return ActiveBackend.Duration;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <summary>Seeks the active backend to <paramref name="position"/>. Meaningful only for <see cref="AudioSourceKind.Files"/>.</summary>
+    public void Seek(TimeSpan position)
+    {
+        try
+        {
+            ActiveBackend.Seek(position);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[RadioPlayerService] Seek failed: {ex.Message}");
         }
     }
 
@@ -746,6 +780,81 @@ public sealed partial class RadioPlayerService : IDisposable
         }
     }
 
+    /// <summary>The folder's tracks currently loaded for a <see cref="AudioSourceKind.Files"/> station.</summary>
+    public IReadOnlyList<string> CurrentLocalTrackList => _localTrackList;
+
+    /// <summary>Index into <see cref="CurrentLocalTrackList"/> of the track currently playing.</summary>
+    public int CurrentLocalTrackIndex => _localTrackIndex;
+
+    public bool CanGoToNextLocalTrack =>
+        _activeSourceKind == AudioSourceKind.Files && _localTrackIndex + 1 < _localTrackList.Count;
+
+    public bool CanGoToPreviousLocalTrack =>
+        _activeSourceKind == AudioSourceKind.Files && _localTrackIndex > 0;
+
+    /// <summary>
+    /// Scans <see cref="RadioStation.LocalFolderPath"/> fresh and starts playing its first
+    /// track. The folder is rescanned live rather than trusting a cached list, so files added,
+    /// removed, or renamed since the station was last played are reflected immediately.
+    /// </summary>
+    public async Task PlayLocalMusicStationAsync(
+        RadioStation station,
+        bool playAfterSwitch,
+        CancellationToken cancellationToken = default)
+    {
+        _localTrackList = LocalMusicFolderScanner.ScanTracks(station.LocalFolderPath);
+        _localTrackIndex = 0;
+
+        if (_localTrackList.Count == 0)
+        {
+            LogService.Warn("RadioPlayerService",
+                $"Local music folder has no playable tracks: {LogService.Redact(station.LocalFolderPath)}");
+            ReportPlaybackFailure("This folder has no playable audio files.");
+            return;
+        }
+
+        await TransitionToStationAsync(
+            ToFileUri(_localTrackList[_localTrackIndex]),
+            station.Name,
+            station.FaviconUrl,
+            station.Volume,
+            playAfterSwitch,
+            sourceKind: AudioSourceKind.Files,
+            cancellationToken: cancellationToken);
+    }
+
+    /// <summary>Jumps to an arbitrary track in the folder currently loaded, e.g. from the details page's track list.</summary>
+    public async Task<bool> PlayLocalTrackAtIndexAsync(int index, CancellationToken cancellationToken = default)
+    {
+        if (_activeSourceKind != AudioSourceKind.Files || index < 0 || index >= _localTrackList.Count)
+        {
+            return false;
+        }
+
+        _localTrackIndex = index;
+
+        await TransitionToStationAsync(
+            ToFileUri(_localTrackList[_localTrackIndex]),
+            _currentStationName ?? string.Empty,
+            _currentStationFaviconUrl,
+            _volume,
+            playAfterSwitch: true,
+            sourceKind: AudioSourceKind.Files,
+            cancellationToken: cancellationToken);
+
+        return true;
+    }
+
+    /// <summary>Advances to the next track in the folder, if there is one. No wraparound.</summary>
+    public Task<bool> NextLocalTrackAsync(CancellationToken cancellationToken = default) =>
+        PlayLocalTrackAtIndexAsync(_localTrackIndex + 1, cancellationToken);
+
+    /// <summary>Returns to the previous track in the folder, if there is one. No wraparound.</summary>
+    public Task<bool> PreviousLocalTrackAsync(CancellationToken cancellationToken = default) =>
+        PlayLocalTrackAtIndexAsync(_localTrackIndex - 1, cancellationToken);
+
+    private static string ToFileUri(string path) => new Uri(path).AbsoluteUri;
+
     public void ClearPlaybackTarget()
     {
         Debug.WriteLine("=== ClearPlaybackTarget START ===");
@@ -816,9 +925,11 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine($"=== Play END (white noise) ===");
                 return;
 
-            // Files isn't implemented yet, so it falls through to the streaming path below,
-            // which will simply fail to open its placeholder URL and report that cleanly
-            // rather than doing nothing.
+            // Files shares Radio's streaming path below: by the time Play() runs, _streamUrl
+            // is always the current track's real file URI (set by PlayLocalMusicStationAsync/
+            // PlayLocalTrackAtIndexAsync via TransitionToStationAsync), so the same
+            // IPlaybackBackend.PrepareAsync pipeline that opens a radio stream opens a local
+            // file just as well.
             case AudioSourceKind.Radio:
             case AudioSourceKind.Files:
             default:
@@ -979,8 +1090,13 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine("[RadioPlayerService] Reusing existing playback source - resuming playback");
             }
 
+            // A local file opens near-instantly and has no "live edge" to wait for, so the
+            // buffer-then-wait dance below - built for a network stream - would only impose an
+            // artificial delay on every play/resume.
             bool useNativeBuffering = ActivePlaybackBackend == PlaybackBackendKind.Native;
-            bool needsBuffering = useNativeBuffering && RequiredBufferDuration > TimeSpan.Zero;
+            bool needsBuffering = useNativeBuffering &&
+                                   RequiredBufferDuration > TimeSpan.Zero &&
+                                   _activeSourceKind == AudioSourceKind.Radio;
 
             if (needsBuffering)
             {
@@ -1714,8 +1830,12 @@ public sealed partial class RadioPlayerService : IDisposable
                 Debug.WriteLine($"=== Pause END (white noise) ===");
                 return;
 
-            case AudioSourceKind.Radio:
             case AudioSourceKind.Files:
+                PauseLocalMusic();
+                Debug.WriteLine($"=== Pause END (local music) ===");
+                return;
+
+            case AudioSourceKind.Radio:
             default:
                 break;
         }
@@ -1759,6 +1879,32 @@ public sealed partial class RadioPlayerService : IDisposable
         }
 
         Debug.WriteLine($"=== Pause END ===");
+    }
+
+    /// <summary>
+    /// Pauses a local music track. Deliberately does not set <see cref="_wasExternalPause"/> or
+    /// tear down the backend source the way the Radio pause path does - those exist to force a
+    /// fresh connection at the live edge on resume, which a local file has no equivalent of and
+    /// would otherwise reset it to position 0 on every pause/resume.
+    /// </summary>
+    private void PauseLocalMusic()
+    {
+        Debug.WriteLine("[RadioPlayerService] Pausing local music");
+
+        CancelPendingPlayAttempt();
+
+        try
+        {
+            SetInternalStateChange(true);
+            ActiveBackend.Pause();
+            SetManualBuffering(false);
+            _watchdog.NotifyUserIntentionToPause();
+        }
+        catch (Exception ex)
+        {
+            SetInternalStateChange(false);
+            Debug.WriteLine($"[RadioPlayerService] EXCEPTION in PauseLocalMusic: {ex.Message}");
+        }
     }
 
     /// <summary>Stops a white noise station. See <see cref="PlayWhiteNoise"/>.</summary>

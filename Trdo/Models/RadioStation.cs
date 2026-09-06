@@ -17,6 +17,15 @@ public partial class RadioStation : INotifyPropertyChanged, IJsonOnDeserialized
     /// </summary>
     public const string WhiteNoiseStreamUrl = "trdo-whitenoise://local";
 
+    /// <summary>
+    /// Placeholder <see cref="StreamUrl"/> for a station whose <see cref="SourceKind"/> is
+    /// <see cref="AudioSourceKind.Files"/>, stored only on a freshly constructed station before
+    /// any track has been resolved. Actual playback never dials this - it always resolves
+    /// <see cref="LocalFolderPath"/> to the current track's real file URI first. See
+    /// <see cref="WhiteNoiseStreamUrl"/> for why a placeholder is needed at all.
+    /// </summary>
+    public const string LocalMusicStreamUrl = "trdo-localmusic://local";
+
     private string _id = string.Empty;
     private string _name = string.Empty;
     private string _streamUrl = string.Empty;
@@ -39,6 +48,7 @@ public partial class RadioStation : INotifyPropertyChanged, IJsonOnDeserialized
     private bool _isSelectedStation;
     private AudioSourceKind _sourceKind = AudioSourceKind.Radio;
     private WhiteNoiseColor _whiteNoiseColor = WhiteNoiseColor.White;
+    private string? _localFolderPath;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -412,6 +422,23 @@ public partial class RadioStation : INotifyPropertyChanged, IJsonOnDeserialized
         {
             if (value == _whiteNoiseColor) return;
             _whiteNoiseColor = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Absolute path to the folder scanned for tracks when <see cref="SourceKind"/> is
+    /// <see cref="AudioSourceKind.Files"/>. The folder is rescanned live each time it's played
+    /// rather than caching a track list here, so files added, removed, or renamed on disk are
+    /// always reflected. See <see cref="Services.LocalMusicFolderScanner"/>.
+    /// </summary>
+    public string? LocalFolderPath
+    {
+        get => _localFolderPath;
+        set
+        {
+            if (value == _localFolderPath) return;
+            _localFolderPath = value;
             OnPropertyChanged();
         }
     }

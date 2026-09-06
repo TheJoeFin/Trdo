@@ -4,6 +4,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Trdo.Models;
 
 namespace Trdo.Services.Audio;
 
@@ -71,6 +72,16 @@ public sealed class RadioStaticService : IDisposable
 
     private void OnBufferingStateChanged(object? sender, bool isBuffering)
     {
+        // Static is the sound of an actual radio dial searching for a signal - white noise
+        // never buffers, and a local file merely opening (which briefly reads as "buffering"
+        // on some backends) has nothing to do with a signal being found.
+        if (RadioPlayerService.Instance.ActiveSourceKind != AudioSourceKind.Radio)
+        {
+            if (_isAudible)
+                RunDetached(StopCoreAsync);
+            return;
+        }
+
         if (isBuffering)
         {
             if (SettingsService.IsRadioStaticEnabled)

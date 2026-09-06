@@ -17,8 +17,8 @@ public enum AudioSourceKind
     WhiteNoise,
 
     /// <summary>
-    /// A local audio file or playlist. Not implemented yet - reserved so callers can already
-    /// switch on <see cref="AudioSourceKind"/> rather than a single-purpose flag.
+    /// A folder of local audio files, played in filename order. See
+    /// <see cref="RadioStation.LocalFolderPath"/>.
     /// </summary>
     Files,
 }
