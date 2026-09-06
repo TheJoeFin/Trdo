@@ -6,8 +6,26 @@ using System.Text.Json.Serialization;
 
 namespace Trdo.Models;
 
-public partial class RadioStation : INotifyPropertyChanged
+public partial class RadioStation : INotifyPropertyChanged, IJsonOnDeserialized
 {
+    /// <summary>
+    /// Placeholder <see cref="StreamUrl"/> for a station whose <see cref="SourceKind"/> is not
+    /// <see cref="AudioSourceKind.Radio"/> - white noise today, a local file in future. It is
+    /// never dialled, but every station is required to have a non-empty stream URL, so a
+    /// station with nothing to dial carries this rather than special-casing the field to be
+    /// optional.
+    /// </summary>
+    public const string WhiteNoiseStreamUrl = "trdo-whitenoise://local";
+
+    /// <summary>
+    /// Placeholder <see cref="StreamUrl"/> for a station whose <see cref="SourceKind"/> is
+    /// <see cref="AudioSourceKind.Files"/>, stored only on a freshly constructed station before
+    /// any track has been resolved. Actual playback never dials this - it always resolves
+    /// <see cref="LocalFolderPath"/> to the current track's real file URI first. See
+    /// <see cref="WhiteNoiseStreamUrl"/> for why a placeholder is needed at all.
+    /// </summary>
+    public const string LocalMusicStreamUrl = "trdo-localmusic://local";
+
     private string _id = string.Empty;
     private string _name = string.Empty;
     private string _streamUrl = string.Empty;
@@ -28,6 +46,9 @@ public partial class RadioStation : INotifyPropertyChanged
     private DateTimeOffset? _metadataRefreshedUtc;
     private string? _groupId;
     private bool _isSelectedStation;
+    private AudioSourceKind _sourceKind = AudioSourceKind.Radio;
+    private WhiteNoiseColor _whiteNoiseColor = WhiteNoiseColor.White;
+    private string? _localFolderPath;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -331,6 +352,93 @@ public partial class RadioStation : INotifyPropertyChanged
         {
             if (value == _isSelectedStation) return;
             _isSelectedStation = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// What kind of audio this "station" actually plays. Anything other than
+    /// <see cref="AudioSourceKind.Radio"/> is played locally by
+    /// <see cref="Services.RadioPlayerService"/> instead of connecting to
+    /// <see cref="StreamUrl"/>, which then carries a placeholder such as
+    /// <see cref="WhiteNoiseStreamUrl"/>.
+    /// </summary>
+    public AudioSourceKind SourceKind
+    {
+        get => _sourceKind;
+        set
+        {
+            if (value == _sourceKind) return;
+            _sourceKind = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// The shape <see cref="SourceKind"/> was saved under before it existed. A file written by
+    /// that earlier build has <c>"IsWhiteNoise": true</c> and no <c>SourceKind</c> field at all,
+    /// so without this it would silently read back in as <see cref="AudioSourceKind.Radio"/>
+    /// carrying <see cref="WhiteNoiseStreamUrl"/> as its stream - a station that fails to play
+    /// with "invalid URL" instead of a station that plays white noise.
+    /// <para>
+    /// Write-only deliberately: a getter would make this serialize again on every save, right
+    /// back into the field it exists to retire.
+    /// </para>
+    /// </summary>
+    public bool IsWhiteNoise
+    {
+        set
+        {
+            if (value)
+                SourceKind = AudioSourceKind.WhiteNoise;
+        }
+    }
+
+    /// <summary>
+    /// Self-heals <see cref="SourceKind"/> from <see cref="StreamUrl"/> after loading, in case
+    /// it was ever saved wrong - for instance by a build with a bug in whatever set it, which
+    /// bakes "Radio" into the file permanently and leaves the legacy <see cref="IsWhiteNoise"/>
+    /// shim with nothing left to migrate from. The placeholder stream URL is the one signal
+    /// that survives every shape this field has ever been saved in, so it is the most reliable
+    /// thing to trust over whatever <c>SourceKind</c> itself says.
+    /// </summary>
+    void IJsonOnDeserialized.OnDeserialized()
+    {
+        if (_sourceKind == AudioSourceKind.Radio &&
+            string.Equals(_streamUrl, WhiteNoiseStreamUrl, StringComparison.Ordinal))
+        {
+            _sourceKind = AudioSourceKind.WhiteNoise;
+        }
+    }
+
+    /// <summary>
+    /// Which noise spectrum to play. Only meaningful when <see cref="SourceKind"/> is
+    /// <see cref="AudioSourceKind.WhiteNoise"/>.
+    /// </summary>
+    public WhiteNoiseColor WhiteNoiseColor
+    {
+        get => _whiteNoiseColor;
+        set
+        {
+            if (value == _whiteNoiseColor) return;
+            _whiteNoiseColor = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Absolute path to the folder scanned for tracks when <see cref="SourceKind"/> is
+    /// <see cref="AudioSourceKind.Files"/>. The folder is rescanned live each time it's played
+    /// rather than caching a track list here, so files added, removed, or renamed on disk are
+    /// always reflected. See <see cref="Services.LocalMusicFolderScanner"/>.
+    /// </summary>
+    public string? LocalFolderPath
+    {
+        get => _localFolderPath;
+        set
+        {
+            if (value == _localFolderPath) return;
+            _localFolderPath = value;
             OnPropertyChanged();
         }
     }

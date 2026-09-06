@@ -30,6 +30,8 @@
     <None Remove="Controls\TutorialWindow.xaml" />
     <None Remove="Controls\SongChangePopupWindow.xaml" />
     <None Remove="Pages\AddStation.xaml" />
+    <None Remove="Pages\AddWhiteNoise.xaml" />
+    <None Remove="Controls\AddLocalMusicWindow.xaml" />
     <None Remove="Pages\FavoritesPage.xaml" />
     <None Remove="Pages\PlayingPage.xaml" />
     <None Remove="Pages\SettingsPage.xaml" />
@@ -129,6 +131,16 @@
   </ItemGroup>
   <ItemGroup>
     <Page Update="Pages\AddStation.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Pages\AddWhiteNoise.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Update="Controls\AddLocalMusicWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>

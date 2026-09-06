@@ -28,6 +28,7 @@ public static class SettingsService
     private const string SongChangePopupDwellSecondsKey = "SongChangePopupDwellSeconds";
     private const string StationSortModeKey = "StationSortMode";
     private const string StationGroupByModeKey = "StationGroupByMode";
+    private const string IsRadioStaticEnabledKey = "IsRadioStaticEnabled";
 
     public static event EventHandler? MusicSearchServicesChanged;
 
@@ -43,6 +44,12 @@ public static class SettingsService
     /// track it is already holding rather than only the next one.
     /// </summary>
     public static event EventHandler? TrackInfoDelayChanged;
+
+    /// <summary>
+    /// Raised when <see cref="IsRadioStaticEnabled"/> changes, so static that is already playing
+    /// can be faded out the moment the user turns the feature off.
+    /// </summary>
+    public static event EventHandler? RadioStaticEnabledChanged;
 
     /// <summary>
     /// Gets or sets whether the app should automatically start playing the last selected station on startup.
@@ -549,11 +556,26 @@ public static class SettingsService
             {
                 SongChangePopupEnabledChanged?.Invoke(null, EventArgs.Empty);
             }
+            else if (key is IsRadioStaticEnabledKey)
+            {
+                RadioStaticEnabledChanged?.Invoke(null, EventArgs.Empty);
+            }
         }
         catch
         {
             // Silently fail if unable to save
         }
+    }
+
+    /// <summary>
+    /// Gets or sets whether generated FM radio static plays while a stream is buffering.
+    /// Defaults to false when no saved value exists - existing listeners should not suddenly
+    /// start hearing noise from an app they already had installed.
+    /// </summary>
+    public static bool IsRadioStaticEnabled
+    {
+        get => GetBoolSetting(IsRadioStaticEnabledKey, defaultValue: false);
+        set => SetBoolSetting(IsRadioStaticEnabledKey, value);
     }
 
     /// <summary>

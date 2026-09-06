@@ -28,6 +28,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
     private string _youtubeMusicToggleText = LocalizationService.GetString("Toggle_On", "On");
     private string _bandcampToggleText = LocalizationService.GetString("Toggle_Off", "Off");
     private string _songChangePopupToggleText = LocalizationService.GetString("Toggle_Off", "Off");
+    private string _radioStaticToggleText = LocalizationService.GetString("Toggle_Off", "Off");
     private StartupTask? _startupTask;
     private bool _initDone;
     private bool _isLanguageRestartPending;
@@ -73,6 +74,7 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         YouTubeMusicToggleText = GetToggleText(SettingsService.IsYouTubeMusicEnabled);
         BandcampToggleText = GetToggleText(SettingsService.IsBandcampEnabled);
         SongChangePopupToggleText = GetToggleText(SettingsService.IsSongChangePopupEnabled);
+        RadioStaticToggleText = GetToggleText(SettingsService.IsRadioStaticEnabled);
 
         // Initialize startup task
         _ = InitializeStartupTaskAsync();
@@ -402,6 +404,32 @@ public partial class SettingsViewModel : INotifyPropertyChanged
         {
             if (value == _songChangePopupToggleText) return;
             _songChangePopupToggleText = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>
+    /// Whether generated FM radio static plays while a stream buffers.
+    /// </summary>
+    public bool IsRadioStaticEnabled
+    {
+        get => SettingsService.IsRadioStaticEnabled;
+        set
+        {
+            if (value == SettingsService.IsRadioStaticEnabled) return;
+            SettingsService.IsRadioStaticEnabled = value;
+            OnPropertyChanged();
+            RadioStaticToggleText = GetToggleText(value);
+        }
+    }
+
+    public string RadioStaticToggleText
+    {
+        get => _radioStaticToggleText;
+        set
+        {
+            if (value == _radioStaticToggleText) return;
+            _radioStaticToggleText = value;
             OnPropertyChanged();
         }
     }

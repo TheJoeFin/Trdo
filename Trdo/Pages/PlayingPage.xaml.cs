@@ -184,6 +184,69 @@ public sealed partial class PlayingPage : Page
         {
             UpdateNowPlayingMarqueeState();
         }
+
+        if (e.PropertyName is nameof(PlayerViewModel.SleepTimerProgress))
+        {
+            UpdateSleepTimerRing();
+        }
+
+        if (e.PropertyName is nameof(PlayerViewModel.IsSleepTimerActive) && ViewModel.IsSleepTimerActive)
+        {
+            // Reset the hover state so a freshly-started timer shows the ring rather than
+            // whatever the pointer happened to be doing to the previous one.
+            SleepTimerRingHost.Opacity = 1;
+            SleepTimerCancelIcon.Opacity = 0;
+            UpdateSleepTimerRing();
+        }
+    }
+
+    private const double SleepTimerRingDiameter = 28;
+    private const double SleepTimerRingStrokeThickness = 2.5;
+
+    /// <summary>
+    /// Redraws the countdown ring's arc via Ellipse.StrokeDashArray. XAML expresses
+    /// dash lengths as multiples of the stroke thickness rather than device pixels, so the
+    /// circle's circumference has to be converted into that unit before it can be split into a
+    /// "time remaining" dash and a "time elapsed" gap.
+    /// </summary>
+    private void UpdateSleepTimerRing()
+    {
+        double progress = Math.Clamp(ViewModel.SleepTimerProgress, 0, 1);
+        double radius = (SleepTimerRingDiameter - SleepTimerRingStrokeThickness) / 2;
+        double circumferenceUnits = 2 * Math.PI * radius / SleepTimerRingStrokeThickness;
+
+        SleepTimerRingProgress.StrokeDashArray = new DoubleCollection
+        {
+            circumferenceUnits * progress,
+            circumferenceUnits
+        };
+    }
+
+    private void SleepTimerMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuFlyoutItem { Tag: string minutesText } && int.TryParse(minutesText, out int minutes))
+        {
+            Debug.WriteLine($"[PlayingPage] Starting sleep timer: {minutes} minutes");
+            ViewModel.StartSleepTimer(minutes);
+        }
+    }
+
+    private void SleepTimerButton_Click(object sender, RoutedEventArgs e)
+    {
+        Debug.WriteLine("[PlayingPage] Sleep timer cancelled from countdown control");
+        ViewModel.CancelSleepTimer();
+    }
+
+    private void SleepTimerButton_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        SleepTimerRingHost.Opacity = 0;
+        SleepTimerCancelIcon.Opacity = 1;
+    }
+
+    private void SleepTimerButton_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        SleepTimerRingHost.Opacity = 1;
+        SleepTimerCancelIcon.Opacity = 0;
     }
 
     private void UpdateFavoriteButtonState()
@@ -209,7 +272,15 @@ public sealed partial class PlayingPage : Page
         ContentDialog dialog = new()
         {
             Title = LocalizationService.GetString("PlayingPage_PlaybackErrorTitle", "Playback Error"),
-            Content = errorMessage,
+            // A plain string Content renders as a TextBlock that can't be selected, which
+            // makes an error impossible to copy into a bug report. TextBlock supports
+            // selection directly - no need for a full TextBox just to allow copying.
+            Content = new TextBlock
+            {
+                Text = errorMessage,
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true,
+            },
             CloseButtonText = LocalizationService.GetString("PlayingPage_PlaybackErrorClose", "OK"),
             XamlRoot = this.XamlRoot
         };
@@ -403,6 +474,30 @@ public sealed partial class PlayingPage : Page
         if (sender is MenuFlyoutItem menuItem && menuItem.Tag is RadioStation station)
         {
             Debug.WriteLine($"[PlayingPage] Edit station clicked: {station.Name}");
+
+            switch (station.SourceKind)
+            {
+                case AudioSourceKind.WhiteNoise:
+                    // White noise has no stream URL, homepage or favicon to edit, so it gets
+                    // its own page rather than the generic manual-entry window.
+                    _shellViewModel?.NavigateToAddWhiteNoisePage(station);
+                    return;
+
+                case AudioSourceKind.Files:
+                    // Its own pop-out window, not page navigation: re-picking a folder opens a
+                    // system FolderPicker dialog, which a page hosted in the shell frame does
+                    // not survive.
+                    AddLocalMusicWindow editLocalMusicWindow = new();
+                    WindowHelper.Track(editLocalMusicWindow);
+                    editLocalMusicWindow.LoadStationForEdit(station);
+                    editLocalMusicWindow.Activate();
+                    return;
+
+                case AudioSourceKind.Radio:
+                default:
+                    break;
+            }
+
             // Open a pop-out window for editing so the flyout closing doesn't clear the fields
             ManualStationWindow editWindow = new();
             WindowHelper.Track(editWindow);
@@ -509,6 +604,26 @@ public sealed partial class PlayingPage : Page
             ViewModel.PersistStationList();
             e.Cancel = true;
         }
+    }
+
+    private void PreviousTrackButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.PreviousLocalTrack();
+    }
+
+    private void NextTrackButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.NextLocalTrack();
+    }
+
+    private void SeekSlider_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        ViewModel.BeginSeekDrag();
+    }
+
+    private void SeekSlider_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        ViewModel.EndSeekDrag();
     }
 
     private void VolumeControl_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
@@ -719,7 +834,12 @@ public sealed partial class PlayingPage : Page
         ContentDialog dialog = new()
         {
             Title = title,
-            Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+            Content = new TextBlock
+            {
+                Text = message,
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true,
+            },
             CloseButtonText = "OK",
             XamlRoot = this.XamlRoot
         };

@@ -13,6 +13,10 @@ using Trdo.Helpers;
 using Trdo.Models;
 using Trdo.Services;
 using Windows.System;
+// Windows.System also defines DispatcherQueueTimer, which collides with the
+// Microsoft.UI.Dispatching one the sleep timer uses.
+using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
+using DispatcherQueueTimer = Microsoft.UI.Dispatching.DispatcherQueueTimer;
 
 namespace Trdo.ViewModels;
 
@@ -27,6 +31,20 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     private bool _isCurrentTrackFavorited;
     private bool _isRefreshingMetadata;
     private CancellationTokenSource? _stationTransitionCts;
+
+    // Sleep timer: pauses playback once the chosen duration elapses. The timer is recreated
+    // lazily on first use rather than in the constructor, since DispatcherQueueTimer requires
+    // a UI thread and there is no need to pay for one until the user actually asks for it.
+    private DispatcherQueueTimer? _sleepTimer;
+    private DateTimeOffset _sleepTimerEndsAt;
+    private TimeSpan _sleepTimerDuration;
+    private bool _isSleepTimerActive;
+
+    // Local music scrub bar: polls position while a Files-kind station plays so the bar moves
+    // smoothly, same lazy-creation reasoning as the sleep timer above.
+    private DispatcherQueueTimer? _localMusicPositionTimer;
+    private bool _isSeekDragging;
+    private double _seekProgress;
 
     /// <summary>The arrangement: top-level stations, folders and dividers, in display order.</summary>
     private readonly List<object> _topLevelNodes;
@@ -105,6 +123,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(MiniPlayerPrimaryText));
             OnPropertyChanged(nameof(MiniPlayerSecondaryText));
             OnPropertyChanged(nameof(HasMiniPlayerSecondaryText));
+            RefreshLocalMusicTrackState();
         };
         _player.BufferingStateChanged += (_, _) =>
         {
@@ -238,16 +257,33 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             // before playback starts, so the first connection already uses them.
             _player.Volume = _selectedStation.Volume;
             _player.Watchdog.StationBufferLevelOverride = _selectedStation.BufferLevel;
+
+            // Startup calls Initialize()/Play() directly rather than going through
+            // TransitionToStationAsync, so there is no outgoing source whose reads this could
+            // clobber - safe to set before anything else here.
+            _player.SetActiveSourceKind(_selectedStation.SourceKind);
+            _player.SetWhiteNoiseColor(_selectedStation.WhiteNoiseColor);
             SyncTrackInfoDelay();
 
-            Debug.WriteLine($"[PlayerViewModel] Initializing stream with URL: {_selectedStation.StreamUrl}");
-            InitializeStream(_selectedStation.StreamUrl);
-
-            // Auto-play on startup if the setting is enabled
-            if (SettingsService.AutoPlayOnStartup)
+            if (_selectedStation.SourceKind == AudioSourceKind.Files)
             {
-                Debug.WriteLine("[PlayerViewModel] AutoPlayOnStartup is enabled, starting playback...");
-                _player.Play();
+                // Files carries a placeholder StreamUrl, not a real one InitializeStream could
+                // dial - only RadioPlayerService can resolve "this station" into "its first
+                // track's real file URI", same as BeginStationTransition does for a live switch.
+                Debug.WriteLine($"[PlayerViewModel] Initializing local music station: {_selectedStation.Name}");
+                _ = _player.PlayLocalMusicStationAsync(_selectedStation, playAfterSwitch: SettingsService.AutoPlayOnStartup);
+            }
+            else
+            {
+                Debug.WriteLine($"[PlayerViewModel] Initializing stream with URL: {_selectedStation.StreamUrl}");
+                InitializeStream(_selectedStation.StreamUrl);
+
+                // Auto-play on startup if the setting is enabled
+                if (SettingsService.AutoPlayOnStartup)
+                {
+                    Debug.WriteLine("[PlayerViewModel] AutoPlayOnStartup is enabled, starting playback...");
+                    _player.Play();
+                }
             }
         }
         else
@@ -370,6 +406,8 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(SelectedStationFallbackIconVisibility));
             OnPropertyChanged(nameof(SelectedStationFaviconImageSource));
             OnPropertyChanged(nameof(SelectedStationDisplayName));
+            OnPropertyChanged(nameof(IsLocalMusicActive));
+            RefreshLocalMusicTrackState();
             SyncStationCyclingAvailability();
 
             if (_selectedStation != null)
@@ -383,8 +421,10 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 LogService.Info("PlayerViewModel",
                     $"Station selected: '{_selectedStation.Name}' ({LogService.Redact(_selectedStation.StreamUrl)}), volume={_selectedStation.Volume:0.00}");
 
-                // Validate the URL
-                if (!IsValidUrl(_selectedStation.StreamUrl))
+                // Validate the URL. Only a Radio station actually dials StreamUrl - anything
+                // else (white noise today, a local file later) carries a placeholder there and
+                // never needs to pass this check.
+                if (_selectedStation.SourceKind == AudioSourceKind.Radio && !IsValidUrl(_selectedStation.StreamUrl))
                 {
                     string logDetail = $"Invalid stream URL for {_selectedStation.Name}";
                     _lastError = string.Format(
@@ -803,6 +843,214 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         Debug.WriteLine("=== Pause END ===");
     }
 
+    /// <summary>True while a sleep timer is counting down toward pausing playback.</summary>
+    public bool IsSleepTimerActive
+    {
+        get => _isSleepTimerActive;
+        private set
+        {
+            if (_isSleepTimerActive == value) return;
+            _isSleepTimerActive = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private TimeSpan SleepTimerRemaining => _sleepTimerEndsAt > DateTimeOffset.Now
+        ? _sleepTimerEndsAt - DateTimeOffset.Now
+        : TimeSpan.Zero;
+
+    /// <summary>The countdown control's label, rounded up so it reads "1m" until the timer actually elapses.</summary>
+    public string SleepTimerDisplayText => $"{Math.Max((int)Math.Ceiling(SleepTimerRemaining.TotalMinutes), 1)}m";
+
+    /// <summary>Fraction of the chosen duration still remaining, for the countdown ring.</summary>
+    public double SleepTimerProgress => _sleepTimerDuration > TimeSpan.Zero
+        ? Math.Clamp(SleepTimerRemaining / _sleepTimerDuration, 0, 1)
+        : 0;
+
+    /// <summary>
+    /// Starts (or restarts) the sleep timer. Playback itself is untouched until it elapses -
+    /// this only arranges for <see cref="Pause"/> to be called once <paramref name="minutes"/>
+    /// have passed.
+    /// </summary>
+    public void StartSleepTimer(int minutes)
+    {
+        _sleepTimerDuration = TimeSpan.FromMinutes(minutes);
+        _sleepTimerEndsAt = DateTimeOffset.Now + _sleepTimerDuration;
+
+        if (_sleepTimer is null)
+        {
+            DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread()
+                ?? throw new InvalidOperationException("StartSleepTimer must be called from the UI thread.");
+            _sleepTimer = dispatcherQueue.CreateTimer();
+            _sleepTimer.Interval = TimeSpan.FromSeconds(1);
+            _sleepTimer.IsRepeating = true;
+            _sleepTimer.Tick += (_, _) => TickSleepTimer();
+        }
+
+        _sleepTimer.Start();
+        IsSleepTimerActive = true;
+        OnPropertyChanged(nameof(SleepTimerDisplayText));
+        OnPropertyChanged(nameof(SleepTimerProgress));
+
+        LogService.Info("PlayerViewModel", $"Sleep timer started: {minutes} minutes");
+    }
+
+    /// <summary>Cancels a running sleep timer without affecting playback.</summary>
+    public void CancelSleepTimer()
+    {
+        if (!IsSleepTimerActive)
+            return;
+
+        _sleepTimer?.Stop();
+        IsSleepTimerActive = false;
+        LogService.Info("PlayerViewModel", "Sleep timer cancelled");
+    }
+
+    private void TickSleepTimer()
+    {
+        if (SleepTimerRemaining <= TimeSpan.Zero)
+        {
+            _sleepTimer?.Stop();
+            IsSleepTimerActive = false;
+            LogService.Info("PlayerViewModel", "Sleep timer elapsed, pausing playback");
+            Pause();
+            return;
+        }
+
+        OnPropertyChanged(nameof(SleepTimerDisplayText));
+        OnPropertyChanged(nameof(SleepTimerProgress));
+    }
+
+    /// <summary>True when the selected station is a local music folder rather than radio/white noise.</summary>
+    public bool IsLocalMusicActive => SelectedStation?.SourceKind == AudioSourceKind.Files;
+
+    /// <summary>The current folder's tracks, in playback order.</summary>
+    public IReadOnlyList<string> LocalTrackList => _player.CurrentLocalTrackList;
+
+    /// <summary>Index into <see cref="LocalTrackList"/> of the track currently playing.</summary>
+    public int CurrentLocalTrackIndex => _player.CurrentLocalTrackIndex;
+
+    public bool CanGoToNextLocalTrack => _player.CanGoToNextLocalTrack;
+
+    public bool CanGoToPreviousLocalTrack => _player.CanGoToPreviousLocalTrack;
+
+    /// <summary>
+    /// The scrub bar's value, 0-100. A two-way property rather than a plain passthrough of
+    /// <see cref="Position"/>/<see cref="Duration"/> because the slider needs to be settable
+    /// mid-drag without immediately seeking on every tick - see <see cref="BeginSeekDrag"/>/
+    /// <see cref="EndSeekDrag"/>, which is where a drag's seek actually lands.
+    /// </summary>
+    public double SeekProgress
+    {
+        get => _seekProgress;
+        set
+        {
+            value = Math.Clamp(value, 0, 100);
+            if (Math.Abs(_seekProgress - value) < 0.01) return;
+            _seekProgress = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public TimeSpan Position => _player.Position;
+
+    public TimeSpan? Duration => _player.Duration;
+
+    public string PositionDisplay => FormatTimeSpan(Position);
+
+    public string DurationDisplay => Duration is { } duration ? FormatTimeSpan(duration) : "0:00";
+
+    private static string FormatTimeSpan(TimeSpan value) =>
+        value.Hours > 0 ? value.ToString(@"h\:mm\:ss") : value.ToString(@"m\:ss");
+
+    /// <summary>
+    /// Marks the start of a scrub-bar drag: the position-poll timer stops overwriting
+    /// <see cref="SeekProgress"/> until <see cref="EndSeekDrag"/>, so the thumb doesn't jump
+    /// back under the user's finger mid-drag.
+    /// </summary>
+    public void BeginSeekDrag() => _isSeekDragging = true;
+
+    /// <summary>Ends a scrub-bar drag and commits the seek - see <see cref="BeginSeekDrag"/>.</summary>
+    public void EndSeekDrag()
+    {
+        _isSeekDragging = false;
+
+        if (Duration is not { } duration || duration <= TimeSpan.Zero)
+            return;
+
+        TimeSpan target = duration * (_seekProgress / 100);
+        _player.Seek(target);
+        OnPropertyChanged(nameof(Position));
+        OnPropertyChanged(nameof(PositionDisplay));
+    }
+
+    public async void NextLocalTrack()
+    {
+        await _player.NextLocalTrackAsync();
+    }
+
+    public async void PreviousLocalTrack()
+    {
+        await _player.PreviousLocalTrackAsync();
+    }
+
+    /// <summary>Plays an arbitrary track from <see cref="LocalTrackList"/>, e.g. tapped from the details page.</summary>
+    public async Task PlayLocalTrackAtIndexAsync(int index)
+    {
+        await _player.PlayLocalTrackAtIndexAsync(index);
+    }
+
+    private void RefreshLocalMusicTrackState()
+    {
+        OnPropertyChanged(nameof(LocalTrackList));
+        OnPropertyChanged(nameof(CurrentLocalTrackIndex));
+        OnPropertyChanged(nameof(CanGoToNextLocalTrack));
+        OnPropertyChanged(nameof(CanGoToPreviousLocalTrack));
+        OnPropertyChanged(nameof(Duration));
+        OnPropertyChanged(nameof(DurationDisplay));
+        SyncLocalMusicPositionTimer();
+    }
+
+    private void SyncLocalMusicPositionTimer()
+    {
+        bool shouldRun = IsLocalMusicActive && IsPlaying;
+
+        if (shouldRun)
+        {
+            if (_localMusicPositionTimer is null)
+            {
+                DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread()
+                    ?? throw new InvalidOperationException("SyncLocalMusicPositionTimer must be called from the UI thread.");
+                _localMusicPositionTimer = dispatcherQueue.CreateTimer();
+                _localMusicPositionTimer.Interval = TimeSpan.FromMilliseconds(250);
+                _localMusicPositionTimer.IsRepeating = true;
+                _localMusicPositionTimer.Tick += (_, _) => TickLocalMusicPosition();
+            }
+
+            _localMusicPositionTimer.Start();
+        }
+        else
+        {
+            _localMusicPositionTimer?.Stop();
+        }
+    }
+
+    private void TickLocalMusicPosition()
+    {
+        OnPropertyChanged(nameof(Position));
+        OnPropertyChanged(nameof(PositionDisplay));
+
+        // The timer must not fight a drag in progress - overwriting SeekProgress here would
+        // snap the thumb back to the live position out from under the user's finger.
+        if (_isSeekDragging)
+            return;
+
+        if (Duration is { } duration && duration > TimeSpan.Zero)
+        {
+            SeekProgress = Position.TotalSeconds / duration.TotalSeconds * 100;
+        }
+    }
+
     public void ToggleCurrentTrackFavorite()
     {
         if (CurrentMetadata?.HasMetadata != true)
@@ -881,7 +1129,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
                 CancelStationTransition();
                 _player.ClearPlaybackTarget();
             }
-            else if (!IsValidUrl(_selectedStation.StreamUrl))
+            else if (_selectedStation.SourceKind == AudioSourceKind.Radio && !IsValidUrl(_selectedStation.StreamUrl))
             {
                 throw new InvalidOperationException($"Invalid stream URL for {_selectedStation.Name}");
             }
@@ -950,6 +1198,50 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
             Debug.WriteLine("[PlayerViewModel] First station added, selecting automatically");
             SelectedStation = station;
         }
+    }
+
+    /// <summary>
+    /// Adds a batch of brand-new stations already grouped inside a brand-new folder, in a
+    /// single persist. Used when adding a local-music "artist" folder whose album subfolders
+    /// should appear as individual stations, already grouped together, rather than an
+    /// AddStation + MoveStationToGroup round trip per station (each of which persists on its
+    /// own).
+    /// </summary>
+    public StationGroup AddStationsToNewFolder(string folderName, IReadOnlyList<RadioStation> stations)
+    {
+        StationGroup group = new()
+        {
+            Id = StationIdentityPolicy.NewId(),
+            Name = string.IsNullOrWhiteSpace(folderName) ? "New group" : folderName.Trim(),
+        };
+
+        foreach (RadioStation station in stations)
+        {
+            if (string.IsNullOrWhiteSpace(station.Id))
+                station.Id = StationIdentityPolicy.NewId();
+            station.DateAdded ??= DateTimeOffset.UtcNow;
+            station.GroupId = group.Id;
+
+            Stations.Add(station);
+            group.Children.Add(station);
+        }
+
+        group.NotifyChildrenChanged();
+        _topLevelNodes.Add(group);
+
+        RebuildDisplayRows();
+        OnPropertyChanged(nameof(Groups));
+        PersistStationList();
+
+        // Mirrors AddStation's own "first station added, select it automatically" - if these
+        // are the only stations in the app, one of them needs to end up selected the same way.
+        if (Stations.Count == stations.Count && stations.Count > 0)
+        {
+            Debug.WriteLine("[PlayerViewModel] First stations added via folder, selecting the first automatically");
+            SelectedStation = stations[0];
+        }
+
+        return group;
     }
 
     public async Task VisitWebsite(RadioStation station)
@@ -1545,7 +1837,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         SyncTrackInfoDelay();
 
         // If the current station was edited, reinitialize the stream
-        if (_selectedStation != null && IsValidUrl(_selectedStation.StreamUrl))
+        if (_selectedStation != null && (_selectedStation.SourceKind != AudioSourceKind.Radio || IsValidUrl(_selectedStation.StreamUrl)))
         {
             Debug.WriteLine($"[PlayerViewModel] Reinitializing stream after save: {_selectedStation.StreamUrl}");
             try
@@ -1580,7 +1872,7 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     private void InitializeStream(string streamUrl)
     {
         Debug.WriteLine($"[PlayerViewModel] InitializeStream called with URL: {streamUrl}");
-        if (IsValidUrl(streamUrl))
+        if ((_selectedStation is not null && _selectedStation.SourceKind != AudioSourceKind.Radio) || IsValidUrl(streamUrl))
         {
             try
             {
@@ -1693,13 +1985,25 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     {
         try
         {
-            await _player.TransitionToStationAsync(
-                station.StreamUrl,
-                station.Name,
-                station.FaviconUrl,
-                station.Volume,
-                playAfterSwitch,
-                transitionCts.Token);
+            // Only RadioPlayerService knows how to resolve "this station" into "what to
+            // actually play" - for Files that's scanning the folder for its first track,
+            // which TransitionToStationAsync's fixed stream-url parameter can't express.
+            if (station.SourceKind == AudioSourceKind.Files)
+            {
+                await _player.PlayLocalMusicStationAsync(station, playAfterSwitch, transitionCts.Token);
+            }
+            else
+            {
+                await _player.TransitionToStationAsync(
+                    station.StreamUrl,
+                    station.Name,
+                    station.FaviconUrl,
+                    station.Volume,
+                    playAfterSwitch,
+                    station.SourceKind,
+                    station.WhiteNoiseColor,
+                    transitionCts.Token);
+            }
 
             if (ReferenceEquals(_selectedStation, station))
             {

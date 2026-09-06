@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Trdo.Controls;
 using Trdo.Services;
+using Trdo.Services.Audio;
 using Trdo.Services.Playback;
 using Trdo.ViewModels;
 using Windows.UI.ViewManagement;
@@ -91,6 +92,9 @@ public partial class App : Application
         // Same for playback errors: the service has to be listening before the first
         // failure, and it needs this (UI) thread's dispatcher for its review timer.
         PlaybackErrorService.EnsureInitialized();
+
+        // Radio static listens for buffering, which can start before any window is shown.
+        RadioStaticService.Instance.Initialize();
 
         // Subscribe to theme change events
         _uiSettings.ColorValuesChanged += OnColorValuesChanged;
@@ -756,6 +760,7 @@ public partial class App : Application
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();
             _trayIconRestoreEvent?.Dispose();
+            RadioStaticService.Instance.Dispose();
             LibVlcHost.Dispose();
         }
         catch
