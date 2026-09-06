@@ -209,7 +209,15 @@ public sealed partial class PlayingPage : Page
         ContentDialog dialog = new()
         {
             Title = LocalizationService.GetString("PlayingPage_PlaybackErrorTitle", "Playback Error"),
-            Content = errorMessage,
+            // A plain string Content renders as a TextBlock that can't be selected, which
+            // makes an error impossible to copy into a bug report. TextBlock supports
+            // selection directly - no need for a full TextBox just to allow copying.
+            Content = new TextBlock
+            {
+                Text = errorMessage,
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true,
+            },
             CloseButtonText = LocalizationService.GetString("PlayingPage_PlaybackErrorClose", "OK"),
             XamlRoot = this.XamlRoot
         };
@@ -736,7 +744,12 @@ public sealed partial class PlayingPage : Page
         ContentDialog dialog = new()
         {
             Title = title,
-            Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+            Content = new TextBlock
+            {
+                Text = message,
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true,
+            },
             CloseButtonText = "OK",
             XamlRoot = this.XamlRoot
         };
