@@ -13,6 +13,10 @@ using Trdo.Helpers;
 using Trdo.Models;
 using Trdo.Services;
 using Windows.System;
+// Windows.System also defines DispatcherQueueTimer, which collides with the
+// Microsoft.UI.Dispatching one the sleep timer uses.
+using DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue;
+using DispatcherQueueTimer = Microsoft.UI.Dispatching.DispatcherQueueTimer;
 
 namespace Trdo.ViewModels;
 
@@ -27,6 +31,14 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
     private bool _isCurrentTrackFavorited;
     private bool _isRefreshingMetadata;
     private CancellationTokenSource? _stationTransitionCts;
+
+    // Sleep timer: pauses playback once the chosen duration elapses. The timer is recreated
+    // lazily on first use rather than in the constructor, since DispatcherQueueTimer requires
+    // a UI thread and there is no need to pay for one until the user actually asks for it.
+    private DispatcherQueueTimer? _sleepTimer;
+    private DateTimeOffset _sleepTimerEndsAt;
+    private TimeSpan _sleepTimerDuration;
+    private bool _isSleepTimerActive;
 
     /// <summary>The arrangement: top-level stations, folders and dividers, in display order.</summary>
     private readonly List<object> _topLevelNodes;
@@ -809,6 +821,84 @@ public sealed partial class PlayerViewModel : INotifyPropertyChanged
         }
 
         Debug.WriteLine("=== Pause END ===");
+    }
+
+    /// <summary>True while a sleep timer is counting down toward pausing playback.</summary>
+    public bool IsSleepTimerActive
+    {
+        get => _isSleepTimerActive;
+        private set
+        {
+            if (_isSleepTimerActive == value) return;
+            _isSleepTimerActive = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private TimeSpan SleepTimerRemaining => _sleepTimerEndsAt > DateTimeOffset.Now
+        ? _sleepTimerEndsAt - DateTimeOffset.Now
+        : TimeSpan.Zero;
+
+    /// <summary>The countdown control's label, rounded up so it reads "1m" until the timer actually elapses.</summary>
+    public string SleepTimerDisplayText => $"{Math.Max((int)Math.Ceiling(SleepTimerRemaining.TotalMinutes), 1)}m";
+
+    /// <summary>Fraction of the chosen duration still remaining, for the countdown ring.</summary>
+    public double SleepTimerProgress => _sleepTimerDuration > TimeSpan.Zero
+        ? Math.Clamp(SleepTimerRemaining / _sleepTimerDuration, 0, 1)
+        : 0;
+
+    /// <summary>
+    /// Starts (or restarts) the sleep timer. Playback itself is untouched until it elapses -
+    /// this only arranges for <see cref="Pause"/> to be called once <paramref name="minutes"/>
+    /// have passed.
+    /// </summary>
+    public void StartSleepTimer(int minutes)
+    {
+        _sleepTimerDuration = TimeSpan.FromMinutes(minutes);
+        _sleepTimerEndsAt = DateTimeOffset.Now + _sleepTimerDuration;
+
+        if (_sleepTimer is null)
+        {
+            DispatcherQueue dispatcherQueue = DispatcherQueue.GetForCurrentThread()
+                ?? throw new InvalidOperationException("StartSleepTimer must be called from the UI thread.");
+            _sleepTimer = dispatcherQueue.CreateTimer();
+            _sleepTimer.Interval = TimeSpan.FromSeconds(1);
+            _sleepTimer.IsRepeating = true;
+            _sleepTimer.Tick += (_, _) => TickSleepTimer();
+        }
+
+        _sleepTimer.Start();
+        IsSleepTimerActive = true;
+        OnPropertyChanged(nameof(SleepTimerDisplayText));
+        OnPropertyChanged(nameof(SleepTimerProgress));
+
+        LogService.Info("PlayerViewModel", $"Sleep timer started: {minutes} minutes");
+    }
+
+    /// <summary>Cancels a running sleep timer without affecting playback.</summary>
+    public void CancelSleepTimer()
+    {
+        if (!IsSleepTimerActive)
+            return;
+
+        _sleepTimer?.Stop();
+        IsSleepTimerActive = false;
+        LogService.Info("PlayerViewModel", "Sleep timer cancelled");
+    }
+
+    private void TickSleepTimer()
+    {
+        if (SleepTimerRemaining <= TimeSpan.Zero)
+        {
+            _sleepTimer?.Stop();
+            IsSleepTimerActive = false;
+            LogService.Info("PlayerViewModel", "Sleep timer elapsed, pausing playback");
+            Pause();
+            return;
+        }
+
+        OnPropertyChanged(nameof(SleepTimerDisplayText));
+        OnPropertyChanged(nameof(SleepTimerProgress));
     }
 
     public void ToggleCurrentTrackFavorite()
