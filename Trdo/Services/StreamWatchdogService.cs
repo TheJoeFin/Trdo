@@ -3,6 +3,7 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Trdo.Services.Audio;
 using Trdo.Services.Playback;
 using Windows.Storage;
 
@@ -236,6 +237,10 @@ public sealed partial class StreamWatchdogService : IDisposable
         _silenceMonitor = new AudioSilenceMonitorService();
         _silenceMonitor.SilenceDetected += OnSilenceDetected;
         _silenceMonitor.AudioLevelUpdated += OnAudioLevelFromMonitor;
+
+        // Radio static is our own noise on the output; without this the monitor would hear it and
+        // conclude a dead stream is still playing.
+        _silenceMonitor.ShouldIgnoreCapturedAudio = () => RadioStaticService.Instance.IsAudible;
 
         // Load settings
         LoadAutoBufferSettings();
