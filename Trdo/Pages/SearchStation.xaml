@@ -306,6 +306,7 @@
                         <HyperlinkButton.ContextFlyout>
                             <MenuFlyout>
                                 <MenuFlyoutItem Click="AddWhiteNoiseButton_Click" Text="Add white noise..." />
+                                <MenuFlyoutItem Click="AddLocalMusicButton_Click" Text="Add local music..." />
                             </MenuFlyout>
                         </HyperlinkButton.ContextFlyout>
                     </HyperlinkButton>

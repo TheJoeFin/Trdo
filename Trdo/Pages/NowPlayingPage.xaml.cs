@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System.Diagnostics;
 using Trdo.Models;
@@ -100,6 +101,15 @@ public sealed partial class NowPlayingPage : Page
         {
             Debug.WriteLine($"[NowPlayingPage] Favorite history item clicked: {item.DisplayText}");
             ViewModel.ToggleHistoryItemFavorite(item);
+        }
+    }
+
+    private void LocalTrackRow_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.Tag is int index)
+        {
+            Debug.WriteLine($"[NowPlayingPage] Local track row tapped: {index}");
+            ViewModel.PlayLocalTrackAtIndex(index);
         }
     }
 }

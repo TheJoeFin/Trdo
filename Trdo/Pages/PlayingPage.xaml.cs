@@ -483,10 +483,17 @@ public sealed partial class PlayingPage : Page
                     _shellViewModel?.NavigateToAddWhiteNoisePage(station);
                     return;
 
-                // Files isn't implemented yet, so it has no editor of its own either -
-                // falls through to the manual-entry window along with Radio for now.
-                case AudioSourceKind.Radio:
                 case AudioSourceKind.Files:
+                    // Its own pop-out window, not page navigation: re-picking a folder opens a
+                    // system FolderPicker dialog, which a page hosted in the shell frame does
+                    // not survive.
+                    AddLocalMusicWindow editLocalMusicWindow = new();
+                    WindowHelper.Track(editLocalMusicWindow);
+                    editLocalMusicWindow.LoadStationForEdit(station);
+                    editLocalMusicWindow.Activate();
+                    return;
+
+                case AudioSourceKind.Radio:
                 default:
                     break;
             }
@@ -597,6 +604,26 @@ public sealed partial class PlayingPage : Page
             ViewModel.PersistStationList();
             e.Cancel = true;
         }
+    }
+
+    private void PreviousTrackButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.PreviousLocalTrack();
+    }
+
+    private void NextTrackButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.NextLocalTrack();
+    }
+
+    private void SeekSlider_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        ViewModel.BeginSeekDrag();
+    }
+
+    private void SeekSlider_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        ViewModel.EndSeekDrag();
     }
 
     private void VolumeControl_PointerWheelChanged(object sender, PointerRoutedEventArgs e)

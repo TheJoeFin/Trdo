@@ -253,8 +253,11 @@
             </Grid>
         </Grid>
 
-        <!--  Playlist History Section  -->
-        <Grid Grid.Row="2" Padding="0,0,0,0">
+        <!--  Playlist History Section - hidden for local music, which shows its folder's track list instead  -->
+        <Grid
+            Grid.Row="2"
+            Padding="0,0,0,0"
+            Visibility="{x:Bind ViewModel.IsLocalMusicActive, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=Invert}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -340,6 +343,79 @@
                                     Foreground="{ThemeResource AccentFillColorDefaultBrush}"
                                     Glyph="{x:Bind IsFavorited, Mode=OneWay, Converter={StaticResource BooleanToFavoriteGlyphConverter}}" />
                             </Button>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+
+        <!--  Local Music Track List Section  -->
+        <Grid
+            Grid.Row="2"
+            Padding="0,0,0,0"
+            Visibility="{x:Bind ViewModel.IsLocalMusicActive, Mode=OneWay, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <TextBlock
+                x:Uid="NowPlayingPage_TrackList"
+                Grid.Row="0"
+                Margin="0,0,0,8"
+                FontSize="14"
+                FontWeight="SemiBold"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+            <ListView
+                Grid.Row="1"
+                Padding="0,0,12,0"
+                ItemsSource="{x:Bind ViewModel.LocalTrackList, Mode=OneWay}"
+                SelectionMode="None">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="0,4" />
+                        <Setter Property="MinHeight" Value="0" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="vm:LocalTrackDisplayItem">
+                        <Grid
+                            Padding="10"
+                            Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                            CornerRadius="6"
+                            Tag="{x:Bind Index}"
+                            Tapped="LocalTrackRow_Tapped">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <!--  Highlights the currently playing track  -->
+                            <Border
+                                Grid.ColumnSpan="2"
+                                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                                CornerRadius="6"
+                                Opacity="0.15"
+                                Visibility="{x:Bind IsCurrent, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                            <FontIcon
+                                Grid.Column="0"
+                                Margin="0,0,8,0"
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                Foreground="{ThemeResource AccentFillColorDefaultBrush}"
+                                Glyph="&#xE768;"
+                                Visibility="{x:Bind IsCurrent, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                            <TextBlock
+                                Grid.Column="1"
+                                VerticalAlignment="Center"
+                                FontSize="12"
+                                Text="{x:Bind DisplayTitle}"
+                                TextTrimming="CharacterEllipsis"
+                                TextWrapping="NoWrap" />
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

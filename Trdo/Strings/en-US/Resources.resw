@@ -194,6 +194,45 @@
   <data name="AddStation_UrlRequired" xml:space="preserve">
     <value>Stream URL is required.</value>
   </data>
+  <data name="AddLocalMusic_AddPageTitle" xml:space="preserve">
+    <value>Add Local Music</value>
+  </data>
+  <data name="AddLocalMusic_EditPageTitle" xml:space="preserve">
+    <value>Edit Local Music</value>
+  </data>
+  <data name="AddLocalMusic_StationNameLabel.Text" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="AddLocalMusic_StationNamePlaceholder.PlaceholderText" xml:space="preserve">
+    <value>e.g., My Music, Favorites</value>
+  </data>
+  <data name="AddLocalMusic_FolderLabel.Text" xml:space="preserve">
+    <value>Folder</value>
+  </data>
+  <data name="AddLocalMusic_BrowseButton.Content" xml:space="preserve">
+    <value>Browse...</value>
+  </data>
+  <data name="AddLocalMusic_VolumeLabel.Text" xml:space="preserve">
+    <value>Volume</value>
+  </data>
+  <data name="AddLocalMusic_NoFolderSelected" xml:space="preserve">
+    <value>No folder selected</value>
+  </data>
+  <data name="AddLocalMusic_NoTracksFound" xml:space="preserve">
+    <value>No audio files found in this folder.</value>
+  </data>
+  <data name="AddLocalMusic_OneTrackFound" xml:space="preserve">
+    <value>1 track found.</value>
+  </data>
+  <data name="AddLocalMusic_TracksFound" xml:space="preserve">
+    <value>{0} tracks found.</value>
+  </data>
+  <data name="AddLocalMusic_OneAlbumFound" xml:space="preserve">
+    <value>1 subfolder with music found. It will become its own station inside a new folder.</value>
+  </data>
+  <data name="AddLocalMusic_AlbumsFound" xml:space="preserve">
+    <value>{0} subfolders with music found. Each will become its own station inside a new folder.</value>
+  </data>
   <data name="AddWhiteNoise_AddPageTitle" xml:space="preserve">
     <value>Add White Noise</value>
   </data>
@@ -355,6 +394,9 @@
   </data>
   <data name="NowPlayingPage_RecentTracks.Text" xml:space="preserve">
     <value>Recent Tracks</value>
+  </data>
+  <data name="NowPlayingPage_TrackList.Text" xml:space="preserve">
+    <value>Tracks</value>
   </data>
   <data name="NowPlayingPage_Title.Text" xml:space="preserve">
     <value>Now Playing</value>

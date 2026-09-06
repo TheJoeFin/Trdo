@@ -279,6 +279,17 @@ public sealed partial class SearchStation : Page
         _shellViewModel?.NavigateToAddWhiteNoisePage();
     }
 
+    private async void AddLocalMusicButton_Click(object sender, RoutedEventArgs e)
+    {
+        await StopPreviewAsync();
+
+        // Pop-out window, not page navigation: picking a folder opens a system FolderPicker
+        // dialog, which a page hosted in the shell frame does not survive.
+        AddLocalMusicWindow addWindow = new();
+        WindowHelper.Track(addWindow);
+        addWindow.Activate();
+    }
+
     private async void CancelButton_Click(object sender, RoutedEventArgs e)
     {
         await StopPreviewAsync();
